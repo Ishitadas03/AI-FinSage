@@ -12,15 +12,15 @@ export const PublicFooter: React.FC = () => {
           
           {/* Brand Info (2 cols on md) */}
           <div className="col-span-2 space-y-4">
-            <Link to="/" className="flex items-center gap-2.5">
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-teal-50 text-teal-700 border border-teal-200/60 shadow-xs">
-                <Leaf className="h-5 w-5 transform -rotate-12 fill-teal-600/20" />
+            <Link to="/" className="flex items-center gap-3">
+              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-teal-50/90 text-teal-700 border border-teal-200/60 shadow-xs">
+                <Leaf className="h-6 w-6 transform -rotate-12 fill-teal-600/20 stroke-[2.2]" />
               </div>
               <div>
-                <span className="text-lg font-bold tracking-tight text-slate-900 leading-none block">
+                <span className="text-xl font-extrabold tracking-tight text-slate-900 leading-none block">
                   FinSage
                 </span>
-                <span className="text-[10px] font-medium text-slate-400 tracking-tight">
+                <span className="text-[11px] font-medium text-slate-400 tracking-tight mt-0.5">
                   Smarter Money. Brighter Tomorrow.
                 </span>
               </div>

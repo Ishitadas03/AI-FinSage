@@ -22,15 +22,15 @@ export const FinSageNavbar: React.FC = () => {
     <header className="sticky top-0 z-50 w-full border-b border-slate-200/80 bg-[#F8FAFA]/90 backdrop-blur-md">
       <div className="mx-auto flex h-18 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
         {/* Left: Brand Logo */}
-        <Link to="/" className="flex items-center gap-2.5 group">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-teal-50 text-teal-700 border border-teal-200/60 shadow-xs transition-all group-hover:bg-teal-100 group-hover:scale-105">
-            <Leaf className="h-5 w-5 transform -rotate-12 fill-teal-600/20" />
+        <Link to="/" className="flex items-center gap-3 group">
+          <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-teal-50/90 text-teal-700 border border-teal-200/60 shadow-xs transition-all group-hover:bg-teal-100 group-hover:scale-105 group-hover:border-teal-300">
+            <Leaf className="h-6 w-6 transform -rotate-12 fill-teal-600/20 text-teal-700 stroke-[2.2]" />
           </div>
           <div>
-            <div className="text-lg font-bold tracking-tight text-slate-900 leading-none">
+            <div className="text-xl font-extrabold tracking-tight text-slate-900 leading-none">
               FinSage
             </div>
-            <div className="text-[10px] font-medium text-slate-400 tracking-tight mt-0.5">
+            <div className="text-[11px] font-medium text-slate-400 tracking-tight mt-0.5">
               Smarter Money. Brighter Tomorrow.
             </div>
           </div>

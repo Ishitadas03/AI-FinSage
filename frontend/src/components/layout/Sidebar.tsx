@@ -113,9 +113,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileOpen, onCloseMobile }) =
       >
         {/* Brand Header */}
         <div className="flex h-16 items-center justify-between px-5 border-b border-slate-100">
-          <NavLink to="/" className="flex items-center gap-2.5 group" onClick={onCloseMobile}>
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-teal-50 text-teal-800 transition-colors group-hover:bg-teal-100">
-              <Leaf className="h-5 w-5 text-teal-700 transform -rotate-12 fill-teal-600/20" />
+          <NavLink to="/" className="flex items-center gap-3 group" onClick={onCloseMobile}>
+            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-teal-50/90 text-teal-800 border border-teal-200/60 shadow-xs transition-colors group-hover:bg-teal-100/90">
+              <Leaf className="h-5.5 w-5.5 text-teal-700 stroke-[2.2] transform -rotate-12 fill-teal-600/20" />
             </div>
             <div>
               <div className="text-[17px] font-bold tracking-tight text-slate-900 flex items-center">

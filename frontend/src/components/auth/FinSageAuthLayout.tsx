@@ -42,11 +42,11 @@ export const FinSageAuthLayout: React.FC<FinSageAuthLayoutProps> = ({
 
         {/* Mobile / Tablet Header (Visible only on < lg screens) */}
         <div className="lg:hidden p-6 pb-2 flex items-center justify-between border-b border-slate-100 bg-[#F8FAFA]">
-          <Link to="/" className="flex items-center gap-2.5">
-            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-teal-50 text-teal-700 border border-teal-200">
-              <Leaf className="h-4 w-4 transform -rotate-12 fill-teal-600/20" />
+          <Link to="/" className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-teal-50/90 text-teal-700 border border-teal-200/60 shadow-xs">
+              <Leaf className="h-5.5 w-5.5 stroke-[2.2] transform -rotate-12 fill-teal-600/20" />
             </div>
-            <span className="font-bold text-slate-900 text-base">FinSage</span>
+            <span className="font-bold text-slate-900 text-lg">FinSage</span>
           </Link>
 
           <button

@@ -87,15 +87,15 @@ export const PublicNavbar: React.FC = () => {
     <header className="sticky top-0 z-50 w-full border-b border-slate-200/80 bg-[#F8FAFA]/95 backdrop-blur-md">
       <div className="mx-auto flex h-18 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
         {/* Left: Brand Logo */}
-        <Link to="/" className="flex items-center gap-2.5 group">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-teal-50 text-teal-700 border border-teal-200/60 shadow-xs transition-all group-hover:bg-teal-100 group-hover:scale-105">
-            <Leaf className="h-5 w-5 transform -rotate-12 fill-teal-600/20" />
+        <Link to="/" className="flex items-center gap-3 group">
+          <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-teal-50/90 text-teal-700 border border-teal-200/60 shadow-xs transition-all group-hover:bg-teal-100 group-hover:scale-105 group-hover:border-teal-300">
+            <Leaf className="h-6 w-6 transform -rotate-12 fill-teal-600/20 text-teal-700 stroke-[2.2]" />
           </div>
           <div>
-            <div className="text-lg font-bold tracking-tight text-slate-900 leading-none">
+            <div className="text-xl font-extrabold tracking-tight text-slate-900 leading-none">
               FinSage
             </div>
-            <div className="text-[10px] font-medium text-slate-400 tracking-tight mt-0.5">
+            <div className="text-[11px] font-medium text-slate-400 tracking-tight mt-0.5">
               Smarter Money. Brighter Tomorrow.
             </div>
           </div>
@@ -140,8 +140,8 @@ export const PublicNavbar: React.FC = () => {
                         to="/transactions"
                         className="group flex items-start gap-3 rounded-xl p-2.5 transition-colors hover:bg-teal-50/60"
                       >
-                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-teal-50 text-teal-700 border border-teal-100 group-hover:bg-teal-600 group-hover:text-white transition-colors">
-                          <CreditCard className="h-4 w-4" />
+                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-teal-50/90 text-teal-700 border border-teal-200/60 shadow-2xs group-hover:bg-teal-600 group-hover:text-white group-hover:border-teal-600 transition-all">
+                          <CreditCard className="h-4.5 w-4.5" />
                         </div>
                         <div>
                           <div className="text-xs font-bold text-slate-900 group-hover:text-teal-900">
@@ -157,8 +157,8 @@ export const PublicNavbar: React.FC = () => {
                         to="/spending"
                         className="group flex items-start gap-3 rounded-xl p-2.5 transition-colors hover:bg-teal-50/60"
                       >
-                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-teal-50 text-teal-700 border border-teal-100 group-hover:bg-teal-600 group-hover:text-white transition-colors">
-                          <PieChart className="h-4 w-4" />
+                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-teal-50/90 text-teal-700 border border-teal-200/60 shadow-2xs group-hover:bg-teal-600 group-hover:text-white group-hover:border-teal-600 transition-all">
+                          <PieChart className="h-4.5 w-4.5" />
                         </div>
                         <div>
                           <div className="text-xs font-bold text-slate-900 group-hover:text-teal-900">
@@ -174,8 +174,8 @@ export const PublicNavbar: React.FC = () => {
                         to="/budgets"
                         className="group flex items-start gap-3 rounded-xl p-2.5 transition-colors hover:bg-teal-50/60"
                       >
-                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-teal-50 text-teal-700 border border-teal-100 group-hover:bg-teal-600 group-hover:text-white transition-colors">
-                          <Wallet className="h-4 w-4" />
+                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-teal-50/90 text-teal-700 border border-teal-200/60 shadow-2xs group-hover:bg-teal-600 group-hover:text-white group-hover:border-teal-600 transition-all">
+                          <Wallet className="h-4.5 w-4.5" />
                         </div>
                         <div>
                           <div className="text-xs font-bold text-slate-900 group-hover:text-teal-900">
@@ -199,8 +199,8 @@ export const PublicNavbar: React.FC = () => {
                         to="/goals"
                         className="group flex items-start gap-3 rounded-xl p-2.5 transition-colors hover:bg-teal-50/60"
                       >
-                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-teal-50 text-teal-700 border border-teal-100 group-hover:bg-teal-600 group-hover:text-white transition-colors">
-                          <Target className="h-4 w-4" />
+                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-teal-50/90 text-teal-700 border border-teal-200/60 shadow-2xs group-hover:bg-teal-600 group-hover:text-white group-hover:border-teal-600 transition-all">
+                          <Target className="h-4.5 w-4.5" />
                         </div>
                         <div>
                           <div className="text-xs font-bold text-slate-900 group-hover:text-teal-900">
@@ -216,8 +216,8 @@ export const PublicNavbar: React.FC = () => {
                         to="/future-self"
                         className="group flex items-start gap-3 rounded-xl p-2.5 transition-colors hover:bg-teal-50/60"
                       >
-                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-teal-50 text-teal-700 border border-teal-100 group-hover:bg-teal-600 group-hover:text-white transition-colors">
-                          <Clock className="h-4 w-4" />
+                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-teal-50/90 text-teal-700 border border-teal-200/60 shadow-2xs group-hover:bg-teal-600 group-hover:text-white group-hover:border-teal-600 transition-all">
+                          <Clock className="h-4.5 w-4.5" />
                         </div>
                         <div>
                           <div className="text-xs font-bold text-slate-900 group-hover:text-teal-900">
@@ -233,8 +233,8 @@ export const PublicNavbar: React.FC = () => {
                         to="/debt-emi"
                         className="group flex items-start gap-3 rounded-xl p-2.5 transition-colors hover:bg-teal-50/60"
                       >
-                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-teal-50 text-teal-700 border border-teal-100 group-hover:bg-teal-600 group-hover:text-white transition-colors">
-                          <Landmark className="h-4 w-4" />
+                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-teal-50/90 text-teal-700 border border-teal-200/60 shadow-2xs group-hover:bg-teal-600 group-hover:text-white group-hover:border-teal-600 transition-all">
+                          <Landmark className="h-4.5 w-4.5" />
                         </div>
                         <div>
                           <div className="text-xs font-bold text-slate-900 group-hover:text-teal-900">
@@ -258,8 +258,8 @@ export const PublicNavbar: React.FC = () => {
                         to="/financial-health"
                         className="group flex items-start gap-3 rounded-xl p-2.5 transition-colors hover:bg-teal-50/60"
                       >
-                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-teal-50 text-teal-700 border border-teal-100 group-hover:bg-teal-600 group-hover:text-white transition-colors">
-                          <Activity className="h-4 w-4" />
+                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-teal-50/90 text-teal-700 border border-teal-200/60 shadow-2xs group-hover:bg-teal-600 group-hover:text-white group-hover:border-teal-600 transition-all">
+                          <Activity className="h-4.5 w-4.5" />
                         </div>
                         <div>
                           <div className="text-xs font-bold text-slate-900 group-hover:text-teal-900">
@@ -275,8 +275,8 @@ export const PublicNavbar: React.FC = () => {
                         to="/ai-report"
                         className="group flex items-start gap-3 rounded-xl p-2.5 transition-colors hover:bg-teal-50/60"
                       >
-                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-teal-50 text-teal-700 border border-teal-100 group-hover:bg-teal-600 group-hover:text-white transition-colors">
-                          <FileText className="h-4 w-4" />
+                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-teal-50/90 text-teal-700 border border-teal-200/60 shadow-2xs group-hover:bg-teal-600 group-hover:text-white group-hover:border-teal-600 transition-all">
+                          <FileText className="h-4.5 w-4.5" />
                         </div>
                         <div>
                           <div className="text-xs font-bold text-slate-900 group-hover:text-teal-900">
@@ -292,8 +292,8 @@ export const PublicNavbar: React.FC = () => {
                         to="/market-intel"
                         className="group flex items-start gap-3 rounded-xl p-2.5 transition-colors hover:bg-teal-50/60"
                       >
-                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-teal-50 text-teal-700 border border-teal-100 group-hover:bg-teal-600 group-hover:text-white transition-colors">
-                          <TrendingUp className="h-4 w-4" />
+                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-teal-50/90 text-teal-700 border border-teal-200/60 shadow-2xs group-hover:bg-teal-600 group-hover:text-white group-hover:border-teal-600 transition-all">
+                          <TrendingUp className="h-4.5 w-4.5" />
                         </div>
                         <div>
                           <div className="text-xs font-bold text-slate-900 group-hover:text-teal-900">
@@ -317,8 +317,8 @@ export const PublicNavbar: React.FC = () => {
                         to="/scam-shield"
                         className="group flex items-start gap-3 rounded-xl p-2.5 transition-colors hover:bg-teal-50/60"
                       >
-                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-rose-50 text-rose-600 border border-rose-100 group-hover:bg-rose-600 group-hover:text-white transition-colors">
-                          <ShieldAlert className="h-4 w-4" />
+                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-rose-50/90 text-rose-600 border border-rose-200/60 shadow-2xs group-hover:bg-rose-600 group-hover:text-white group-hover:border-rose-600 transition-all">
+                          <ShieldAlert className="h-4.5 w-4.5" />
                         </div>
                         <div>
                           <div className="text-xs font-bold text-slate-900 group-hover:text-rose-900">
