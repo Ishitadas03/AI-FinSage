@@ -104,27 +104,25 @@ export const AuthBrandPanel: React.FC = () => {
       </div>
 
       {/* Bottom Visual: Landscape & Quote Card */}
-      <div className="relative mt-8 pt-4">
+      <div className="relative mt-6 sm:mt-8">
         
         {/* Handwritten Callout with Arrow */}
-        <div className="absolute right-4 -top-10 z-20 hidden sm:block text-right">
-          <div className="font-serif italic text-teal-900 text-xs sm:text-sm font-semibold leading-tight rotate-[-4deg]">
-            Better<br />
-            Habits<br />
-            Brighter<br />
-            Tomorrows
+        <div className="flex flex-col items-end pr-4 mb-2.5 select-none">
+          <div className="font-serif italic text-teal-950 text-xs sm:text-sm font-bold leading-tight rotate-[-3deg] tracking-tight">
+            Better Habits<br />
+            Brighter Tomorrows
           </div>
           <svg
-            className="w-16 h-8 text-teal-800 ml-auto mt-0.5 opacity-80"
-            viewBox="0 0 100 40"
+            className="w-14 h-5 text-teal-800 mr-1 mt-0.5 opacity-80"
+            viewBox="0 0 100 35"
             fill="none"
             stroke="currentColor"
             strokeWidth="2.5"
             strokeLinecap="round"
             strokeLinejoin="round"
           >
-            <path d="M10 10 Q 50 35 90 20" />
-            <path d="M78 12 L 92 20 L 80 28" />
+            <path d="M10 8 Q 50 28 88 18" />
+            <path d="M76 10 L 90 18 L 78 26" />
           </svg>
         </div>
 
