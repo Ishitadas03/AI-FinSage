@@ -1,6 +1,9 @@
 # FinSage — Your AI Financial Copilot
 *Smarter Money. Brighter Tomorrow.*
 
+🌐 **Live Production Application:** [https://ai-finsage.vercel.app](https://ai-finsage.vercel.app)  
+*(Alternative Mirror: [https://finsage-app.vercel.app](https://finsage-app.vercel.app))*
+
 FinSage is a comprehensive, production-grade FinTech web application designed to eliminate money stress, optimize monthly cash flow, protect against transaction fraud, and simulate compounding paths to early financial freedom.
 
 ---
