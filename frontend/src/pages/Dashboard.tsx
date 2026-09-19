@@ -334,17 +334,17 @@ export const Dashboard: React.FC = () => {
                 </span>
               </div>
 
-              <div className="mt-4 flex flex-col sm:flex-row items-center gap-4">
+              <div className="mt-4 flex flex-col sm:flex-row items-center gap-4 sm:gap-6">
                 {/* Donut Chart */}
-                <div className="relative h-44 w-44 shrink-0 flex items-center justify-center">
+                <div className="relative h-40 w-40 shrink-0 flex items-center justify-center">
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                       <Pie
                         data={spendingData}
                         dataKey="value"
                         nameKey="name"
-                        innerRadius={52}
-                        outerRadius={70}
+                        innerRadius={48}
+                        outerRadius={65}
                         paddingAngle={3}
                         stroke="none"
                       >
@@ -355,25 +355,29 @@ export const Dashboard: React.FC = () => {
                     </PieChart>
                   </ResponsiveContainer>
                   <div className="absolute text-center">
-                    <span className="text-sm font-bold text-slate-900">₹54,200</span>
+                    <span className="text-sm font-bold text-slate-900 font-numeric">₹54,200</span>
                     <span className="block text-[10px] text-slate-400 font-medium">Total Spent</span>
                   </div>
                 </div>
 
-                {/* Legend list */}
-                <div className="flex-1 space-y-1.5 text-xs w-full">
+                {/* Legend list with fixed column grid */}
+                <div className="flex-1 min-w-0 w-full space-y-2">
                   {spendingData.map((item) => (
-                    <div key={item.name} className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <span className="h-2 w-2 rounded-full" style={{ backgroundColor: item.color }} />
-                        <span className="text-slate-600 font-medium">{item.name}</span>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <span className="text-slate-400 text-[11px]">{item.percentage}</span>
-                        <span className="text-slate-800 font-bold font-numeric w-14 text-right">
-                          ₹{item.value.toLocaleString()}
-                        </span>
-                      </div>
+                    <div
+                      key={item.name}
+                      className="grid grid-cols-[8px_1fr_36px_68px] items-center gap-2 text-xs"
+                    >
+                      <span
+                        className="h-2 w-2 rounded-full shrink-0"
+                        style={{ backgroundColor: item.color }}
+                      />
+                      <span className="text-slate-600 font-medium truncate">{item.name}</span>
+                      <span className="text-slate-400 text-[11px] text-right font-numeric font-medium">
+                        {item.percentage}
+                      </span>
+                      <span className="text-slate-900 font-bold font-numeric text-right">
+                        ₹{item.value.toLocaleString()}
+                      </span>
                     </div>
                   ))}
                 </div>
