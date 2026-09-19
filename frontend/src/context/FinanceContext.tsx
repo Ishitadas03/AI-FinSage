@@ -100,6 +100,11 @@ interface FinanceContextType {
   isSearchOpen: boolean;
   setIsSearchOpen: (open: boolean) => void;
 
+  // Auth & Session
+  isAuthenticated: boolean;
+  login: (email: string, name?: string, rememberMe?: boolean) => boolean;
+  logout: () => void;
+
   // Profile update
   updateProfile: (profile: Partial<UserProfile>) => void;
   resetAllData: () => void;
@@ -511,6 +516,10 @@ const INITIAL_CHAT: ChatMessage[] = [
 ];
 
 export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
+    return localStorage.getItem('finsage_auth') === 'true' || sessionStorage.getItem('finsage_auth') === 'true';
+  });
+
   const [user, setUser] = useState<UserProfile>(() => {
     const saved = localStorage.getItem('finsage_user');
     return saved ? JSON.parse(saved) : INITIAL_USER;
@@ -793,6 +802,42 @@ On your HDFC Home Loan (₹18.5L balance at 8.65%):
     setUser((prev) => ({ ...prev, ...updated }));
   };
 
+  const login = (email: string, name?: string, rememberMe?: boolean): boolean => {
+    if (!email || !email.includes('@')) return false;
+    
+    // Auto-update user profile name and email if provided
+    let displayName = name || user.name;
+    if (!name && email.includes('@')) {
+      const prefix = email.split('@')[0];
+      displayName = prefix.charAt(0).toUpperCase() + prefix.slice(1).replace(/[._-]/g, ' ');
+    }
+
+    const updatedUser: UserProfile = {
+      ...user,
+      email,
+      name: displayName,
+      initials: displayName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) || 'FS',
+    };
+
+    setUser(updatedUser);
+    localStorage.setItem('finsage_user', JSON.stringify(updatedUser));
+    setIsAuthenticated(true);
+
+    if (rememberMe) {
+      localStorage.setItem('finsage_auth', 'true');
+    } else {
+      sessionStorage.setItem('finsage_auth', 'true');
+    }
+
+    return true;
+  };
+
+  const logout = () => {
+    setIsAuthenticated(false);
+    localStorage.removeItem('finsage_auth');
+    sessionStorage.removeItem('finsage_auth');
+  };
+
   const resetAllData = () => {
     setUser(INITIAL_USER);
     setTransactions(INITIAL_TRANSACTIONS);
@@ -802,12 +847,17 @@ On your HDFC Home Loan (₹18.5L balance at 8.65%):
     setSecurityAlerts(INITIAL_SECURITY_ALERTS);
     setChatMessages(INITIAL_CHAT);
     setNotifications(INITIAL_NOTIFICATIONS);
+    setIsAuthenticated(false);
     localStorage.clear();
+    sessionStorage.clear();
   };
 
   return (
     <FinanceContext.Provider
       value={{
+        isAuthenticated,
+        login,
+        logout,
         user,
         netWorth,
         monthlyIncome,

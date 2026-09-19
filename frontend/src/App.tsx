@@ -32,6 +32,7 @@ import { AboutPage } from "./pages/public/AboutPage";
 import { HelpPage } from "./pages/public/HelpPage";
 import { FaqPage } from "./pages/public/FaqPage";
 import { ContactPage } from "./pages/public/ContactPage";
+import { SignInPage } from "./pages/public/auth/SignInPage";
 
 // Resource Guides
 import { PersonalFinanceBasicsPage } from "./pages/public/resources/PersonalFinanceBasicsPage";
@@ -59,6 +60,10 @@ const App = () => (
             {/* Landing Page */}
             <Route path="/" element={<Landing />} />
             <Route path="/landing" element={<Landing />} />
+
+            {/* Authentication Routes */}
+            <Route path="/signin" element={<SignInPage />} />
+            <Route path="/login" element={<SignInPage />} />
 
             {/* Core Public Company Pages */}
             <Route

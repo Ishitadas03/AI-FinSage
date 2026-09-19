@@ -52,7 +52,7 @@ export const FinSageNavbar: React.FC = () => {
         {/* Right: Auth & CTA Buttons */}
         <div className="hidden sm:flex items-center gap-3">
           <button
-            onClick={() => navigate('/dashboard')}
+            onClick={() => navigate('/signin')}
             className="rounded-xl px-4 py-2 text-xs font-semibold text-slate-700 hover:text-slate-900 hover:bg-slate-100/70 transition-colors"
           >
             Sign in
@@ -95,7 +95,7 @@ export const FinSageNavbar: React.FC = () => {
             <button
               onClick={() => {
                 setMobileMenuOpen(false);
-                navigate('/dashboard');
+                navigate('/signin');
               }}
               className="w-full rounded-xl border border-slate-200 py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-50"
             >
