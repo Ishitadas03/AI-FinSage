@@ -2,11 +2,12 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { FinanceProvider } from "@/context/FinanceContext";
 import { AppShell } from "@/components/layout/AppShell";
 
 // Pages
+import { Landing } from "./pages/Landing";
 import { Dashboard } from "./pages/Dashboard";
 import { Transactions } from "./pages/Transactions";
 import { Spending } from "./pages/Spending";
@@ -32,8 +33,13 @@ const App = () => (
       <FinanceProvider>
         <BrowserRouter>
           <Routes>
+            {/* Landing Page with Hero Section */}
+            <Route path="/" element={<Landing />} />
+            <Route path="/landing" element={<Landing />} />
+
+            {/* Dashboard & Full FinTech Application Routes */}
             <Route
-              path="/"
+              path="/dashboard"
               element={
                 <AppShell>
                   <Dashboard />
@@ -136,6 +142,7 @@ const App = () => (
                 </AppShell>
               }
             />
+
             {/* Catch-all route */}
             <Route path="*" element={<NotFound />} />
           </Routes>

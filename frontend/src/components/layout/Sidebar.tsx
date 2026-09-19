@@ -49,7 +49,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileOpen, onCloseMobile }) =
   const navSections: NavSection[] = [
     {
       items: [
-        { name: 'Dashboard', href: '/', icon: LayoutDashboard },
+        { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
       ],
     },
     {

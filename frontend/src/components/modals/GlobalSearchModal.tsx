@@ -98,9 +98,13 @@ export const GlobalSearchModal: React.FC = () => {
         <CommandSeparator />
 
         <CommandGroup heading="Navigation">
-          <CommandItem onSelect={() => handleSelect(() => navigate('/'))}>
+          <CommandItem onSelect={() => handleSelect(() => navigate('/dashboard'))}>
             <LayoutDashboard className="h-4 w-4 mr-2 text-slate-500" />
             <span>Dashboard</span>
+          </CommandItem>
+          <CommandItem onSelect={() => handleSelect(() => navigate('/'))}>
+            <Sparkles className="h-4 w-4 mr-2 text-teal-600" />
+            <span>Landing Page</span>
           </CommandItem>
           <CommandItem onSelect={() => handleSelect(() => navigate('/transactions'))}>
             <Receipt className="h-4 w-4 mr-2 text-slate-500" />
