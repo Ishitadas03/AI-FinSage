@@ -1,62 +1,64 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
-
 @layer base {
   :root {
-    --background: 222 47% 6%;
-    --foreground: 210 40% 95%;
+    /* Background & Foreground - Crisp clean slate background */
+    --background: 218 38% 98%;      /* #F7F9FC */
+    --foreground: 222 47% 11%;      /* #0F172A */
 
-    --card: 222 44% 9%;
-    --card-foreground: 210 40% 95%;
+    /* Cards & Popovers - Pure White */
+    --card: 0 0% 100%;              /* #FFFFFF */
+    --card-foreground: 222 47% 11%; /* #0F172A */
 
-    --popover: 222 44% 9%;
-    --popover-foreground: 210 40% 95%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
 
-    --primary: 174 72% 50%;
-    --primary-foreground: 222 47% 6%;
+    /* Primary Brand - Deep Teal #0F766E */
+    --primary: 175 77% 26%;         /* #0F766E */
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 222 30% 14%;
-    --secondary-foreground: 210 40% 90%;
+    /* Secondary - Soft Slate Tint */
+    --secondary: 210 40% 96%;       /* #F1F5F9 */
+    --secondary-foreground: 222 47% 11%;
 
-    --muted: 222 30% 14%;
-    --muted-foreground: 215 20% 55%;
+    /* Muted Text & Elements */
+    --muted: 210 40% 96%;
+    --muted-foreground: 215 16% 47%;/* #64748B */
 
-    --accent: 174 72% 50%;
-    --accent-foreground: 222 47% 6%;
+    /* Accent - Vibrant Mint/Teal #14B8A6 */
+    --accent: 173 80% 40%;          /* #14B8A6 */
+    --accent-foreground: 0 0% 100%;
 
-    --destructive: 0 72% 55%;
-    --destructive-foreground: 210 40% 98%;
+    /* Functional States */
+    --destructive: 0 84% 60%;       /* #EF4444 */
+    --destructive-foreground: 0 0% 100%;
 
-    --success: 152 69% 45%;
-    --success-foreground: 222 47% 6%;
+    --success: 142 71% 45%;         /* #16A34A */
+    --success-foreground: 0 0% 100%;
 
-    --warning: 38 92% 55%;
-    --warning-foreground: 222 47% 6%;
+    --warning: 38 92% 50%;          /* #F59E0B */
+    --warning-foreground: 0 0% 100%;
 
-    --border: 222 30% 16%;
-    --input: 222 30% 16%;
-    --ring: 174 72% 50%;
+    /* Borders & Inputs */
+    --border: 214 32% 91%;          /* #E2E8F0 */
+    --input: 214 32% 91%;           /* #E2E8F0 */
+    --ring: 175 77% 26%;            /* #0F766E */
 
     --radius: 0.75rem;
 
-    --glass: 222 44% 9% / 0.6;
-    --glass-border: 174 72% 50% / 0.12;
-    --glow-primary: 174 72% 50% / 0.15;
-    --glow-success: 152 69% 45% / 0.15;
-    --glow-destructive: 0 72% 55% / 0.15;
-    --glow-warning: 38 92% 55% / 0.15;
-
-    --sidebar-background: 222 47% 5%;
-    --sidebar-foreground: 210 40% 75%;
-    --sidebar-primary: 174 72% 50%;
-    --sidebar-primary-foreground: 222 47% 6%;
-    --sidebar-accent: 222 30% 12%;
-    --sidebar-accent-foreground: 210 40% 90%;
-    --sidebar-border: 222 30% 12%;
-    --sidebar-ring: 174 72% 50%;
+    /* Sidebar */
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 215 16% 47%;
+    --sidebar-primary: 175 77% 26%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 175 60% 96%;  /* Soft teal active bg */
+    --sidebar-accent-foreground: 175 77% 26%;
+    --sidebar-border: 214 32% 91%;
+    --sidebar-ring: 175 77% 26%;
   }
 }
 
@@ -66,74 +68,60 @@
   }
 
   body {
-    @apply bg-background text-foreground font-sans antialiased;
-    font-feature-settings: "cv11", "ss01";
+    @apply bg-background text-foreground antialiased;
+    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+    letter-spacing: -0.01em;
   }
 
+  /* Custom scrollbars */
   ::-webkit-scrollbar {
     width: 6px;
     height: 6px;
   }
   ::-webkit-scrollbar-track {
-    background: hsl(var(--background));
+    background: transparent;
   }
   ::-webkit-scrollbar-thumb {
-    background: hsl(var(--border));
-    border-radius: 3px;
+    background: #CBD5E1;
+    border-radius: 9999px;
   }
   ::-webkit-scrollbar-thumb:hover {
-    background: hsl(var(--primary) / 0.5);
+    background: #94A3B8;
   }
 }
 
 @layer utilities {
-  .glass-card {
-    @apply bg-card/60 backdrop-blur-xl border border-white/[0.06] rounded-xl;
-    box-shadow: 
-      0 0 0 1px hsl(var(--glass-border)),
-      0 8px 32px -8px rgba(0, 0, 0, 0.4),
-      inset 0 1px 0 0 rgba(255, 255, 255, 0.03);
+  .card-fintech {
+    background: #FFFFFF;
+    border: 1px solid #E2E8F0;
+    border-radius: 0.875rem;
+    box-shadow: 0 1px 3px 0 rgba(15, 23, 42, 0.03), 0 1px 2px -1px rgba(15, 23, 42, 0.03);
+    transition: all 0.2s ease-in-out;
+  }
+  
+  .card-fintech:hover {
+    box-shadow: 0 4px 12px 0 rgba(15, 23, 42, 0.05);
   }
 
-  .glow-primary {
-    box-shadow: 0 0 20px hsl(var(--glow-primary)), 0 0 60px hsl(var(--glow-primary));
+  .badge-success {
+    @apply bg-emerald-50 text-emerald-700 border border-emerald-200/60 font-medium;
   }
 
-  .glow-success {
-    box-shadow: 0 0 20px hsl(var(--glow-success)), 0 0 60px hsl(var(--glow-success));
+  .badge-warning {
+    @apply bg-amber-50 text-amber-700 border border-amber-200/60 font-medium;
   }
 
-  .glow-destructive {
-    box-shadow: 0 0 20px hsl(var(--glow-destructive)), 0 0 60px hsl(var(--glow-destructive));
+  .badge-danger {
+    @apply bg-rose-50 text-rose-700 border border-rose-200/60 font-medium;
   }
 
-  .glow-warning {
-    box-shadow: 0 0 20px hsl(var(--glow-warning)), 0 0 60px hsl(var(--glow-warning));
+  .badge-brand {
+    @apply bg-teal-50 text-teal-800 border border-teal-200/60 font-medium;
   }
 
-  .text-gradient-primary {
-    @apply bg-clip-text text-transparent;
-    background-image: linear-gradient(135deg, hsl(174 72% 50%), hsl(190 90% 60%));
-  }
-
-  .text-gradient-gold {
-    @apply bg-clip-text text-transparent;
-    background-image: linear-gradient(135deg, hsl(38 92% 55%), hsl(45 100% 70%));
-  }
-
-  .animate-pulse-glow {
-    animation: pulseGlow 2s ease-in-out infinite;
-  }
-
-  @keyframes pulseGlow {
-    0%, 100% { opacity: 0.6; }
-    50% { opacity: 1; }
-  }
-
-  .grid-bg {
-    background-image: 
-      linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
-    background-size: 40px 40px;
+  /* Currency format helper font */
+  .font-numeric {
+    font-feature-settings: "tnum";
+    font-variant-numeric: tabular-nums;
   }
 }
