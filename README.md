@@ -1,73 +1,63 @@
-# Welcome to your Lovable project
+# FinSage — Your AI Financial Copilot
+*Smarter Money. Brighter Tomorrow.*
 
-## Project info
+FinSage is a comprehensive, production-grade FinTech web application designed to eliminate money stress, optimize monthly cash flow, protect against transaction fraud, and simulate compounding paths to early financial freedom.
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+---
 
-## How can I edit this code?
+## ✨ Features & Capabilities
 
-There are several ways of editing your application.
+### 1. 📊 Overview & Dashboard
+- **Executive Metrics**: Live tracking of Net Worth, Monthly Inflow, Outflow, and Savings Rate.
+- **Financial Health Gauge**: Multi-dimensional 0-100 diagnostic score with historical trajectory.
+- **Cash Flow Analytics**: Dual-series visualization of income vs fixed/variable expenditures.
+- **Where Your Money Goes**: Interactive category spending breakdown.
+- **Milestone Goals & Quick Actions**: Add transactions, set goals, import bank statements, and trigger AI copilot advice.
 
-**Use Lovable**
+### 2. 💳 Money & Ledger Management
+- **Transactions Ledger**: Multi-filter ledger (Category, Payment Mode, Status) with full CRUD, search, and CSV statement export/import.
+- **Spending Analytics**: Discretionary vs fixed cost trajectory, merchant audits, and recurring subscription tracking.
+- **Category Budgets**: Proactive budget limits with real-time threshold warnings (80%/100%) and rollover support.
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
+### 3. 🎯 Planning & Projections
+- **Financial Goals Tracker**: Active & completed goal monitoring with automated monthly SIP calculations.
+- **Future Self Simulator**: Interactive compound wealth engine with customizable returns, income growth, inflation discounting, and Crorepati milestone timelines.
+- **Debt & EMI Optimization**: Debt-to-income stress testing, loan schedules, and **What-If Extra Prepayment Simulator** calculating interest and months slashed.
 
-Changes made via Lovable will be committed automatically to this repo.
+### 4. 🛡️ Protect & Security
+- **Scam Shield**: Heuristic fraud defense with **explainable AI reason tags** (never black-box alerts), forensic risk telemetry (IP, geolocation, device fingerprint), whitelisting, and one-click incident reporting.
 
-**Use your preferred IDE**
+### 5. 🧠 Insights & Reports
+- **Financial Health Deep Dive**: 5-pillar diagnostics (Savings Discipline, Debt Management, Emergency Readiness, Spending Control, Investment Habits).
+- **AI Monthly Audit Report**: Synthesized executive commentary, positive observations, improvement areas, action checklist, and printable PDF downloads.
+- **Market Intel**: Live market indices (Nifty, Sensex, Gold), investment portfolio P&L tracking, and asset allocation strategy.
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+---
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+## 🛠️ Tech Stack
 
-Follow these steps:
+- **Framework**: React 18 with TypeScript
+- **Bundler & Tooling**: Vite & Tailwind CSS
+- **Design System**: Plus Jakarta Sans, Custom FinTech Palette, Radix UI & shadcn/ui
+- **Data Visualization**: Recharts & Lucide React Icons
+- **State Architecture**: Reactive React Context with LocalStorage persistence
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+---
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+## 🚀 Getting Started
 
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+### 1. Install Dependencies
+```bash
+npm install
 ```
 
-**Edit a file directly in GitHub**
+### 2. Run Development Server
+```bash
+npm run dev
+```
+Open [http://localhost:8080](http://localhost:8080) in your browser.
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
-
-**Use GitHub Codespaces**
-
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
-
-## What technologies are used for this project?
-
-This project is built with:
-
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+### 3. Production Build
+```bash
+npm run build
+```
