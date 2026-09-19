@@ -1,17 +1,12 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FinSageNavbar } from '@/components/landing/FinSageNavbar';
+import { PublicNavbar } from '@/components/landing/PublicNavbar';
+import { PublicFooter } from '@/components/landing/PublicFooter';
 import { HeroSection } from '@/components/landing/HeroSection';
 import { ValuePropositionSection } from '@/components/landing/ValuePropositionSection';
 import {
   ArrowRight,
-  ShieldCheck,
-  Zap,
   Sparkles,
-  TrendingUp,
-  Leaf,
-  CheckCircle2,
-  Lock,
 } from 'lucide-react';
 import { useFinance } from '@/context/FinanceContext';
 
@@ -21,8 +16,8 @@ export const Landing: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-[#F8FAFA] text-slate-900 flex flex-col antialiased selection:bg-teal-100 selection:text-teal-900">
-      {/* Top Navigation */}
-      <FinSageNavbar />
+      {/* Top Mega-Menu Navigation */}
+      <PublicNavbar />
 
       {/* Hero Section */}
       <HeroSection />
@@ -69,29 +64,8 @@ export const Landing: React.FC = () => {
         </div>
       </section>
 
-      {/* Clean Minimal FinTech Footer */}
-      <footer className="border-t border-slate-200 bg-white py-12 text-xs text-slate-500">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-teal-50 text-teal-700 border border-teal-200/60">
-              <Leaf className="h-4 w-4 transform -rotate-12" />
-            </div>
-            <span className="font-bold text-slate-900 text-sm">FinSage</span>
-            <span className="text-slate-400">— Smarter Money. Brighter Tomorrow.</span>
-          </div>
-
-          <div className="flex items-center gap-6">
-            <a href="/financial-health" className="hover:text-teal-800 transition-colors">Security</a>
-            <a href="/scam-shield" className="hover:text-teal-800 transition-colors">Scam Shield</a>
-            <a href="/help-support" className="hover:text-teal-800 transition-colors">Help Center</a>
-            <a href="/settings" className="hover:text-teal-800 transition-colors">Privacy Policy</a>
-          </div>
-
-          <div className="text-slate-400 text-[11px]">
-            © {new Date().getFullYear()} FinSage Inc. All rights reserved.
-          </div>
-        </div>
-      </footer>
+      {/* Comprehensive Public Footer */}
+      <PublicFooter />
     </div>
   );
 };
