@@ -100,7 +100,7 @@ export const FinSageLoader: React.FC<FinSageLoaderProps> = ({
       aria-valuemin={0}
       aria-valuemax={100}
       className={cn(
-        'bg-white text-[#0F172A] flex flex-col items-center justify-center select-none overflow-hidden transition-opacity duration-500 ease-out z-50',
+        'bg-white text-[#0F172A] flex flex-col items-center justify-center select-none overflow-hidden transition-opacity duration-500 ease-out z-[99999]',
         isFullScreen ? 'fixed inset-0 w-screen h-screen' : 'relative w-full h-full min-h-[400px]',
         isFadingOut ? 'opacity-0 pointer-events-none' : 'opacity-100',
         className

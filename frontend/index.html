@@ -30,7 +30,141 @@
   </head>
 
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <!-- Instant Pre-Hydration FinSage Splash Loading Screen -->
+      <style>
+        .finsage-splash-screen {
+          position: fixed;
+          inset: 0;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          background-color: #FFFFFF;
+          z-index: 99999;
+          font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+          user-select: none;
+          overflow: hidden;
+        }
+        .finsage-splash-decor-tl {
+          position: absolute;
+          top: -48px;
+          left: -48px;
+          width: 380px;
+          height: 380px;
+          pointer-events: none;
+          opacity: 0.85;
+        }
+        .finsage-splash-decor-br {
+          position: absolute;
+          bottom: -48px;
+          right: -48px;
+          width: 380px;
+          height: 380px;
+          pointer-events: none;
+          opacity: 0.85;
+        }
+        .finsage-splash-center {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          position: relative;
+          z-index: 10;
+          animation: finsageSplashFade 0.5s ease-out;
+        }
+        .finsage-splash-icon {
+          width: 58px;
+          height: 58px;
+          margin-bottom: 14px;
+        }
+        .finsage-splash-brand {
+          font-size: 36px;
+          font-weight: 800;
+          letter-spacing: -0.03em;
+          margin-bottom: 32px;
+          color: #0F172A;
+          line-height: 1;
+        }
+        .finsage-splash-brand span {
+          color: #0F766E;
+        }
+        .finsage-splash-track {
+          width: 280px;
+          max-width: 80vw;
+          height: 5px;
+          background: #E2E8F0;
+          border-radius: 9999px;
+          overflow: hidden;
+          position: relative;
+        }
+        .finsage-splash-fill {
+          height: 100%;
+          border-radius: 9999px;
+          background: linear-gradient(90deg, #0F766E 0%, #14B8A6 50%, #2DD4BF 100%);
+          width: 10%;
+          animation: finsageSplashFill 1.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+          position: relative;
+        }
+        .finsage-splash-fill::after {
+          content: '';
+          position: absolute;
+          right: 0;
+          top: 0;
+          bottom: 0;
+          width: 14px;
+          background: rgba(255, 255, 255, 0.5);
+          filter: blur(2px);
+          border-radius: 9999px;
+        }
+        @keyframes finsageSplashFade {
+          from { opacity: 0; transform: scale(0.96); }
+          to { opacity: 1; transform: scale(1); }
+        }
+        @keyframes finsageSplashFill {
+          0% { width: 6%; }
+          30% { width: 45%; }
+          70% { width: 82%; }
+          100% { width: 100%; }
+        }
+      </style>
+      <div class="finsage-splash-screen">
+        <!-- Top-Left Soft Waves -->
+        <svg class="finsage-splash-decor-tl" viewBox="0 0 400 400" fill="none">
+          <circle cx="100" cy="100" r="280" fill="rgba(20,184,166,0.08)" />
+          <path d="M-50,220 C60,200 120,130 150,70 C180,10 210,-20 280,-40 L-50,-50 Z" fill="rgba(240,253,250,0.9)" />
+          <path d="M-40,160 C40,150 90,90 120,40 C150,-10 180,-30 230,-40" stroke="#14B8A6" stroke-width="1.5" stroke-opacity="0.35" />
+        </svg>
+
+        <!-- Bottom-Right Soft Waves -->
+        <svg class="finsage-splash-decor-br" viewBox="0 0 400 400" fill="none">
+          <circle cx="300" cy="300" r="280" fill="rgba(20,184,166,0.08)" />
+          <path d="M450,180 C340,200 280,270 250,330 C220,390 190,420 120,440 L450,450 Z" fill="rgba(240,253,250,0.9)" />
+          <path d="M440,240 C360,250 310,310 280,360 C250,410 220,430 170,440" stroke="#14B8A6" stroke-width="1.5" stroke-opacity="0.35" />
+        </svg>
+
+        <!-- Center Brand & Progress -->
+        <div class="finsage-splash-center">
+          <svg class="finsage-splash-icon" viewBox="0 0 64 64" fill="none">
+            <defs>
+              <linearGradient id="splashLeafG" x1="15%" y1="90%" x2="85%" y2="10%">
+                <stop offset="0%" stop-color="#0F766E" />
+                <stop offset="50%" stop-color="#14B8A6" />
+                <stop offset="100%" stop-color="#2DD4BF" />
+              </linearGradient>
+            </defs>
+            <path d="M12 50 C12 50 14 30 32 16 C46 5 54 8 54 8 C54 8 57 18 48 34 C36 54 18 53 12 50 Z" fill="url(#splashLeafG)" />
+            <path d="M12 50 Q 28 36 54 8" stroke="#FFFFFF" stroke-width="2.5" stroke-linecap="round" opacity="0.9" />
+          </svg>
+          <div class="finsage-splash-brand">
+            Fin<span>Sage</span>
+          </div>
+          <div class="finsage-splash-track">
+            <div class="finsage-splash-fill"></div>
+          </div>
+        </div>
+      </div>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
