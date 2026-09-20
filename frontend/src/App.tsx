@@ -1,3 +1,4 @@
+import React, { useState, useEffect } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -6,6 +7,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { FinanceProvider } from "@/context/FinanceContext";
 import { AppShell } from "@/components/layout/AppShell";
 import { PublicLayout } from "@/components/layout/PublicLayout";
+import { FinSageLoader } from "@/components/FinSageLoader";
 
 // Landing & App Pages
 import { Landing } from "./pages/Landing";
@@ -49,21 +51,35 @@ import { GoalCalculatorPage } from "./pages/public/calculators/GoalCalculatorPag
 
 const queryClient = new QueryClient();
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner position="top-right" richColors />
-      <FinanceProvider>
-        <BrowserRouter>
-          <Routes>
-            {/* Landing Page */}
-            <Route path="/" element={<Landing />} />
-            <Route path="/landing" element={<Landing />} />
+const App = () => {
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
 
-            {/* Authentication Routes */}
-            <Route path="/signin" element={<SignInPage />} />
-            <Route path="/login" element={<SignInPage />} />
+  return (
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner position="top-right" richColors />
+        {isInitialLoading && (
+          <FinSageLoader
+            isFullScreen={true}
+            duration={1400}
+            onFinish={() => setIsInitialLoading(false)}
+          />
+        )}
+        <FinanceProvider>
+          <BrowserRouter>
+            <Routes>
+              {/* Standalone Loader Preview Routes */}
+              <Route path="/loader" element={<FinSageLoader isFullScreen={true} duration={3000} />} />
+              <Route path="/splash" element={<FinSageLoader isFullScreen={true} duration={3000} />} />
+
+              {/* Landing Page */}
+              <Route path="/" element={<Landing />} />
+              <Route path="/landing" element={<Landing />} />
+
+              {/* Authentication Routes */}
+              <Route path="/signin" element={<SignInPage />} />
+              <Route path="/login" element={<SignInPage />} />
 
             {/* Core Public Company Pages */}
             <Route
@@ -314,6 +330,7 @@ const App = () => (
       </FinanceProvider>
     </TooltipProvider>
   </QueryClientProvider>
-);
+  );
+};
 
 export default App;
