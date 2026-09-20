@@ -51,7 +51,7 @@ export const AIReport: React.FC = () => {
           </p>
         </div>
 
-        <div className="flex items-center gap-2.5">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-2.5">
           <select
             value={selectedMonth}
             onChange={(e) => setSelectedMonth(e.target.value)}
@@ -73,7 +73,7 @@ export const AIReport: React.FC = () => {
       </div>
 
       {/* Printable Report Document Sheet */}
-      <div className="card-fintech p-8 sm:p-10 space-y-8 bg-white border border-slate-200 shadow-md">
+      <div className="card-fintech p-4 sm:p-8 lg:p-10 space-y-8 bg-white border border-slate-200 shadow-md">
         {/* Document Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-200 pb-6 gap-4">
           <div>

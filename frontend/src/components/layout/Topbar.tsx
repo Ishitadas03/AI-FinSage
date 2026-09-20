@@ -146,7 +146,7 @@ export const Topbar: React.FC<TopbarProps> = ({ onOpenMobileMenu }) => {
               )}
             </button>
           </PopoverTrigger>
-          <PopoverContent align="end" className="w-80 sm:w-96 rounded-2xl bg-white p-0 shadow-dropdown border border-slate-100 overflow-hidden">
+          <PopoverContent align="end" className="w-[calc(100vw-32px)] sm:w-96 rounded-2xl bg-white p-0 shadow-dropdown border border-slate-100 overflow-hidden">
             <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3 bg-slate-50/60">
               <div className="flex items-center gap-2">
                 <h4 className="text-sm font-semibold text-slate-900">Notifications</h4>

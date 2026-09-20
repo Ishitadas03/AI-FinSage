@@ -92,12 +92,12 @@ export const Settings: React.FC = () => {
 
       <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
         {/* Navigation Sidebar Tabs (3 cols) */}
-        <div className="md:col-span-3 space-y-1">
+        <div className="md:col-span-3 flex md:flex-col gap-1.5 overflow-x-auto pb-2 md:pb-0">
           {[
             { id: 'profile', label: 'Profile & Identity', icon: User },
             { id: 'security', label: 'Security & 2FA', icon: Shield },
             { id: 'notifications', label: 'Notifications', icon: Bell },
-            { id: 'preferences', label: 'System Preferences', icon: Sliders },
+            { id: 'preferences', label: 'Preferences', icon: Sliders },
             { id: 'accounts', label: 'Connected Accounts', icon: Building },
             { id: 'data', label: 'Data & Privacy', icon: Lock },
           ].map((tab) => {
@@ -107,13 +107,13 @@ export const Settings: React.FC = () => {
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id as any)}
                 className={cn(
-                  "flex w-full items-center gap-3 rounded-xl px-3.5 py-2.5 text-xs font-semibold transition-all text-left",
+                  "flex shrink-0 md:w-full items-center gap-2 md:gap-3 rounded-xl px-3 py-2 md:px-3.5 md:py-2.5 text-xs font-semibold transition-all text-left whitespace-nowrap",
                   activeTab === tab.id
                     ? "bg-teal-50 text-teal-900 font-bold border border-teal-200/80"
                     : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
                 )}
               >
-                <Icon className={cn("h-4 w-4", activeTab === tab.id ? "text-teal-700" : "text-slate-400")} />
+                <Icon className={cn("h-4 w-4 shrink-0", activeTab === tab.id ? "text-teal-700" : "text-slate-400")} />
                 <span>{tab.label}</span>
               </button>
             );

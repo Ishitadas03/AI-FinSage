@@ -27,7 +27,7 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
       <div className="flex flex-1 flex-col lg:pl-64 transition-all duration-200">
         <Topbar onOpenMobileMenu={() => setMobileMenuOpen(true)} />
 
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto">
+        <main className="flex-1 p-3 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto overflow-x-hidden">
           {children}
         </main>
       </div>

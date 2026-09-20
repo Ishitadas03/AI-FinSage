@@ -157,7 +157,7 @@ export const HeroSection: React.FC = () => {
             </div>
 
             {/* Mobile-Friendly Grid for Feature Cards on small screens */}
-            <div className="grid grid-cols-1 sm:hidden gap-2.5 mt-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 sm:hidden gap-2 mt-4">
               <FloatingFeatureCard
                 iconType="target"
                 title="Build Goals"
