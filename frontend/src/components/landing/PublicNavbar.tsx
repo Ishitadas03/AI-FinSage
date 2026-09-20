@@ -84,25 +84,25 @@ export const PublicNavbar: React.FC = () => {
   const isAboutActive = location.pathname === '/about';
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-slate-200/80 bg-[#F8FAFA]/95 backdrop-blur-md">
-      <div className="mx-auto flex h-18 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+    <header className="sticky top-0 z-50 w-full border-b border-slate-200/80 bg-[#F8FAFA]/95 backdrop-blur-md transition-all">
+      <div className="mx-auto flex h-20 max-w-[1380px] items-center justify-between px-4 sm:px-6 lg:px-10">
         {/* Left: Brand Logo */}
-        <Link to="/" className="flex items-center gap-3 group">
-          <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-teal-50/90 text-teal-700 border border-teal-200/60 shadow-xs transition-all group-hover:bg-teal-100 group-hover:scale-105 group-hover:border-teal-300">
-            <Leaf className="h-6 w-6 transform -rotate-12 fill-teal-600/20 text-teal-700 stroke-[2.2]" />
+        <Link to="/" className="flex items-center gap-3.5 group shrink-0">
+          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-teal-50 text-teal-700 border border-teal-200/70 shadow-xs transition-all group-hover:bg-teal-100 group-hover:scale-105 group-hover:border-teal-300">
+            <Leaf className="h-7 w-7 transform -rotate-12 fill-teal-600/20 text-teal-700 stroke-[2.2]" />
           </div>
-          <div>
-            <div className="text-xl font-extrabold tracking-tight text-slate-900 leading-none">
+          <div className="flex flex-col">
+            <div className="text-[22px] sm:text-[24px] font-extrabold tracking-tight text-slate-900 leading-none">
               FinSage
             </div>
-            <div className="text-[11px] font-medium text-slate-400 tracking-tight mt-0.5">
+            <div className="text-[11px] sm:text-[12px] font-medium text-slate-500 tracking-tight mt-1">
               Smarter Money. Brighter Tomorrow.
             </div>
           </div>
         </Link>
 
-        {/* Center: Desktop Navigation */}
-        <nav className="hidden lg:flex items-center gap-1 text-xs font-semibold text-slate-600">
+        {/* Center: Desktop Navigation Links */}
+        <nav className="hidden lg:flex items-center gap-7 xl:gap-9 text-[15px] font-medium text-slate-600">
           
           {/* 1. PRODUCT Mega Menu */}
           <div
@@ -113,14 +113,14 @@ export const PublicNavbar: React.FC = () => {
             <button
               onClick={() => setActiveDropdown(activeDropdown === 'product' ? null : 'product')}
               className={cn(
-                'flex items-center gap-1.5 rounded-lg px-3 py-2 transition-colors hover:text-teal-800 hover:bg-slate-100/60',
-                (isProductActive || activeDropdown === 'product') && 'text-teal-800 font-bold bg-teal-50/70'
+                'flex items-center gap-1.5 py-2 transition-colors hover:text-teal-700 focus:outline-hidden',
+                (isProductActive || activeDropdown === 'product') && 'text-teal-700 font-semibold'
               )}
             >
               <span>Product</span>
               <ChevronDown
                 className={cn(
-                  'h-3.5 w-3.5 transition-transform duration-200 text-slate-400',
+                  'h-4 w-4 transition-transform duration-200 text-slate-400',
                   activeDropdown === 'product' && 'rotate-180 text-teal-700'
                 )}
               />
@@ -365,8 +365,8 @@ export const PublicNavbar: React.FC = () => {
           <Link
             to="/features"
             className={cn(
-              'rounded-lg px-3 py-2 transition-colors hover:text-teal-800 hover:bg-slate-100/60',
-              isFeaturesActive && 'text-teal-800 font-bold bg-teal-50/70'
+              'py-2 transition-colors hover:text-teal-700',
+              isFeaturesActive && 'text-teal-700 font-semibold'
             )}
           >
             Features
@@ -376,8 +376,8 @@ export const PublicNavbar: React.FC = () => {
           <Link
             to="/security"
             className={cn(
-              'rounded-lg px-3 py-2 transition-colors hover:text-teal-800 hover:bg-slate-100/60',
-              isSecurityActive && 'text-teal-800 font-bold bg-teal-50/70'
+              'py-2 transition-colors hover:text-teal-700',
+              isSecurityActive && 'text-teal-700 font-semibold'
             )}
           >
             Security
@@ -387,8 +387,8 @@ export const PublicNavbar: React.FC = () => {
           <Link
             to="/pricing"
             className={cn(
-              'rounded-lg px-3 py-2 transition-colors hover:text-teal-800 hover:bg-slate-100/60',
-              isPricingActive && 'text-teal-800 font-bold bg-teal-50/70'
+              'py-2 transition-colors hover:text-teal-700',
+              isPricingActive && 'text-teal-700 font-semibold'
             )}
           >
             Pricing
@@ -398,8 +398,8 @@ export const PublicNavbar: React.FC = () => {
           <Link
             to="/about"
             className={cn(
-              'rounded-lg px-3 py-2 transition-colors hover:text-teal-800 hover:bg-slate-100/60',
-              isAboutActive && 'text-teal-800 font-bold bg-teal-50/70'
+              'py-2 transition-colors hover:text-teal-700',
+              isAboutActive && 'text-teal-700 font-semibold'
             )}
           >
             About
@@ -414,15 +414,14 @@ export const PublicNavbar: React.FC = () => {
             <button
               onClick={() => setActiveDropdown(activeDropdown === 'resources' ? null : 'resources')}
               className={cn(
-                'flex items-center gap-1.5 rounded-lg px-3 py-2 transition-colors hover:text-teal-800 hover:bg-slate-100/60',
-                (isResourcesActive || activeDropdown === 'resources') &&
-                  'text-teal-800 font-bold bg-teal-50/70'
+                'flex items-center gap-1.5 py-2 transition-colors hover:text-teal-700 focus:outline-hidden',
+                (isResourcesActive || activeDropdown === 'resources') && 'text-teal-700 font-semibold'
               )}
             >
               <span>Resources</span>
               <ChevronDown
                 className={cn(
-                  'h-3.5 w-3.5 transition-transform duration-200 text-slate-400',
+                  'h-4 w-4 transition-transform duration-200 text-slate-400',
                   activeDropdown === 'resources' && 'rotate-180 text-teal-700'
                 )}
               />
@@ -549,10 +548,10 @@ export const PublicNavbar: React.FC = () => {
         </nav>
 
         {/* Right: Auth & CTA Buttons */}
-        <div className="hidden sm:flex items-center gap-3">
+        <div className="hidden sm:flex items-center gap-3.5">
           <button
             onClick={() => navigate('/signin')}
-            className="rounded-xl px-4 py-2 text-xs font-semibold text-slate-700 hover:text-slate-900 hover:bg-slate-100/70 transition-colors"
+            className="rounded-xl px-4 py-2.5 text-[15px] font-medium text-slate-700 hover:text-teal-800 hover:bg-slate-100/70 transition-colors"
           >
             Sign In
           </button>
@@ -560,17 +559,18 @@ export const PublicNavbar: React.FC = () => {
             onClick={() => {
               navigate('/dashboard');
             }}
-            className="group flex items-center gap-1.5 rounded-xl bg-teal-700 px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-teal-800 transition-all hover:shadow"
+            className="group flex h-11 items-center gap-2 rounded-xl bg-teal-700 px-5.5 text-[15px] font-semibold text-white shadow-xs hover:bg-teal-800 transition-all hover:shadow-sm"
           >
             <span>Get Started</span>
-            <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
+            <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
           </button>
         </div>
 
         {/* Mobile menu hamburger button */}
         <button
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          className="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 hover:bg-slate-100 lg:hidden"
+          className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 hover:bg-slate-100 lg:hidden transition-colors"
+          aria-label="Toggle Navigation Menu"
         >
           {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
         </button>
@@ -578,14 +578,14 @@ export const PublicNavbar: React.FC = () => {
 
       {/* Mobile drawer dropdown */}
       {mobileMenuOpen && (
-        <div className="border-b border-slate-200 bg-white px-4 py-5 lg:hidden space-y-4 shadow-lg animate-in slide-in-from-top-2 max-h-[85vh] overflow-y-auto">
-          <nav className="flex flex-col space-y-2 text-sm font-semibold text-slate-700">
+        <div className="border-b border-slate-200 bg-white px-5 py-6 lg:hidden space-y-5 shadow-xl animate-in slide-in-from-top-2 max-h-[85vh] overflow-y-auto">
+          <nav className="flex flex-col space-y-3 text-[15px] font-semibold text-slate-700">
             
             {/* Product Accordion on Mobile */}
             <div>
               <button
                 onClick={() => setMobileProductOpen(!mobileProductOpen)}
-                className="flex w-full items-center justify-between py-2 text-left hover:text-teal-800 transition-colors"
+                className="flex w-full items-center justify-between py-2 text-left hover:text-teal-700 transition-colors"
               >
                 <span>Product</span>
                 <ChevronDown
@@ -597,24 +597,24 @@ export const PublicNavbar: React.FC = () => {
               </button>
 
               {mobileProductOpen && (
-                <div className="pl-3 py-2 space-y-2 text-xs border-l-2 border-teal-500 bg-slate-50/50 rounded-r-lg">
-                  <div className="text-[10px] uppercase font-bold text-slate-400 pt-1">Money Management</div>
-                  <Link to="/transactions" className="block py-1 hover:text-teal-800">Transactions</Link>
-                  <Link to="/spending" className="block py-1 hover:text-teal-800">Spending Analytics</Link>
-                  <Link to="/budgets" className="block py-1 hover:text-teal-800">Budgets</Link>
+                <div className="pl-4 py-2 mt-1 space-y-2.5 text-[13px] border-l-2 border-teal-500 bg-slate-50/70 rounded-r-xl">
+                  <div className="text-[11px] uppercase font-bold text-slate-400 pt-1">Money Management</div>
+                  <Link to="/transactions" className="block py-1 text-slate-700 hover:text-teal-800">Transactions</Link>
+                  <Link to="/spending" className="block py-1 text-slate-700 hover:text-teal-800">Spending Analytics</Link>
+                  <Link to="/budgets" className="block py-1 text-slate-700 hover:text-teal-800">Budgets</Link>
 
-                  <div className="text-[10px] uppercase font-bold text-slate-400 pt-2">Financial Planning</div>
-                  <Link to="/goals" className="block py-1 hover:text-teal-800">Goals</Link>
-                  <Link to="/future-self" className="block py-1 hover:text-teal-800">Future Self</Link>
-                  <Link to="/debt-emi" className="block py-1 hover:text-teal-800">Debt & EMI</Link>
+                  <div className="text-[11px] uppercase font-bold text-slate-400 pt-2">Financial Planning</div>
+                  <Link to="/goals" className="block py-1 text-slate-700 hover:text-teal-800">Goals</Link>
+                  <Link to="/future-self" className="block py-1 text-slate-700 hover:text-teal-800">Future Self</Link>
+                  <Link to="/debt-emi" className="block py-1 text-slate-700 hover:text-teal-800">Debt & EMI</Link>
 
-                  <div className="text-[10px] uppercase font-bold text-slate-400 pt-2">Intelligence</div>
-                  <Link to="/financial-health" className="block py-1 hover:text-teal-800">Financial Health</Link>
-                  <Link to="/ai-report" className="block py-1 hover:text-teal-800">AI Financial Report</Link>
-                  <Link to="/market-intel" className="block py-1 hover:text-teal-800">Market Intel</Link>
+                  <div className="text-[11px] uppercase font-bold text-slate-400 pt-2">Intelligence</div>
+                  <Link to="/financial-health" className="block py-1 text-slate-700 hover:text-teal-800">Financial Health</Link>
+                  <Link to="/ai-report" className="block py-1 text-slate-700 hover:text-teal-800">AI Financial Report</Link>
+                  <Link to="/market-intel" className="block py-1 text-slate-700 hover:text-teal-800">Market Intel</Link>
 
-                  <div className="text-[10px] uppercase font-bold text-slate-400 pt-2">Protection</div>
-                  <Link to="/scam-shield" className="block py-1 text-rose-700 hover:text-rose-900">Scam Shield</Link>
+                  <div className="text-[11px] uppercase font-bold text-slate-400 pt-2">Protection</div>
+                  <Link to="/scam-shield" className="block py-1 text-rose-700 font-semibold hover:text-rose-900">Scam Shield</Link>
                 </div>
               )}
             </div>
@@ -623,8 +623,8 @@ export const PublicNavbar: React.FC = () => {
             <Link
               to="/features"
               className={cn(
-                'py-2 hover:text-teal-800 transition-colors',
-                isFeaturesActive && 'text-teal-800 font-bold'
+                'py-2 hover:text-teal-700 transition-colors',
+                isFeaturesActive && 'text-teal-700 font-bold'
               )}
             >
               Features
@@ -634,8 +634,8 @@ export const PublicNavbar: React.FC = () => {
             <Link
               to="/security"
               className={cn(
-                'py-2 hover:text-teal-800 transition-colors',
-                isSecurityActive && 'text-teal-800 font-bold'
+                'py-2 hover:text-teal-700 transition-colors',
+                isSecurityActive && 'text-teal-700 font-bold'
               )}
             >
               Security
@@ -645,8 +645,8 @@ export const PublicNavbar: React.FC = () => {
             <Link
               to="/pricing"
               className={cn(
-                'py-2 hover:text-teal-800 transition-colors',
-                isPricingActive && 'text-teal-800 font-bold'
+                'py-2 hover:text-teal-700 transition-colors',
+                isPricingActive && 'text-teal-700 font-bold'
               )}
             >
               Pricing
@@ -656,8 +656,8 @@ export const PublicNavbar: React.FC = () => {
             <Link
               to="/about"
               className={cn(
-                'py-2 hover:text-teal-800 transition-colors',
-                isAboutActive && 'text-teal-800 font-bold'
+                'py-2 hover:text-teal-700 transition-colors',
+                isAboutActive && 'text-teal-700 font-bold'
               )}
             >
               About
@@ -667,7 +667,7 @@ export const PublicNavbar: React.FC = () => {
             <div>
               <button
                 onClick={() => setMobileResourcesOpen(!mobileResourcesOpen)}
-                className="flex w-full items-center justify-between py-2 text-left hover:text-teal-800 transition-colors"
+                className="flex w-full items-center justify-between py-2 text-left hover:text-teal-700 transition-colors"
               >
                 <span>Resources</span>
                 <ChevronDown
@@ -679,37 +679,37 @@ export const PublicNavbar: React.FC = () => {
               </button>
 
               {mobileResourcesOpen && (
-                <div className="pl-3 py-2 space-y-2 text-xs border-l-2 border-teal-500 bg-slate-50/50 rounded-r-lg">
-                  <div className="text-[10px] uppercase font-bold text-slate-400 pt-1">Learn Guides</div>
-                  <Link to="/resources/personal-finance-basics" className="block py-1 hover:text-teal-800">Personal Finance Basics</Link>
-                  <Link to="/resources/budgeting" className="block py-1 hover:text-teal-800">Budgeting Guide</Link>
-                  <Link to="/resources/emi-guide" className="block py-1 hover:text-teal-800">Understanding EMI</Link>
-                  <Link to="/resources/emergency-fund" className="block py-1 hover:text-teal-800">Emergency Fund Guide</Link>
-                  <Link to="/resources/financial-health" className="block py-1 hover:text-teal-800">Financial Health Guide</Link>
+                <div className="pl-4 py-2 mt-1 space-y-2.5 text-[13px] border-l-2 border-teal-500 bg-slate-50/70 rounded-r-xl">
+                  <div className="text-[11px] uppercase font-bold text-slate-400 pt-1">Learn Guides</div>
+                  <Link to="/resources/personal-finance-basics" className="block py-1 text-slate-700 hover:text-teal-800">Personal Finance Basics</Link>
+                  <Link to="/resources/budgeting" className="block py-1 text-slate-700 hover:text-teal-800">Budgeting Guide</Link>
+                  <Link to="/resources/emi-guide" className="block py-1 text-slate-700 hover:text-teal-800">Understanding EMI</Link>
+                  <Link to="/resources/emergency-fund" className="block py-1 text-slate-700 hover:text-teal-800">Emergency Fund Guide</Link>
+                  <Link to="/resources/financial-health" className="block py-1 text-slate-700 hover:text-teal-800">Financial Health Guide</Link>
 
-                  <div className="text-[10px] uppercase font-bold text-slate-400 pt-2">Calculators</div>
-                  <Link to="/tools/emi-calculator" className="block py-1 hover:text-teal-800">EMI Calculator</Link>
-                  <Link to="/tools/savings-calculator" className="block py-1 hover:text-teal-800">Savings Calculator</Link>
-                  <Link to="/tools/compound-interest" className="block py-1 hover:text-teal-800">Compound Interest</Link>
-                  <Link to="/tools/goal-calculator" className="block py-1 hover:text-teal-800">Goal Calculator</Link>
+                  <div className="text-[11px] uppercase font-bold text-slate-400 pt-2">Calculators</div>
+                  <Link to="/tools/emi-calculator" className="block py-1 text-slate-700 hover:text-teal-800">EMI Calculator</Link>
+                  <Link to="/tools/savings-calculator" className="block py-1 text-slate-700 hover:text-teal-800">Savings Calculator</Link>
+                  <Link to="/tools/compound-interest" className="block py-1 text-slate-700 hover:text-teal-800">Compound Interest</Link>
+                  <Link to="/tools/goal-calculator" className="block py-1 text-slate-700 hover:text-teal-800">Goal Calculator</Link>
 
-                  <div className="text-[10px] uppercase font-bold text-slate-400 pt-2">Support</div>
-                  <Link to="/help" className="block py-1 hover:text-teal-800">Help Center</Link>
-                  <Link to="/faq" className="block py-1 hover:text-teal-800">FAQ</Link>
-                  <Link to="/contact" className="block py-1 hover:text-teal-800">Contact Support</Link>
+                  <div className="text-[11px] uppercase font-bold text-slate-400 pt-2">Support</div>
+                  <Link to="/help" className="block py-1 text-slate-700 hover:text-teal-800">Help Center</Link>
+                  <Link to="/faq" className="block py-1 text-slate-700 hover:text-teal-800">FAQ</Link>
+                  <Link to="/contact" className="block py-1 text-slate-700 hover:text-teal-800">Contact Support</Link>
                 </div>
               )}
             </div>
 
           </nav>
 
-          <div className="flex flex-col gap-2 pt-3 border-t border-slate-100">
+          <div className="flex flex-col gap-2.5 pt-4 border-t border-slate-100">
             <button
               onClick={() => {
                 setMobileMenuOpen(false);
                 navigate('/signin');
               }}
-              className="w-full rounded-xl border border-slate-200 py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-50"
+              className="w-full h-11 rounded-xl border border-slate-200 py-2.5 text-[15px] font-semibold text-slate-700 hover:bg-slate-50 transition-colors"
             >
               Sign In
             </button>
@@ -718,7 +718,7 @@ export const PublicNavbar: React.FC = () => {
                 setMobileMenuOpen(false);
                 navigate('/dashboard');
               }}
-              className="w-full rounded-xl bg-teal-700 py-2.5 text-xs font-bold text-white shadow-sm hover:bg-teal-800"
+              className="w-full h-11 rounded-xl bg-teal-700 py-2.5 text-[15px] font-semibold text-white shadow-xs hover:bg-teal-800 transition-colors"
             >
               Get Started
             </button>
