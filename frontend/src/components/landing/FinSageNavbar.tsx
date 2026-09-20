@@ -50,19 +50,19 @@ export const FinSageNavbar: React.FC = () => {
         </nav>
 
         {/* Right: Auth & CTA Buttons */}
-        <div className="hidden sm:flex items-center gap-3.5">
+        <div className="hidden sm:flex items-center gap-3.5 shrink-0">
           <button
             onClick={() => navigate('/signin')}
-            className="rounded-xl px-4 py-2.5 text-[15px] font-medium text-slate-700 hover:text-teal-800 hover:bg-slate-100/70 transition-colors"
+            className="rounded-xl px-4 py-2.5 text-[15px] font-medium text-slate-700 hover:text-teal-800 hover:bg-slate-100/70 transition-colors whitespace-nowrap"
           >
             Sign In
           </button>
           <button
             onClick={() => navigate('/dashboard')}
-            className="group flex h-11 items-center gap-2 rounded-xl bg-teal-700 px-5.5 text-[15px] font-semibold text-white shadow-xs hover:bg-teal-800 transition-all hover:shadow-sm"
+            className="group inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-teal-700 px-5 sm:px-6 text-[15px] font-semibold text-white shadow-xs hover:bg-teal-800 transition-all hover:shadow-sm whitespace-nowrap shrink-0"
           >
             <span>Get Started</span>
-            <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+            <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5 shrink-0" />
           </button>
         </div>
 
