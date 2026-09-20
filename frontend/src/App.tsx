@@ -62,7 +62,7 @@ const App = () => {
         {isInitialLoading && (
           <FinSageLoader
             isFullScreen={true}
-            duration={1400}
+            duration={2000}
             onFinish={() => setIsInitialLoading(false)}
           />
         )}

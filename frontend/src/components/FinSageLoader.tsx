@@ -62,11 +62,13 @@ export const FinSageLoader: React.FC<FinSageLoaderProps> = ({
       } else {
         // Completed loading
         setInternalProgress(100);
-        setIsFadingOut(true);
-        setTimeout(() => {
-          setIsMounted(false);
-          onFinish?.();
-        }, 450);
+        if (onFinish) {
+          setIsFadingOut(true);
+          setTimeout(() => {
+            setIsMounted(false);
+            onFinish();
+          }, 450);
+        }
       }
     };
 
@@ -79,12 +81,12 @@ export const FinSageLoader: React.FC<FinSageLoaderProps> = ({
 
   // Handle external isLoading false trigger
   useEffect(() => {
-    if (!isLoading && !isFadingOut) {
+    if (!isLoading && !isFadingOut && onFinish) {
       setInternalProgress(100);
       setIsFadingOut(true);
       const timer = setTimeout(() => {
         setIsMounted(false);
-        onFinish?.();
+        onFinish();
       }, 450);
       return () => clearTimeout(timer);
     }
