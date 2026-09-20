@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <defs>
+    <linearGradient id="finsageFaviconLeaf" x1="15%" y1="90%" x2="85%" y2="10%">
+      <stop offset="0%" stopColor="#0F766E" />
+      <stop offset="50%" stopColor="#14B8A6" />
+      <stop offset="100%" stopColor="#2DD4BF" />
+    </linearGradient>
+  </defs>
+  <!-- FinSage Stylized Leaf Icon -->
+  <path
+    d="M10 54 C10 54 12 32 32 16 C48 4 56 8 56 8 C56 8 60 18 50 36 C36 58 16 57 10 54 Z"
+    fill="url(#finsageFaviconLeaf)"
+  />
+  <!-- Central Vein -->
+  <path
+    d="M10 54 Q 28 38 56 8"
+    stroke="#FFFFFF"
+    stroke-width="3.2"
+    stroke-linecap="round"
+    opacity="0.95"
+  />
+</svg>
