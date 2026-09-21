@@ -13,7 +13,8 @@ backend/
 │   ├── script.py.mako           # Migration template
 │   └── versions/                # Versioned migration scripts
 │       ├── 001_initial_user_model.py
-│       └── 002_add_refresh_sessions.py
+│       ├── 002_add_refresh_sessions.py
+│       └── 003_add_accounts_table.py
 ├── alembic.ini                  # Alembic configuration
 ├── app/
 │   ├── main.py                  # FastAPI application entrypoint & middleware
@@ -23,7 +24,8 @@ backend/
 │   │       ├── router.py        # API v1 route aggregator
 │   │       └── endpoints/
 │   │           ├── health.py    # Health and DB ping endpoints
-│   │           └── auth.py      # Registration, Login, /me, Refresh, Logout
+│   │           ├── auth.py      # Registration, Login, /me, Refresh, Logout
+│   │           └── accounts.py  # Financial Accounts CRUD endpoints
 │   ├── core/
 │   │   ├── config.py            # Pydantic v2 BaseSettings (.env loading)
 │   │   ├── database.py          # SQLAlchemy 2.0 engine & session dependency
@@ -31,13 +33,18 @@ backend/
 │   ├── models/                  # SQLAlchemy 2.0 DeclarativeBase models
 │   │   ├── base.py
 │   │   ├── user.py              # User entity (UUID, email, timestamps)
-│   │   └── refresh_session.py   # Refresh token session & revocation tracking
-│   └── schemas/                 # Pydantic validation models
-│       ├── user.py
-│       └── auth.py
+│   │   ├── refresh_session.py   # Refresh token session & revocation tracking
+│   │   └── account.py           # Financial Account entity (Numeric balance, isolation)
+│   ├── schemas/                 # Pydantic validation models
+│   │   ├── user.py
+│   │   ├── auth.py
+│   │   └── account.py           # Account create/read/update schemas & AccountType
+│   └── services/                # Database query & business logic layer
+│       └── account_service.py   # Account CRUD and user isolation services
 ├── tests/                       # Pytest automated test suite
 │   ├── test_health.py
-│   └── test_auth.py
+│   ├── test_auth.py
+│   └── test_accounts.py
 ├── .env.example                 # Example environment configuration
 ├── .env                         # Active environment configuration
 ├── requirements.txt             # Python dependencies
@@ -79,7 +86,7 @@ pip install -r requirements.txt
 
 ### 5. Run Database Migrations
 
-Apply all migrations (users and refresh_sessions):
+Apply all migrations (users, refresh_sessions, and accounts):
 
 ```bash
 alembic upgrade head
@@ -121,12 +128,23 @@ pytest -v
 | `POST` | `/api/v1/auth/refresh` | Exchange valid refresh token for rotated token pair | No |
 | `POST` | `/api/v1/auth/logout` | Revoke active refresh session in PostgreSQL | No |
 
+### Financial Accounts (Phase 1C)
+
+| Method | Endpoint | Description | Auth Required |
+|---|---|---|---|
+| `POST` | `/api/v1/accounts` | Create new financial account with Decimal balance | Bearer JWT |
+| `GET` | `/api/v1/accounts` | List all accounts belonging to the current user | Bearer JWT |
+| `GET` | `/api/v1/accounts/{account_id}` | Retrieve account details by ID (enforces user ownership) | Bearer JWT |
+| `PATCH` | `/api/v1/accounts/{account_id}` | Partially update account fields (name, balance, type) | Bearer JWT |
+| `DELETE` | `/api/v1/accounts/{account_id}` | Delete account (enforces user ownership) | Bearer JWT |
+
 ---
 
-## Authentication Lifecycle Example
+## Authentication & Accounts Lifecycle Example
 
-### 1. Register User
+### 1. Register User & Login
 ```bash
+# Register
 curl -X POST http://127.0.0.1:8000/api/v1/auth/register \
   -H "Content-Type: application/json" \
   -d '{
@@ -134,10 +152,8 @@ curl -X POST http://127.0.0.1:8000/api/v1/auth/register \
     "email": "ishita@example.com",
     "password": "SecurePassword123!"
   }'
-```
 
-### 2. Login
-```bash
+# Login to obtain Bearer Token
 curl -X POST http://127.0.0.1:8000/api/v1/auth/login \
   -H "Content-Type: application/json" \
   -d '{
@@ -146,22 +162,37 @@ curl -X POST http://127.0.0.1:8000/api/v1/auth/login \
   }'
 ```
 
-### 3. Access Protected Route (`/auth/me`)
+### 2. Create Financial Account
 ```bash
-curl -X GET http://127.0.0.1:8000/api/v1/auth/me \
+curl -X POST http://127.0.0.1:8000/api/v1/accounts \
+  -H "Authorization: Bearer <ACCESS_TOKEN>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "HDFC Primary Savings",
+    "account_type": "savings",
+    "balance": "54250.75",
+    "currency": "INR"
+  }'
+```
+
+### 3. List User Accounts
+```bash
+curl -X GET http://127.0.0.1:8000/api/v1/accounts \
   -H "Authorization: Bearer <ACCESS_TOKEN>"
 ```
 
-### 4. Refresh Token
+### 4. Update Account
 ```bash
-curl -X POST http://127.0.0.1:8000/api/v1/auth/refresh \
+curl -X PATCH http://127.0.0.1:8000/api/v1/accounts/<ACCOUNT_ID> \
+  -H "Authorization: Bearer <ACCESS_TOKEN>" \
   -H "Content-Type: application/json" \
-  -d '{"refresh_token": "<REFRESH_TOKEN>"}'
+  -d '{
+    "balance": "60000.00"
+  }'
 ```
 
-### 5. Logout / Revoke Session
+### 5. Delete Account
 ```bash
-curl -X POST http://127.0.0.1:8000/api/v1/auth/logout \
-  -H "Content-Type: application/json" \
-  -d '{"refresh_token": "<REFRESH_TOKEN>"}'
+curl -X DELETE http://127.0.0.1:8000/api/v1/accounts/<ACCOUNT_ID> \
+  -H "Authorization: Bearer <ACCESS_TOKEN>"
 ```

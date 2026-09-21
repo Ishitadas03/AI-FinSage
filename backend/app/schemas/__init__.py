@@ -7,6 +7,13 @@ from app.schemas.auth import (
     LogoutRequest,
     MessageResponse,
 )
+from app.schemas.account import (
+    AccountType,
+    AccountBase,
+    AccountCreate,
+    AccountUpdate,
+    AccountRead,
+)
 
 __all__ = [
     "UserBase",
@@ -18,4 +25,9 @@ __all__ = [
     "RefreshTokenRequest",
     "LogoutRequest",
     "MessageResponse",
+    "AccountType",
+    "AccountBase",
+    "AccountCreate",
+    "AccountUpdate",
+    "AccountRead",
 ]

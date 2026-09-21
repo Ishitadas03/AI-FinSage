@@ -1,0 +1,72 @@
+from datetime import datetime
+from decimal import Decimal
+from enum import Enum
+from typing import Optional
+import uuid
+from pydantic import BaseModel, ConfigDict, Field, field_validator
+
+
+class AccountType(str, Enum):
+    SAVINGS = "savings"
+    CURRENT = "current"
+    CASH = "cash"
+    CREDIT_CARD = "credit_card"
+    INVESTMENT = "investment"
+    OTHER = "other"
+
+
+class AccountBase(BaseModel):
+    name: str = Field(..., min_length=1, max_length=255, description="Account display name")
+    account_type: AccountType = Field(..., description="Financial account category")
+    balance: Decimal = Field(default=Decimal("0.00"), description="Monetary balance (precise Decimal representation)")
+    currency: str = Field(default="INR", min_length=3, max_length=3, description="3-letter ISO currency code")
+
+    @field_validator("name")
+    @classmethod
+    def validate_name_not_empty(cls, v: str) -> str:
+        cleaned = v.strip()
+        if not cleaned:
+            raise ValueError("Account name cannot be empty or only whitespace.")
+        return cleaned
+
+    @field_validator("currency")
+    @classmethod
+    def validate_currency(cls, v: str) -> str:
+        return v.strip().upper()
+
+
+class AccountCreate(AccountBase):
+    pass
+
+
+class AccountUpdate(BaseModel):
+    name: Optional[str] = Field(None, min_length=1, max_length=255, description="Updated account name")
+    account_type: Optional[AccountType] = Field(None, description="Updated account category")
+    balance: Optional[Decimal] = Field(None, description="Updated monetary balance")
+    currency: Optional[str] = Field(None, min_length=3, max_length=3, description="Updated currency code")
+
+    @field_validator("name")
+    @classmethod
+    def validate_name_not_empty(cls, v: Optional[str]) -> Optional[str]:
+        if v is not None:
+            cleaned = v.strip()
+            if not cleaned:
+                raise ValueError("Account name cannot be empty or only whitespace.")
+            return cleaned
+        return v
+
+    @field_validator("currency")
+    @classmethod
+    def validate_currency(cls, v: Optional[str]) -> Optional[str]:
+        if v is not None:
+            return v.strip().upper()
+        return v
+
+
+class AccountRead(AccountBase):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    user_id: uuid.UUID
+    created_at: datetime
+    updated_at: datetime
