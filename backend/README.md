@@ -166,9 +166,20 @@ pytest -v
 - `page`: Page number (default: 1)
 - `page_size`: Page size (default: 20, max: 100)
 
+### Spending Analytics (Phase 3A)
+
+| Method | Endpoint | Description | Auth Required |
+|---|---|---|---|
+| `GET` | `/api/v1/analytics/overview` | Aggregated metrics, category breakdowns, trends, and top expenses | Bearer JWT |
+
+#### Supported Analytics Query Parameters (`GET /api/v1/analytics/overview`)
+- `start_date`: Inclusive start timestamp (defaults to 1st day of current calendar month)
+- `end_date`: Inclusive end timestamp (defaults to last day of current calendar month)
+- `account_id`: Filter metrics for a specific owned account
+
 ---
 
-## Authentication, Accounts & Transactions Lifecycle Example
+## Authentication, Accounts, Transactions & Analytics Lifecycle Example
 
 ### 1. Register User & Login
 ```bash
@@ -219,9 +230,9 @@ curl -X POST http://127.0.0.1:8000/api/v1/transactions \
   }'
 ```
 
-### 4. Query Transactions with Filters and Pagination
+### 4. Query Spending Analytics Overview
 ```bash
-curl -X GET "http://127.0.0.1:8000/api/v1/transactions?category=food&min_amount=100.00&page=1&page_size=10" \
+curl -X GET "http://127.0.0.1:8000/api/v1/analytics/overview" \
   -H "Authorization: Bearer <ACCESS_TOKEN>"
 ```
 

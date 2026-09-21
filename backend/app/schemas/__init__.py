@@ -24,6 +24,16 @@ from app.schemas.transaction import (
     TransactionPaginatedResponse,
 )
 
+from app.schemas.analytics import (
+    AnalyticsPeriod,
+    AnalyticsSummary,
+    CategoryBreakdownItem,
+    AccountBreakdownItem,
+    TrendItem,
+    TopExpenseItem,
+    AnalyticsOverviewResponse,
+)
+
 __all__ = [
     "UserBase",
     "UserCreate",
@@ -46,5 +56,13 @@ __all__ = [
     "TransactionUpdate",
     "TransactionRead",
     "TransactionPaginatedResponse",
+    "AnalyticsPeriod",
+    "AnalyticsSummary",
+    "CategoryBreakdownItem",
+    "AccountBreakdownItem",
+    "TrendItem",
+    "TopExpenseItem",
+    "AnalyticsOverviewResponse",
 ]
+
 
