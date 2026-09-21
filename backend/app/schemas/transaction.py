@@ -3,7 +3,7 @@ from decimal import Decimal
 from enum import Enum
 from typing import List, Optional
 import uuid
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 
 class TransactionType(str, Enum):
@@ -30,7 +30,11 @@ class TransactionCategory(str, Enum):
 
 
 class TransactionBase(BaseModel):
-    account_id: uuid.UUID = Field(..., description="ID of the financial account")
+    account_id: uuid.UUID = Field(..., description="ID of the source financial account")
+    destination_account_id: Optional[uuid.UUID] = Field(
+        None,
+        description="ID of destination financial account (required for transfers, null otherwise)",
+    )
     amount: Decimal = Field(
         ...,
         gt=Decimal("0.00"),
@@ -61,11 +65,25 @@ class TransactionBase(BaseModel):
 
 
 class TransactionCreate(TransactionBase):
-    pass
+    @model_validator(mode="after")
+    def validate_transfer_destination(self) -> "TransactionCreate":
+        if self.transaction_type == TransactionType.TRANSFER:
+            if not self.destination_account_id:
+                raise ValueError("destination_account_id is required when transaction_type is 'transfer'.")
+            if self.destination_account_id == self.account_id:
+                raise ValueError("Source account and destination account cannot be the same.")
+        else:
+            if self.destination_account_id is not None:
+                raise ValueError("destination_account_id must be null for non-transfer transactions.")
+        return self
 
 
 class TransactionUpdate(BaseModel):
-    account_id: Optional[uuid.UUID] = Field(None, description="Updated financial account ID")
+    account_id: Optional[uuid.UUID] = Field(None, description="Updated source financial account ID")
+    destination_account_id: Optional[uuid.UUID] = Field(
+        None,
+        description="Updated destination financial account ID",
+    )
     amount: Optional[Decimal] = Field(
         None,
         gt=Decimal("0.00"),
@@ -93,6 +111,18 @@ class TransactionUpdate(BaseModel):
             cleaned = v.strip()
             return cleaned if cleaned else None
         return v
+
+    @model_validator(mode="after")
+    def validate_transfer_update(self) -> "TransactionUpdate":
+        if self.account_id is not None and self.destination_account_id is not None:
+            if self.account_id == self.destination_account_id:
+                raise ValueError("Source account and destination account cannot be the same.")
+        if (
+            self.transaction_type in (TransactionType.INCOME, TransactionType.EXPENSE)
+            and self.destination_account_id is not None
+        ):
+            raise ValueError("destination_account_id must be null for non-transfer transactions.")
+        return self
 
 
 class TransactionRead(TransactionBase):

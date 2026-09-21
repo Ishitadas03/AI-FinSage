@@ -7,7 +7,7 @@ from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 from app.models.account import Account
 from app.models.transaction import Transaction
-from app.schemas.transaction import TransactionCreate, TransactionUpdate
+from app.schemas.transaction import TransactionCreate, TransactionType, TransactionUpdate
 
 
 class TransactionService:
@@ -19,10 +19,10 @@ class TransactionService:
     ) -> Transaction:
         """
         Creates a new transaction for the authenticated user.
-        Strictly verifies that the specified account belongs to the user.
+        Strictly verifies that source (and destination if transfer) accounts belong to the user.
         """
-        # Validate that the account exists and is owned by current user
-        account = (
+        # Validate that the source account exists and is owned by current user
+        source_account = (
             db.query(Account)
             .filter(
                 Account.id == payload.account_id,
@@ -30,16 +30,45 @@ class TransactionService:
             )
             .first()
         )
-        if not account:
+        if not source_account:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="The specified account does not exist or does not belong to the authenticated user.",
             )
 
+        destination_account_id = None
+        if payload.transaction_type == TransactionType.TRANSFER:
+            if not payload.destination_account_id:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="destination_account_id is required when transaction_type is 'transfer'.",
+                )
+            if payload.destination_account_id == payload.account_id:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Source account and destination account cannot be the same.",
+                )
+            # Validate destination account ownership
+            dest_account = (
+                db.query(Account)
+                .filter(
+                    Account.id == payload.destination_account_id,
+                    Account.user_id == user_id,
+                )
+                .first()
+            )
+            if not dest_account:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="The destination account does not exist or does not belong to the authenticated user.",
+                )
+            destination_account_id = payload.destination_account_id
+
         transaction = Transaction(
             id=uuid.uuid4(),
             user_id=user_id,
             account_id=payload.account_id,
+            destination_account_id=destination_account_id,
             amount=payload.amount,
             transaction_type=payload.transaction_type.value,
             category=payload.category.value,
@@ -74,7 +103,9 @@ class TransactionService:
         query = db.query(Transaction).filter(Transaction.user_id == user_id)
 
         if account_id is not None:
-            query = query.filter(Transaction.account_id == account_id)
+            query = query.filter(
+                (Transaction.account_id == account_id) | (Transaction.destination_account_id == account_id)
+            )
         if transaction_type is not None:
             query = query.filter(Transaction.transaction_type == transaction_type)
         if category is not None:
@@ -145,7 +176,7 @@ class TransactionService:
     ) -> Optional[Transaction]:
         """
         Updates an existing transaction with partial fields.
-        Verifies ownership and validates any changed account belongs to the user.
+        Verifies ownership and validates any changed account or destination belongs to the user.
         """
         transaction = TransactionService.get_user_transaction(db, user_id, transaction_id)
         if not transaction:
@@ -153,27 +184,68 @@ class TransactionService:
 
         update_data = payload.model_dump(exclude_unset=True)
 
-        # If account_id is changing, verify the new account belongs to the user
+        final_source_id = update_data.get("account_id", transaction.account_id)
+        final_type_val = (
+            update_data["transaction_type"].value
+            if "transaction_type" in update_data and update_data["transaction_type"] is not None
+            else transaction.transaction_type
+        )
+        final_dest_id = (
+            update_data["destination_account_id"]
+            if "destination_account_id" in update_data
+            else transaction.destination_account_id
+        )
+
+        # Validate source account if changed
         if "account_id" in update_data and update_data["account_id"] is not None:
-            new_account_id = update_data["account_id"]
-            account = (
+            source = (
                 db.query(Account)
                 .filter(
-                    Account.id == new_account_id,
+                    Account.id == final_source_id,
                     Account.user_id == user_id,
                 )
                 .first()
             )
-            if not account:
+            if not source:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
                     detail="The target account does not exist or does not belong to the authenticated user.",
                 )
 
+
+        # Validate transfer destination semantics
+        if final_type_val == "transfer":
+            if not final_dest_id:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="destination_account_id is required when transaction_type is 'transfer'.",
+                )
+            if final_dest_id == final_source_id:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Source account and destination account cannot be the same.",
+                )
+            dest = (
+                db.query(Account)
+                .filter(
+                    Account.id == final_dest_id,
+                    Account.user_id == user_id,
+                )
+                .first()
+            )
+            if not dest:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="The destination account does not exist or does not belong to the authenticated user.",
+                )
+            transaction.destination_account_id = final_dest_id
+        else:
+            transaction.destination_account_id = None
+
         for key, value in update_data.items():
             if key in ("transaction_type", "category") and value is not None:
                 setattr(transaction, key, value.value if hasattr(value, "value") else str(value))
-            elif key != "user_id":  # Ensure user_id cannot be overwritten
+            elif key not in ("user_id", "destination_account_id"):
                 setattr(transaction, key, value)
 
         db.commit()
@@ -197,3 +269,36 @@ class TransactionService:
         db.delete(transaction)
         db.commit()
         return True
+
+    @staticmethod
+    def calculate_user_cashflow(
+        db: Session,
+        user_id: uuid.UUID,
+        start_date: Optional[datetime] = None,
+        end_date: Optional[datetime] = None,
+    ) -> Dict[str, Decimal]:
+        """
+        Calculates total income and total expenses for a user.
+        Explicitly excludes 'transfer' transactions to prevent double-counting.
+        """
+        query = db.query(Transaction).filter(Transaction.user_id == user_id)
+        if start_date:
+            query = query.filter(Transaction.transaction_date >= start_date)
+        if end_date:
+            query = query.filter(Transaction.transaction_date <= end_date)
+
+        income = Decimal("0.00")
+        expense = Decimal("0.00")
+
+        for tx in query.all():
+            if tx.transaction_type == "income":
+                income += tx.amount
+            elif tx.transaction_type == "expense":
+                expense += tx.amount
+            # 'transfer' is ignored in cashflow calculations
+
+        return {
+            "total_income": income,
+            "total_expense": expense,
+            "net_savings": income - expense,
+        }

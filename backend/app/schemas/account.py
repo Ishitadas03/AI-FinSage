@@ -68,5 +68,10 @@ class AccountRead(AccountBase):
 
     id: uuid.UUID
     user_id: uuid.UUID
+    current_balance: Decimal = Field(
+        default=Decimal("0.00"),
+        description="Dynamically calculated current balance based on opening balance and all ledger transactions",
+    )
     created_at: datetime
     updated_at: datetime
+

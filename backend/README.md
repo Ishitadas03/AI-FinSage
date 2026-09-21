@@ -15,7 +15,8 @@ backend/
 │       ├── 001_initial_user_model.py
 │       ├── 002_add_refresh_sessions.py
 │       ├── 003_add_accounts_table.py
-│       └── 004_add_transactions_table.py
+│       ├── 004_add_transactions_table.py
+│       └── 005_add_destination_account_to_transactions.py
 ├── alembic.ini                  # Alembic configuration
 ├── app/
 │   ├── main.py                  # FastAPI application entrypoint & middleware
@@ -37,20 +38,21 @@ backend/
 │   │   ├── user.py              # User entity (UUID, email, timestamps)
 │   │   ├── refresh_session.py   # Refresh token session & revocation tracking
 │   │   ├── account.py           # Financial Account entity (Numeric balance, isolation)
-│   │   └── transaction.py       # Financial Transaction entity (amount, category, type)
+│   │   └── transaction.py       # Financial Transaction entity (amount, transfers, category)
 │   ├── schemas/                 # Pydantic validation models
 │   │   ├── user.py
 │   │   ├── auth.py
 │   │   ├── account.py           # Account create/read/update schemas & AccountType
 │   │   └── transaction.py       # Transaction create/read/update schemas & Pagination
 │   └── services/                # Database query & business logic layer
-│       ├── account_service.py   # Account CRUD and user isolation services
-│       └── transaction_service.py # Transaction CRUD, multi-filter, pagination services
+│       ├── account_service.py   # Account CRUD, user isolation, and dynamic ledger balances
+│       └── transaction_service.py # Transaction CRUD, transfers, multi-filter, cashflow
 ├── tests/                       # Pytest automated test suite
 │   ├── test_health.py
 │   ├── test_auth.py
 │   ├── test_accounts.py
-│   └── test_transactions.py
+│   ├── test_transactions.py
+│   └── test_ledger.py
 ├── .env.example                 # Example environment configuration
 ├── .env                         # Active environment configuration
 ├── requirements.txt             # Python dependencies

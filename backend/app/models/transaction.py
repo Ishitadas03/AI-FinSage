@@ -30,6 +30,12 @@ class Transaction(Base):
         index=True,
         nullable=False,
     )
+    destination_account_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+        PG_UUID(as_uuid=True),
+        ForeignKey("accounts.id", ondelete="SET NULL"),
+        index=True,
+        nullable=True,
+    )
     amount: Mapped[Decimal] = mapped_column(
         Numeric(18, 2),
         nullable=False,
@@ -71,7 +77,12 @@ class Transaction(Base):
 
     # Relationships
     user = relationship("User", backref="transactions")
-    account = relationship("Account", backref="transactions")
+    account = relationship("Account", foreign_keys=[account_id], backref="source_transactions")
+    destination_account = relationship(
+        "Account",
+        foreign_keys=[destination_account_id],
+        backref="destination_transactions",
+    )
 
     __table_args__ = (
         Index("ix_transactions_user_id_transaction_date", "user_id", "transaction_date"),
@@ -80,5 +91,6 @@ class Transaction(Base):
     def __repr__(self) -> str:
         return (
             f"<Transaction id={self.id} user_id={self.user_id} account_id={self.account_id} "
-            f"type={self.transaction_type} amount={self.amount} category={self.category}>"
+            f"dest={self.destination_account_id} type={self.transaction_type} amount={self.amount}>"
         )
+
