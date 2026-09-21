@@ -34,6 +34,11 @@ from app.schemas.analytics import (
     AnalyticsOverviewResponse,
 )
 
+from app.schemas.financial_health import (
+    HealthMetricItem,
+    FinancialHealthOverviewResponse,
+)
+
 __all__ = [
     "UserBase",
     "UserCreate",
@@ -63,6 +68,8 @@ __all__ = [
     "TrendItem",
     "TopExpenseItem",
     "AnalyticsOverviewResponse",
+    "HealthMetricItem",
+    "FinancialHealthOverviewResponse",
 ]
 
 

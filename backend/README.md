@@ -177,6 +177,17 @@ pytest -v
 - `end_date`: Inclusive end timestamp (defaults to last day of current calendar month)
 - `account_id`: Filter metrics for a specific owned account
 
+### Financial Health (Phase 3B)
+
+| Method | Endpoint | Description | Auth Required |
+|---|---|---|---|
+| `GET` | `/api/v1/financial-health/overview` | Deterministic financial health foundation metrics grounded in ledger balances | Bearer JWT |
+
+#### Supported Financial Health Query Parameters (`GET /api/v1/financial-health/overview`)
+- `start_date`: Inclusive start date (defaults to 30 days prior)
+- `end_date`: Inclusive end date (defaults to today)
+- `account_id`: Filter metrics for a specific owned account
+
 ---
 
 ## Authentication, Accounts, Transactions & Analytics Lifecycle Example
