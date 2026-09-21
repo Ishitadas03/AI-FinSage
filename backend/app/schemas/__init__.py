@@ -14,6 +14,15 @@ from app.schemas.account import (
     AccountUpdate,
     AccountRead,
 )
+from app.schemas.transaction import (
+    TransactionType,
+    TransactionCategory,
+    TransactionBase,
+    TransactionCreate,
+    TransactionUpdate,
+    TransactionRead,
+    TransactionPaginatedResponse,
+)
 
 __all__ = [
     "UserBase",
@@ -30,4 +39,12 @@ __all__ = [
     "AccountCreate",
     "AccountUpdate",
     "AccountRead",
+    "TransactionType",
+    "TransactionCategory",
+    "TransactionBase",
+    "TransactionCreate",
+    "TransactionUpdate",
+    "TransactionRead",
+    "TransactionPaginatedResponse",
 ]
+

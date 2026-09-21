@@ -14,7 +14,8 @@ backend/
 │   └── versions/                # Versioned migration scripts
 │       ├── 001_initial_user_model.py
 │       ├── 002_add_refresh_sessions.py
-│       └── 003_add_accounts_table.py
+│       ├── 003_add_accounts_table.py
+│       └── 004_add_transactions_table.py
 ├── alembic.ini                  # Alembic configuration
 ├── app/
 │   ├── main.py                  # FastAPI application entrypoint & middleware
@@ -25,7 +26,8 @@ backend/
 │   │       └── endpoints/
 │   │           ├── health.py    # Health and DB ping endpoints
 │   │           ├── auth.py      # Registration, Login, /me, Refresh, Logout
-│   │           └── accounts.py  # Financial Accounts CRUD endpoints
+│   │           ├── accounts.py  # Financial Accounts CRUD endpoints
+│   │           └── transactions.py # Financial Transactions CRUD, filter, & pagination
 │   ├── core/
 │   │   ├── config.py            # Pydantic v2 BaseSettings (.env loading)
 │   │   ├── database.py          # SQLAlchemy 2.0 engine & session dependency
@@ -34,17 +36,21 @@ backend/
 │   │   ├── base.py
 │   │   ├── user.py              # User entity (UUID, email, timestamps)
 │   │   ├── refresh_session.py   # Refresh token session & revocation tracking
-│   │   └── account.py           # Financial Account entity (Numeric balance, isolation)
+│   │   ├── account.py           # Financial Account entity (Numeric balance, isolation)
+│   │   └── transaction.py       # Financial Transaction entity (amount, category, type)
 │   ├── schemas/                 # Pydantic validation models
 │   │   ├── user.py
 │   │   ├── auth.py
-│   │   └── account.py           # Account create/read/update schemas & AccountType
+│   │   ├── account.py           # Account create/read/update schemas & AccountType
+│   │   └── transaction.py       # Transaction create/read/update schemas & Pagination
 │   └── services/                # Database query & business logic layer
-│       └── account_service.py   # Account CRUD and user isolation services
+│       ├── account_service.py   # Account CRUD and user isolation services
+│       └── transaction_service.py # Transaction CRUD, multi-filter, pagination services
 ├── tests/                       # Pytest automated test suite
 │   ├── test_health.py
 │   ├── test_auth.py
-│   └── test_accounts.py
+│   ├── test_accounts.py
+│   └── test_transactions.py
 ├── .env.example                 # Example environment configuration
 ├── .env                         # Active environment configuration
 ├── requirements.txt             # Python dependencies
@@ -86,7 +92,7 @@ pip install -r requirements.txt
 
 ### 5. Run Database Migrations
 
-Apply all migrations (users, refresh_sessions, and accounts):
+Apply all migrations (users, refresh_sessions, accounts, and transactions):
 
 ```bash
 alembic upgrade head
@@ -138,9 +144,29 @@ pytest -v
 | `PATCH` | `/api/v1/accounts/{account_id}` | Partially update account fields (name, balance, type) | Bearer JWT |
 | `DELETE` | `/api/v1/accounts/{account_id}` | Delete account (enforces user ownership) | Bearer JWT |
 
+### Transactions (Phase 2A)
+
+| Method | Endpoint | Description | Auth Required |
+|---|---|---|---|
+| `POST` | `/api/v1/transactions` | Create new transaction against user's account | Bearer JWT |
+| `GET` | `/api/v1/transactions` | List transactions with filters & pagination | Bearer JWT |
+| `GET` | `/api/v1/transactions/{transaction_id}` | Retrieve transaction by ID (enforces user ownership) | Bearer JWT |
+| `PATCH` | `/api/v1/transactions/{transaction_id}` | Partially update transaction fields & account | Bearer JWT |
+| `DELETE` | `/api/v1/transactions/{transaction_id}` | Delete transaction (enforces user ownership) | Bearer JWT |
+
+#### Supported Transaction Query Filters (`GET /api/v1/transactions`)
+- `account_id`: Filter by specific account UUID
+- `transaction_type`: `income`, `expense`, `transfer`
+- `category`: `salary`, `food`, `shopping`, `transport`, `bills`, `rent`, `entertainment`, `healthcare`, `education`, `investment`, `emi`, `insurance`, `cash`, `other`
+- `merchant`: Case-insensitive substring match
+- `start_date` / `end_date`: ISO 8601 timestamp range (inclusive)
+- `min_amount` / `max_amount`: Decimal monetary range
+- `page`: Page number (default: 1)
+- `page_size`: Page size (default: 20, max: 100)
+
 ---
 
-## Authentication & Accounts Lifecycle Example
+## Authentication, Accounts & Transactions Lifecycle Example
 
 ### 1. Register User & Login
 ```bash
@@ -175,24 +201,41 @@ curl -X POST http://127.0.0.1:8000/api/v1/accounts \
   }'
 ```
 
-### 3. List User Accounts
+### 3. Create Transaction
 ```bash
-curl -X GET http://127.0.0.1:8000/api/v1/accounts \
-  -H "Authorization: Bearer <ACCESS_TOKEN>"
-```
-
-### 4. Update Account
-```bash
-curl -X PATCH http://127.0.0.1:8000/api/v1/accounts/<ACCOUNT_ID> \
+curl -X POST http://127.0.0.1:8000/api/v1/transactions \
   -H "Authorization: Bearer <ACCESS_TOKEN>" \
   -H "Content-Type: application/json" \
   -d '{
-    "balance": "60000.00"
+    "account_id": "<ACCOUNT_ID>",
+    "amount": "1250.00",
+    "transaction_type": "expense",
+    "category": "food",
+    "merchant": "Swiggy",
+    "description": "Team lunch",
+    "transaction_date": "2026-09-21T13:30:00Z"
   }'
 ```
 
-### 5. Delete Account
+### 4. Query Transactions with Filters and Pagination
 ```bash
-curl -X DELETE http://127.0.0.1:8000/api/v1/accounts/<ACCOUNT_ID> \
+curl -X GET "http://127.0.0.1:8000/api/v1/transactions?category=food&min_amount=100.00&page=1&page_size=10" \
+  -H "Authorization: Bearer <ACCESS_TOKEN>"
+```
+
+### 5. Update Transaction
+```bash
+curl -X PATCH http://127.0.0.1:8000/api/v1/transactions/<TRANSACTION_ID> \
+  -H "Authorization: Bearer <ACCESS_TOKEN>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "amount": "1300.00",
+    "description": "Team lunch + drinks"
+  }'
+```
+
+### 6. Delete Transaction
+```bash
+curl -X DELETE http://127.0.0.1:8000/api/v1/transactions/<TRANSACTION_ID> \
   -H "Authorization: Bearer <ACCESS_TOKEN>"
 ```

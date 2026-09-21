@@ -1,0 +1,84 @@
+from datetime import datetime
+from decimal import Decimal
+from typing import Optional
+import uuid
+from sqlalchemy import String, DateTime, Numeric, ForeignKey, Index, func
+from sqlalchemy.dialects.postgresql import UUID as PG_UUID
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+from app.models.base import Base
+
+
+class Transaction(Base):
+    __tablename__ = "transactions"
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        PG_UUID(as_uuid=True),
+        primary_key=True,
+        default=uuid.uuid4,
+        index=True,
+        nullable=False,
+    )
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        PG_UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        index=True,
+        nullable=False,
+    )
+    account_id: Mapped[uuid.UUID] = mapped_column(
+        PG_UUID(as_uuid=True),
+        ForeignKey("accounts.id", ondelete="CASCADE"),
+        index=True,
+        nullable=False,
+    )
+    amount: Mapped[Decimal] = mapped_column(
+        Numeric(18, 2),
+        nullable=False,
+    )
+    transaction_type: Mapped[str] = mapped_column(
+        String(50),
+        index=True,
+        nullable=False,
+    )
+    category: Mapped[str] = mapped_column(
+        String(50),
+        index=True,
+        nullable=False,
+    )
+    merchant: Mapped[Optional[str]] = mapped_column(
+        String(255),
+        nullable=True,
+    )
+    description: Mapped[Optional[str]] = mapped_column(
+        String(500),
+        nullable=True,
+    )
+    transaction_date: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        index=True,
+        nullable=False,
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        nullable=False,
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        onupdate=func.now(),
+        nullable=False,
+    )
+
+    # Relationships
+    user = relationship("User", backref="transactions")
+    account = relationship("Account", backref="transactions")
+
+    __table_args__ = (
+        Index("ix_transactions_user_id_transaction_date", "user_id", "transaction_date"),
+    )
+
+    def __repr__(self) -> str:
+        return (
+            f"<Transaction id={self.id} user_id={self.user_id} account_id={self.account_id} "
+            f"type={self.transaction_type} amount={self.amount} category={self.category}>"
+        )
