@@ -29,6 +29,11 @@ from app.schemas.loan import (
     LoanUpdate,
     LoanRead,
 )
+from app.schemas.credit_utilization import (
+    CardUtilizationItem,
+    AggregateUtilization,
+    CreditUtilizationResponse,
+)
 from app.schemas.analytics import (
     AnalyticsPeriod,
     AnalyticsSummary,
@@ -69,6 +74,9 @@ __all__ = [
     "LoanCreate",
     "LoanUpdate",
     "LoanRead",
+    "CardUtilizationItem",
+    "AggregateUtilization",
+    "CreditUtilizationResponse",
     "AnalyticsPeriod",
     "AnalyticsSummary",
     "CategoryBreakdownItem",
