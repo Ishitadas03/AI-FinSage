@@ -1,6 +1,7 @@
 import uuid
 from datetime import datetime
 from decimal import Decimal
+from typing import Optional
 from sqlalchemy import String, DateTime, Numeric, ForeignKey, func
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -38,6 +39,11 @@ class Account(Base):
         server_default="0.00",
         nullable=False,
     )
+    credit_limit: Mapped[Optional[Decimal]] = mapped_column(
+        Numeric(18, 2),
+        default=None,
+        nullable=True,
+    )
     currency: Mapped[str] = mapped_column(
         String(3),
         default="INR",
@@ -60,4 +66,5 @@ class Account(Base):
     user = relationship("User", backref="accounts")
 
     def __repr__(self) -> str:
-        return f"<Account id={self.id} user_id={self.user_id} name={self.name} balance={self.balance} currency={self.currency}>"
+        return f"<Account id={self.id} user_id={self.user_id} name={self.name} balance={self.balance} credit_limit={self.credit_limit} currency={self.currency}>"
+

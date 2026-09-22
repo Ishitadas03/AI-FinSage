@@ -1,11 +1,12 @@
 from decimal import Decimal
 from typing import List, Optional
 import uuid
+from fastapi import HTTPException, status
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 from app.models.account import Account
 from app.models.transaction import Transaction
-from app.schemas.account import AccountCreate, AccountRead, AccountUpdate
+from app.schemas.account import AccountCreate, AccountRead, AccountUpdate, AccountType
 
 
 class AccountService:
@@ -61,6 +62,7 @@ class AccountService:
             name=account.name,
             account_type=account.account_type,
             balance=account.balance,
+            credit_limit=account.credit_limit,
             current_balance=current_balance,
             currency=account.currency,
             created_at=account.created_at,
@@ -76,12 +78,24 @@ class AccountService:
         """
         Creates a new financial account belonging to the authenticated user.
         """
+        if payload.credit_limit is not None and payload.account_type != AccountType.CREDIT_CARD:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Credit limit is only allowed for credit_card accounts.",
+            )
+        if payload.credit_limit is not None and payload.credit_limit < Decimal("0.00"):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Credit limit cannot be negative.",
+            )
+
         account = Account(
             id=uuid.uuid4(),
             user_id=user_id,
             name=payload.name,
             account_type=payload.account_type.value,
             balance=payload.balance,
+            credit_limit=payload.credit_limit if payload.account_type == AccountType.CREDIT_CARD else None,
             currency=payload.currency,
         )
         db.add(account)
@@ -154,9 +168,36 @@ class AccountService:
             return None
 
         update_data = payload.model_dump(exclude_unset=True)
+
+        target_type = (
+            payload.account_type.value
+            if payload.account_type is not None
+            else account.account_type
+        )
+
+        if "credit_limit" in update_data and update_data["credit_limit"] is not None:
+            if target_type != "credit_card":
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Credit limit is only allowed for credit_card accounts.",
+                )
+            if update_data["credit_limit"] < Decimal("0.00"):
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Credit limit cannot be negative.",
+                )
+
+        if "account_type" in update_data and update_data["account_type"] is not None:
+            new_type_str = payload.account_type.value if hasattr(payload.account_type, "value") else str(payload.account_type)
+            if new_type_str != "credit_card":
+                account.credit_limit = None
+
         for key, value in update_data.items():
             if key == "account_type" and value is not None:
                 setattr(account, key, value.value if hasattr(value, "value") else str(value))
+            elif key == "credit_limit":
+                if target_type == "credit_card":
+                    setattr(account, key, value)
             elif value is not None:
                 setattr(account, key, value)
 

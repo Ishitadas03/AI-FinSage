@@ -238,3 +238,152 @@ def test_cross_user_isolation_prevented():
     verify_res = client.get(f"/api/v1/accounts/{account_a_id}", headers=user_a["headers"])
     assert verify_res.status_code == 200
     assert verify_res.json()["name"] == "User A Secret Vault"
+
+
+def test_credit_card_with_valid_credit_limit():
+    user = register_and_login_user("cc_valid")
+    payload = {
+        "name": "HDFC Regalia Credit Card",
+        "account_type": "credit_card",
+        "balance": "0.00",
+        "credit_limit": "150000.00",
+        "currency": "INR",
+    }
+    response = client.post("/api/v1/accounts", json=payload, headers=user["headers"])
+    assert response.status_code == 201
+    data = response.json()
+    assert data["name"] == "HDFC Regalia Credit Card"
+    assert data["account_type"] == "credit_card"
+    assert Decimal(data["credit_limit"]) == Decimal("150000.00")
+    account_id = data["id"]
+
+    # Verify via GET endpoint
+    get_res = client.get(f"/api/v1/accounts/{account_id}", headers=user["headers"])
+    assert get_res.status_code == 200
+    assert Decimal(get_res.json()["credit_limit"]) == Decimal("150000.00")
+
+    # Verify via LIST endpoint
+    list_res = client.get("/api/v1/accounts", headers=user["headers"])
+    assert list_res.status_code == 200
+    accounts = list_res.json()
+    assert len(accounts) == 1
+    assert Decimal(accounts[0]["credit_limit"]) == Decimal("150000.00")
+
+
+def test_credit_card_without_credit_limit():
+    user = register_and_login_user("cc_no_limit")
+    payload = {
+        "name": "ICICI Amazon Pay Card",
+        "account_type": "credit_card",
+        "balance": "0.00",
+        "currency": "INR",
+    }
+    response = client.post("/api/v1/accounts", json=payload, headers=user["headers"])
+    assert response.status_code == 201
+    data = response.json()
+    assert data["credit_limit"] is None
+
+
+def test_negative_credit_limit_rejected():
+    user = register_and_login_user("cc_neg_limit")
+    payload = {
+        "name": "SBI Card",
+        "account_type": "credit_card",
+        "balance": "0.00",
+        "credit_limit": "-50000.00",
+        "currency": "INR",
+    }
+    response = client.post("/api/v1/accounts", json=payload, headers=user["headers"])
+    assert response.status_code == 422
+
+
+def test_non_credit_card_with_credit_limit_rejected():
+    user = register_and_login_user("non_cc_limit")
+
+    # Attempt savings account with credit limit
+    res_savings = client.post("/api/v1/accounts", json={
+        "name": "Savings with Limit",
+        "account_type": "savings",
+        "balance": "10000.00",
+        "credit_limit": "50000.00",
+        "currency": "INR",
+    }, headers=user["headers"])
+    assert res_savings.status_code == 422
+
+    # Attempt current account with credit limit
+    res_current = client.post("/api/v1/accounts", json={
+        "name": "Current with Limit",
+        "account_type": "current",
+        "balance": "10000.00",
+        "credit_limit": "50000.00",
+        "currency": "INR",
+    }, headers=user["headers"])
+    assert res_current.status_code == 422
+
+    # Attempt cash account with credit limit
+    res_cash = client.post("/api/v1/accounts", json={
+        "name": "Cash Wallet with Limit",
+        "account_type": "cash",
+        "balance": "500.00",
+        "credit_limit": "1000.00",
+        "currency": "INR",
+    }, headers=user["headers"])
+    assert res_cash.status_code == 422
+
+    # Attempt investment account with credit limit
+    res_inv = client.post("/api/v1/accounts", json={
+        "name": "Investment with Limit",
+        "account_type": "investment",
+        "balance": "50000.00",
+        "credit_limit": "50000.00",
+        "currency": "INR",
+    }, headers=user["headers"])
+    assert res_inv.status_code == 422
+
+
+def test_update_credit_limit_lifecycle():
+    user = register_and_login_user("update_cc")
+    # 1. Create credit card with initial limit
+    create_res = client.post("/api/v1/accounts", json={
+        "name": "Axis Magnus",
+        "account_type": "credit_card",
+        "balance": "0.00",
+        "credit_limit": "200000.00",
+        "currency": "INR",
+    }, headers=user["headers"])
+    assert create_res.status_code == 201
+    account_id = create_res.json()["id"]
+
+    # 2. Update credit limit to higher value
+    patch_res = client.patch(
+        f"/api/v1/accounts/{account_id}",
+        json={"credit_limit": "350000.00"},
+        headers=user["headers"],
+    )
+    assert patch_res.status_code == 200
+    assert Decimal(patch_res.json()["credit_limit"]) == Decimal("350000.00")
+
+    # 3. Reject negative credit limit in patch
+    patch_neg = client.patch(
+        f"/api/v1/accounts/{account_id}",
+        json={"credit_limit": "-1000.00"},
+        headers=user["headers"],
+    )
+    assert patch_neg.status_code in [400, 422]
+
+    # 4. Create standard savings account and verify setting credit_limit on it is rejected
+    sav_res = client.post("/api/v1/accounts", json={
+        "name": "Kotak Savings",
+        "account_type": "savings",
+        "balance": "5000.00",
+        "currency": "INR",
+    }, headers=user["headers"])
+    sav_id = sav_res.json()["id"]
+
+    patch_sav = client.patch(
+        f"/api/v1/accounts/{sav_id}",
+        json={"credit_limit": "50000.00"},
+        headers=user["headers"],
+    )
+    assert patch_sav.status_code in [400, 422]
+

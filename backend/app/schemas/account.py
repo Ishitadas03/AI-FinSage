@@ -1,9 +1,9 @@
 from datetime import datetime
 from decimal import Decimal
 from enum import Enum
-from typing import Optional
+from typing import Optional, Self
 import uuid
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 
 class AccountType(str, Enum):
@@ -19,6 +19,10 @@ class AccountBase(BaseModel):
     name: str = Field(..., min_length=1, max_length=255, description="Account display name")
     account_type: AccountType = Field(..., description="Financial account category")
     balance: Decimal = Field(default=Decimal("0.00"), description="Monetary balance (precise Decimal representation)")
+    credit_limit: Optional[Decimal] = Field(
+        default=None,
+        description="Credit limit (only allowed for credit_card accounts, Numeric 18,2)",
+    )
     currency: str = Field(default="INR", min_length=3, max_length=3, description="3-letter ISO currency code")
 
     @field_validator("name")
@@ -34,6 +38,19 @@ class AccountBase(BaseModel):
     def validate_currency(cls, v: str) -> str:
         return v.strip().upper()
 
+    @field_validator("credit_limit")
+    @classmethod
+    def validate_credit_limit_non_negative(cls, v: Optional[Decimal]) -> Optional[Decimal]:
+        if v is not None and v < Decimal("0.00"):
+            raise ValueError("Credit limit cannot be negative.")
+        return v
+
+    @model_validator(mode="after")
+    def validate_credit_limit_only_for_credit_card(self) -> Self:
+        if self.credit_limit is not None and self.account_type != AccountType.CREDIT_CARD:
+            raise ValueError("Credit limit is only allowed for credit_card accounts.")
+        return self
+
 
 class AccountCreate(AccountBase):
     pass
@@ -43,6 +60,7 @@ class AccountUpdate(BaseModel):
     name: Optional[str] = Field(None, min_length=1, max_length=255, description="Updated account name")
     account_type: Optional[AccountType] = Field(None, description="Updated account category")
     balance: Optional[Decimal] = Field(None, description="Updated monetary balance")
+    credit_limit: Optional[Decimal] = Field(None, description="Updated credit limit (only applicable for credit_card)")
     currency: Optional[str] = Field(None, min_length=3, max_length=3, description="Updated currency code")
 
     @field_validator("name")
@@ -62,6 +80,19 @@ class AccountUpdate(BaseModel):
             return v.strip().upper()
         return v
 
+    @field_validator("credit_limit")
+    @classmethod
+    def validate_credit_limit_non_negative(cls, v: Optional[Decimal]) -> Optional[Decimal]:
+        if v is not None and v < Decimal("0.00"):
+            raise ValueError("Credit limit cannot be negative.")
+        return v
+
+    @model_validator(mode="after")
+    def validate_credit_limit_with_account_type(self) -> Self:
+        if self.credit_limit is not None and self.account_type is not None and self.account_type != AccountType.CREDIT_CARD:
+            raise ValueError("Credit limit is only allowed for credit_card accounts.")
+        return self
+
 
 class AccountRead(AccountBase):
     model_config = ConfigDict(from_attributes=True)
@@ -74,4 +105,3 @@ class AccountRead(AccountBase):
     )
     created_at: datetime
     updated_at: datetime
-
