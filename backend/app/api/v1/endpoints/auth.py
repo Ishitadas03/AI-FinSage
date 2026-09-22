@@ -179,7 +179,11 @@ def refresh_token(
     session_record = db.query(RefreshSession).filter(RefreshSession.token_hash == token_h).first()
 
     now = datetime.now(timezone.utc)
-    if not session_record or session_record.is_revoked or session_record.expires_at < now:
+    expires_at = session_record.expires_at if session_record else None
+    if expires_at and expires_at.tzinfo is None:
+        expires_at = expires_at.replace(tzinfo=timezone.utc)
+
+    if not session_record or session_record.is_revoked or (expires_at and expires_at < now):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Refresh token session has been revoked or expired.",
