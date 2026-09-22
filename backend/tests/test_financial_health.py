@@ -368,3 +368,189 @@ def test_financial_health_account_filter():
     # Liquid assets and income should be constrained to acc1
     assert Decimal(str(data["liquid_assets"])) == Decimal("110000.00")
     assert Decimal(str(data["total_income"])) == Decimal("50000.00")
+
+
+def test_financial_health_includes_credit_utilization_valid_card():
+    """Verify Credit Card Utilization is correctly calculated in financial health overview."""
+    user = register_and_login_user("CCHealthValid")
+    now = datetime.now(timezone.utc)
+
+    # Create credit card with 100,000 limit and 20,000 opening balance
+    acc_cc = client.post(
+        "/api/v1/accounts",
+        json={
+            "name": "HDFC Millennia",
+            "account_type": "credit_card",
+            "balance": "20000.00",
+            "credit_limit": "100000.00",
+            "currency": "INR",
+        },
+        headers=user["headers"],
+    ).json()
+
+    # Post an extra 10,000 expense -> total debt = 30,000 -> 30.00% utilization (healthy)
+    create_tx(
+        user=user,
+        account_id=acc_cc["id"],
+        amount="10000.00",
+        tx_type="expense",
+        category="shopping",
+        tx_date=now - timedelta(days=2),
+    )
+
+    res = client.get("/api/v1/financial-health/overview", headers=user["headers"])
+    assert res.status_code == 200
+    data = res.json()
+
+    assert "credit_card_utilization" in data
+    assert Decimal(str(data["credit_card_utilization"]["value"])) == Decimal("30.00")
+    assert data["credit_card_utilization"]["status"] == "healthy"
+    assert "%" in data["credit_card_utilization"]["unit"]
+
+    # Verify per-card breakdown exists
+    assert "credit_card_details" in data
+    assert len(data["credit_card_details"]) == 1
+    assert data["credit_card_details"][0]["account_name"] == "HDFC Millennia"
+    assert Decimal(str(data["credit_card_details"][0]["utilization_percentage"])) == Decimal("30.00")
+
+
+def test_financial_health_credit_utilization_missing_limit():
+    """Verify missing credit limit results in insufficient_data status."""
+    user = register_and_login_user("CCHealthMissingLimit")
+    create_account(user, name="No Limit Card", account_type="credit_card", balance="15000.00")
+
+    res = client.get("/api/v1/financial-health/overview", headers=user["headers"])
+    assert res.status_code == 200
+    data = res.json()
+
+    assert data["credit_card_utilization"]["value"] is None
+    assert data["credit_card_utilization"]["status"] == "insufficient_data"
+
+
+def test_financial_health_multiple_credit_cards_aggregate():
+    """Verify aggregated utilization uses SUM(debt)/SUM(limits) across multiple cards."""
+    user = register_and_login_user("CCHealthMulti")
+
+    # Card 1: 20k / 100k
+    client.post("/api/v1/accounts", json={
+        "name": "Card 1",
+        "account_type": "credit_card",
+        "balance": "20000.00",
+        "credit_limit": "100000.00",
+        "currency": "INR",
+    }, headers=user["headers"])
+
+    # Card 2: 30k / 150k
+    client.post("/api/v1/accounts", json={
+        "name": "Card 2",
+        "account_type": "credit_card",
+        "balance": "30000.00",
+        "credit_limit": "150000.00",
+        "currency": "INR",
+    }, headers=user["headers"])
+
+    res = client.get("/api/v1/financial-health/overview", headers=user["headers"])
+    assert res.status_code == 200
+    data = res.json()
+
+    # Total Debt: 50,000 / Total Limit: 250,000 = 20.00%
+    assert Decimal(str(data["credit_card_utilization"]["value"])) == Decimal("20.00")
+    assert data["credit_card_utilization"]["status"] == "healthy"
+    assert len(data["credit_card_details"]) == 2
+
+
+def test_financial_health_includes_loans_summary():
+    """Verify Loan summary metrics (total outstanding principal, monthly EMI, active count) are integrated."""
+    user = register_and_login_user("LoanHealthSummary")
+
+    # Create 2 loans
+    client.post("/api/v1/loans", json={
+        "name": "Home Loan",
+        "principal_amount": "5000000.00",
+        "outstanding_principal": "4200000.00",
+        "interest_rate": "8.5000",
+        "tenure_months": 240,
+        "monthly_emi": "43391.00",
+        "start_date": "2024-01-01",
+    }, headers=user["headers"])
+
+    client.post("/api/v1/loans", json={
+        "name": "Car Loan",
+        "principal_amount": "800000.00",
+        "outstanding_principal": "650000.00",
+        "interest_rate": "9.2000",
+        "tenure_months": 60,
+        "monthly_emi": "16680.00",
+        "start_date": "2024-06-01",
+    }, headers=user["headers"])
+
+    res = client.get("/api/v1/financial-health/overview", headers=user["headers"])
+    assert res.status_code == 200
+    data = res.json()
+
+    assert Decimal(str(data["total_outstanding_loan_principal"])) == Decimal("4850000.00")
+    assert Decimal(str(data["total_monthly_emi"])) == Decimal("60071.00")
+    assert data["active_loan_count"] == 2
+
+
+def test_financial_health_dti_insufficient_data():
+    """Verify DTI status is insufficient_data and does not inappropriately use net income or transaction totals."""
+    user = register_and_login_user("DTIHealth")
+
+    # Add a loan and an account with transactions
+    client.post("/api/v1/loans", json={
+        "name": "Personal Loan",
+        "principal_amount": "200000.00",
+        "outstanding_principal": "180000.00",
+        "interest_rate": "11.0000",
+        "tenure_months": 24,
+        "monthly_emi": "9320.00",
+        "start_date": "2025-01-01",
+    }, headers=user["headers"])
+
+    res = client.get("/api/v1/financial-health/overview", headers=user["headers"])
+    assert res.status_code == 200
+    data = res.json()
+
+    assert "debt_to_income_ratio" in data
+    assert data["debt_to_income_ratio"]["value"] is None
+    assert data["debt_to_income_ratio"]["status"] == "insufficient_data"
+    assert "gross income" in data["debt_to_income_ratio"]["explanation"].lower()
+
+
+def test_financial_health_user_isolation_with_loans_and_cards():
+    """Verify loans and credit cards of User A are not leaked to User B's financial health overview."""
+    user_a = register_and_login_user("IsoA")
+    user_b = register_and_login_user("IsoB")
+
+    # User A has loans and high credit limit
+    client.post("/api/v1/loans", json={
+        "name": "User A Mega Loan",
+        "principal_amount": "10000000.00",
+        "outstanding_principal": "9000000.00",
+        "interest_rate": "8.0000",
+        "tenure_months": 240,
+        "monthly_emi": "85000.00",
+        "start_date": "2024-01-01",
+    }, headers=user_a["headers"])
+
+    client.post("/api/v1/accounts", json={
+        "name": "User A CC",
+        "account_type": "credit_card",
+        "balance": "80000.00",
+        "credit_limit": "200000.00",
+        "currency": "INR",
+    }, headers=user_a["headers"])
+
+    # User B has no loans and no credit cards
+    res_b = client.get("/api/v1/financial-health/overview", headers=user_b["headers"])
+    assert res_b.status_code == 200
+    data_b = res_b.json()
+
+    assert Decimal(str(data_b["total_outstanding_loan_principal"])) == Decimal("0.00")
+    assert Decimal(str(data_b["total_monthly_emi"])) == Decimal("0.00")
+    assert data_b["active_loan_count"] == 0
+    assert Decimal(str(data_b["credit_card_debt"])) == Decimal("0.00")
+    assert data_b["credit_card_utilization"]["status"] == "insufficient_data"
+    assert len(data_b["credit_card_details"]) == 0
+

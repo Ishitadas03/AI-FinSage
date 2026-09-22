@@ -6,12 +6,14 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.models.account import Account
+from app.models.loan import Loan
 from app.models.transaction import Transaction
 from app.schemas.financial_health import (
     FinancialHealthOverviewResponse,
     HealthMetricItem,
 )
 from app.services.account_service import AccountService
+from app.services.credit_utilization_service import CreditUtilizationService
 
 
 class FinancialHealthService:
@@ -25,7 +27,7 @@ class FinancialHealthService:
     ) -> FinancialHealthOverviewResponse:
         """
         Calculates deterministic financial health metrics grounded strictly in verified
-        ledger account balances and historical transactions.
+        ledger account balances, active loans, and historical transactions.
 
         No AI, no ML, and no arbitrary composite scores.
         """
@@ -92,33 +94,58 @@ class FinancialHealthService:
         total_expenses = totals_map.get("expense", Decimal("0.00"))
         net_cashflow = total_income - total_expenses
 
-        # 3. Calculate Deterministic Metrics
-
-        # Metric 1: Savings Rate
+        # 3. Calculate Deterministic Foundation Metrics
         savings_rate = FinancialHealthService._calculate_savings_rate(total_income, total_expenses)
-
-        # Metric 2: Expense Ratio
         expense_ratio = FinancialHealthService._calculate_expense_ratio(total_income, total_expenses)
-
-        # Metric 3: Emergency Fund Coverage (Months)
         emergency_fund_coverage = FinancialHealthService._calculate_emergency_fund_coverage(
             liquid_assets, total_expenses, days_in_period
         )
-
-        # Metric 4: Debt-to-Liquid Ratio
         debt_to_liquid = FinancialHealthService._calculate_debt_to_liquid_ratio(
             credit_card_debt, liquid_assets
         )
-
-        # Metric 5: Investment Allocation Ratio
         investment_allocation = FinancialHealthService._calculate_investment_allocation(
             investment_assets, total_assets
         )
 
-        # Diagnostic notes for future metric expansions
+        # 4. Integrate Credit Card Utilization via CreditUtilizationService
+        util_response = CreditUtilizationService.get_user_credit_utilization(db, user_id)
+        credit_card_utilization_metric = HealthMetricItem(
+            value=util_response.aggregate.utilization_percentage,
+            unit="%",
+            status=util_response.aggregate.status,
+            benchmark="≤ 30.00% of available credit limit",
+            explanation=util_response.aggregate.explanation,
+        )
+
+        # 5. Integrate Loan / Debt Summary
+        user_loans = (
+            db.query(Loan)
+            .filter(Loan.user_id == user_id)
+            .all()
+        )
+        total_outstanding_loan_principal = sum(
+            (l.outstanding_principal for l in user_loans),
+            Decimal("0.00"),
+        )
+        total_monthly_emi = sum(
+            (l.monthly_emi for l in user_loans),
+            Decimal("0.00"),
+        )
+        active_loan_count = len(user_loans)
+
+        # 6. DTI Metric: remains insufficient_data (reliable gross monthly income not in ledger)
+        debt_to_income_metric = HealthMetricItem(
+            value=None,
+            unit="%",
+            status="insufficient_data",
+            benchmark="≤ 36.00% of gross monthly income (≤ 43.00% maximum threshold)",
+            explanation="Reliable gross income data is not available to compute Debt-to-Income (DTI).",
+        )
+
+        # Diagnostic metadata notes
         data_completeness_notes = [
-            "Debt-to-Income (DTI) metric requires loan/EMI liability schedule (not yet modeled).",
-            "Credit Card Utilization metric requires credit_limit on credit accounts (not yet modeled).",
+            "Debt-to-Income (DTI) metric requires verified gross monthly income profile (not currently available in transaction ledger).",
+            "Credit Card Utilization metric requires credit limit configuration on all credit accounts.",
             "Essential vs. Discretionary spending breakdown requires category classification taxonomy.",
         ]
 
@@ -133,11 +160,17 @@ class FinancialHealthService:
             total_income=total_income,
             total_expenses=total_expenses,
             net_cashflow=net_cashflow,
+            total_outstanding_loan_principal=total_outstanding_loan_principal,
+            total_monthly_emi=total_monthly_emi,
+            active_loan_count=active_loan_count,
             savings_rate=savings_rate,
             expense_ratio=expense_ratio,
             emergency_fund_coverage_months=emergency_fund_coverage,
             debt_to_liquid_ratio=debt_to_liquid,
             investment_allocation_ratio=investment_allocation,
+            credit_card_utilization=credit_card_utilization_metric,
+            debt_to_income_ratio=debt_to_income_metric,
+            credit_card_details=util_response.cards,
             data_completeness_notes=data_completeness_notes,
         )
 

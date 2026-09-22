@@ -34,6 +34,10 @@ from app.schemas.credit_utilization import (
     AggregateUtilization,
     CreditUtilizationResponse,
 )
+from app.schemas.emi import (
+    EmiCalculationRequest,
+    EmiCalculationResponse,
+)
 from app.schemas.analytics import (
     AnalyticsPeriod,
     AnalyticsSummary,
@@ -77,6 +81,8 @@ __all__ = [
     "CardUtilizationItem",
     "AggregateUtilization",
     "CreditUtilizationResponse",
+    "EmiCalculationRequest",
+    "EmiCalculationResponse",
     "AnalyticsPeriod",
     "AnalyticsSummary",
     "CategoryBreakdownItem",
