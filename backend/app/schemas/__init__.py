@@ -38,6 +38,11 @@ from app.schemas.emi import (
     EmiCalculationRequest,
     EmiCalculationResponse,
 )
+from app.schemas.amortization import (
+    AmortizationScheduleItem,
+    AmortizationScheduleResponse,
+    AmortizationRequest,
+)
 from app.schemas.analytics import (
     AnalyticsPeriod,
     AnalyticsSummary,
@@ -83,6 +88,9 @@ __all__ = [
     "CreditUtilizationResponse",
     "EmiCalculationRequest",
     "EmiCalculationResponse",
+    "AmortizationScheduleItem",
+    "AmortizationScheduleResponse",
+    "AmortizationRequest",
     "AnalyticsPeriod",
     "AnalyticsSummary",
     "CategoryBreakdownItem",
