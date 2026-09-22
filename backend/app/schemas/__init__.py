@@ -23,7 +23,12 @@ from app.schemas.transaction import (
     TransactionRead,
     TransactionPaginatedResponse,
 )
-
+from app.schemas.loan import (
+    LoanBase,
+    LoanCreate,
+    LoanUpdate,
+    LoanRead,
+)
 from app.schemas.analytics import (
     AnalyticsPeriod,
     AnalyticsSummary,
@@ -33,7 +38,6 @@ from app.schemas.analytics import (
     TopExpenseItem,
     AnalyticsOverviewResponse,
 )
-
 from app.schemas.financial_health import (
     HealthMetricItem,
     FinancialHealthOverviewResponse,
@@ -61,6 +65,10 @@ __all__ = [
     "TransactionUpdate",
     "TransactionRead",
     "TransactionPaginatedResponse",
+    "LoanBase",
+    "LoanCreate",
+    "LoanUpdate",
+    "LoanRead",
     "AnalyticsPeriod",
     "AnalyticsSummary",
     "CategoryBreakdownItem",
@@ -71,5 +79,3 @@ __all__ = [
     "HealthMetricItem",
     "FinancialHealthOverviewResponse",
 ]
-
-
