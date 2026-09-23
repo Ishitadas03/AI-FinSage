@@ -554,3 +554,236 @@ def test_financial_health_user_isolation_with_loans_and_cards():
     assert data_b["credit_card_utilization"]["status"] == "insufficient_data"
     assert len(data_b["credit_card_details"]) == 0
 
+
+# ---------------------------------------------------------------------------
+# Integrated Debt Stress Tests (Phase 3D-5 Part 3)
+# ---------------------------------------------------------------------------
+def test_financial_health_includes_debt_stress_empty_user():
+    """Verify empty user has fully populated debt_stress structure in financial health overview."""
+    user = register_and_login_user("StressEmpty")
+    res = client.get("/api/v1/financial-health/overview", headers=user["headers"])
+    assert res.status_code == 200
+    data = res.json()
+
+    assert "debt_stress" in data
+    ds = data["debt_stress"]
+    assert ds is not None
+    assert ds["user_id"] == user["user"]["id"]
+    assert ds["analysis_date"] is not None
+    assert ds["start_date"] is not None
+    assert ds["end_date"] is not None
+    assert ds["days_in_period"] >= 1
+
+    # Debt Summary
+    assert Decimal(str(ds["debt_summary"]["total_outstanding_loan_principal"])) == Decimal("0.00")
+    assert Decimal(str(ds["debt_summary"]["total_monthly_emi"])) == Decimal("0.00")
+    assert ds["debt_summary"]["active_loan_count"] == 0
+    assert Decimal(str(ds["debt_summary"]["total_credit_card_debt"])) == Decimal("0.00")
+    assert Decimal(str(ds["debt_summary"]["total_credit_limit"])) == Decimal("0.00")
+    assert ds["debt_summary"]["aggregate_credit_utilization"] is None
+
+    # Cash Flow Pressure
+    assert Decimal(str(ds["cash_flow_pressure"]["monthly_income"])) == Decimal("0.00")
+    assert Decimal(str(ds["cash_flow_pressure"]["monthly_expenses"])) == Decimal("0.00")
+    assert Decimal(str(ds["cash_flow_pressure"]["monthly_net_cash_flow"])) == Decimal("0.00")
+    assert Decimal(str(ds["cash_flow_pressure"]["monthly_emi"])) == Decimal("0.00")
+    assert Decimal(str(ds["cash_flow_pressure"]["cash_flow_after_emi"])) == Decimal("0.00")
+
+    # Debt Burden Metrics
+    assert ds["debt_burden_metrics"]["emi_to_income_ratio"]["status"] == "insufficient_data"
+    assert ds["debt_burden_metrics"]["emi_to_income_ratio"]["value"] is None
+    assert Decimal(str(ds["debt_burden_metrics"]["post_emi_cash_flow"]["value"])) == Decimal("0.00")
+    assert Decimal(str(ds["debt_burden_metrics"]["debt_service_pressure"]["value"])) == Decimal("0.00")
+
+    # Stress Indicators: exactly 4 indicators present
+    indicators = {i["metric"]: i for i in ds["stress_indicators"]}
+    assert "emi_burden" in indicators
+    assert "cash_flow_pressure" in indicators
+    assert "credit_utilization" in indicators
+    assert "debt_balance" in indicators
+    assert len(ds["stress_indicators"]) == 4
+
+    # Data completeness notes present
+    assert len(ds["data_completeness"]) >= 1
+
+
+def test_financial_health_includes_debt_stress_with_data():
+    """Verify integrated debt_stress with active loans, credit cards, income, and expenses."""
+    user = register_and_login_user("StressWithData")
+    now = datetime.now(timezone.utc)
+
+    # 1. Savings account + transactions
+    acc_savings = create_account(user, name="Main Savings", account_type="savings", balance="100000.00")
+    create_tx(
+        user=user,
+        account_id=acc_savings["id"],
+        amount="100000.00",
+        tx_type="income",
+        category="salary",
+        tx_date=now - timedelta(days=5),
+    )
+    create_tx(
+        user=user,
+        account_id=acc_savings["id"],
+        amount="40000.00",
+        tx_type="expense",
+        category="rent",
+        tx_date=now - timedelta(days=2),
+    )
+
+    # 2. Credit Card
+    client.post("/api/v1/accounts", json={
+        "name": "HDFC Card",
+        "account_type": "credit_card",
+        "balance": "20000.00",
+        "credit_limit": "100000.00",
+        "currency": "INR",
+    }, headers=user["headers"])
+
+    # 3. Loan
+    client.post("/api/v1/loans", json={
+        "name": "Auto Loan",
+        "principal_amount": "500000.00",
+        "outstanding_principal": "400000.00",
+        "interest_rate": "9.5000",
+        "tenure_months": 48,
+        "monthly_emi": "12560.00",
+        "start_date": "2024-01-01",
+    }, headers=user["headers"])
+
+    res = client.get("/api/v1/financial-health/overview", headers=user["headers"])
+    assert res.status_code == 200
+    data = res.json()
+
+    # Core financial health backward compatibility checks
+    assert Decimal(str(data["total_income"])) == Decimal("100000.00")
+    assert Decimal(str(data["total_expenses"])) == Decimal("40000.00")
+    assert Decimal(str(data["total_outstanding_loan_principal"])) == Decimal("400000.00")
+    assert Decimal(str(data["total_monthly_emi"])) == Decimal("12560.00")
+    assert data["active_loan_count"] == 1
+
+    # Debt stress section checks
+    ds = data["debt_stress"]
+    assert ds is not None
+    assert Decimal(str(ds["debt_summary"]["total_outstanding_loan_principal"])) == Decimal("400000.00")
+    assert Decimal(str(ds["debt_summary"]["total_monthly_emi"])) == Decimal("12560.00")
+    assert ds["debt_summary"]["active_loan_count"] == 1
+    assert Decimal(str(ds["debt_summary"]["total_credit_card_debt"])) == Decimal("20000.00")
+    assert Decimal(str(ds["debt_summary"]["total_credit_limit"])) == Decimal("100000.00")
+    assert Decimal(str(ds["debt_summary"]["aggregate_credit_utilization"])) == Decimal("20.00")
+
+    # Cash flow pressure
+    assert Decimal(str(ds["cash_flow_pressure"]["monthly_income"])) == Decimal("100000.00")
+    assert Decimal(str(ds["cash_flow_pressure"]["monthly_expenses"])) == Decimal("40000.00")
+    assert Decimal(str(ds["cash_flow_pressure"]["monthly_net_cash_flow"])) == Decimal("60000.00")
+    assert Decimal(str(ds["cash_flow_pressure"]["monthly_emi"])) == Decimal("12560.00")
+    assert Decimal(str(ds["cash_flow_pressure"]["cash_flow_after_emi"])) == Decimal("47440.00")
+
+    # Debt burden metrics: EMI-to-income = 12560 / 100000 * 100 = 12.56%
+    assert ds["debt_burden_metrics"]["emi_to_income_ratio"]["status"] == "calculated"
+    assert Decimal(str(ds["debt_burden_metrics"]["emi_to_income_ratio"]["value"])) == Decimal("12.56")
+    assert Decimal(str(ds["debt_burden_metrics"]["post_emi_cash_flow"]["value"])) == Decimal("47440.00")
+
+    # Debt-service pressure = 12560 / 60000 * 100 = 20.93%
+    assert ds["debt_burden_metrics"]["debt_service_pressure"]["status"] == "calculated"
+    assert Decimal(str(ds["debt_burden_metrics"]["debt_service_pressure"]["value"])) == Decimal("20.93")
+
+    # Stress indicators
+    ind_map = {i["metric"]: i for i in ds["stress_indicators"]}
+    assert ind_map["emi_burden"]["status"] == "healthy"  # 12.56% <= 30%
+    assert ind_map["credit_utilization"]["status"] == "healthy"  # 20.00% <= 30%
+
+
+def test_financial_health_debt_stress_matches_direct_endpoint():
+    """Verify that the debt_stress sub-object matches GET /api/v1/debt-stress/overview exactly."""
+    user = register_and_login_user("StressMatch")
+    now = datetime.now(timezone.utc)
+
+    acc = create_account(user, name="Savings", account_type="savings", balance="80000.00")
+    create_tx(
+        user=user,
+        account_id=acc["id"],
+        amount="75000.00",
+        tx_type="income",
+        category="salary",
+        tx_date=now - timedelta(days=5),
+    )
+    create_tx(
+        user=user,
+        account_id=acc["id"],
+        amount="25000.00",
+        tx_type="expense",
+        category="rent",
+        tx_date=now - timedelta(days=2),
+    )
+    client.post("/api/v1/loans", json={
+        "name": "Personal Loan",
+        "principal_amount": "200000.00",
+        "outstanding_principal": "150000.00",
+        "interest_rate": "12.0000",
+        "tenure_months": 24,
+        "monthly_emi": "9415.00",
+        "start_date": "2024-06-01",
+    }, headers=user["headers"])
+
+    # 1. Fetch from Financial Health
+    health_res = client.get("/api/v1/financial-health/overview", headers=user["headers"])
+    assert health_res.status_code == 200
+    health_data = health_res.json()
+
+    # 2. Fetch directly from Debt Stress
+    direct_res = client.get("/api/v1/debt-stress/overview", headers=user["headers"])
+    assert direct_res.status_code == 200
+    direct_data = direct_res.json()
+
+    # Verify identical fields
+    assert health_data["debt_stress"]["user_id"] == direct_data["user_id"]
+    assert health_data["debt_stress"]["debt_summary"] == direct_data["debt_summary"]
+    assert health_data["debt_stress"]["cash_flow_pressure"] == direct_data["cash_flow_pressure"]
+    assert health_data["debt_stress"]["debt_burden_metrics"] == direct_data["debt_burden_metrics"]
+    assert health_data["debt_stress"]["stress_indicators"] == direct_data["stress_indicators"]
+    assert health_data["debt_stress"]["data_completeness"] == direct_data["data_completeness"]
+
+
+def test_financial_health_debt_stress_date_filter_propagation():
+    """Verify date parameters are correctly passed through to the debt stress analysis."""
+    user = register_and_login_user("StressDateFilter")
+    now = datetime.now(timezone.utc)
+
+    acc = create_account(user, name="Savings", account_type="savings", balance="10000.00")
+
+    # Transaction 50 days ago (should be excluded by 10-day filter)
+    create_tx(
+        user=user,
+        account_id=acc["id"],
+        amount="50000.00",
+        tx_type="income",
+        category="other",
+        tx_date=now - timedelta(days=50),
+    )
+    # Transaction 5 days ago (should be included)
+    create_tx(
+        user=user,
+        account_id=acc["id"],
+        amount="20000.00",
+        tx_type="income",
+        category="salary",
+        tx_date=now - timedelta(days=5),
+    )
+
+    start = (now.date() - timedelta(days=10)).isoformat()
+    end = now.date().isoformat()
+
+    res = client.get(
+        f"/api/v1/financial-health/overview?start_date={start}&end_date={end}",
+        headers=user["headers"],
+    )
+    assert res.status_code == 200
+    data = res.json()
+
+    assert data["start_date"] == start
+    assert data["end_date"] == end
+    assert data["debt_stress"]["start_date"] == start
+    assert data["debt_stress"]["end_date"] == end
+    assert Decimal(str(data["debt_stress"]["cash_flow_pressure"]["monthly_income"])) == Decimal("20000.00")
+

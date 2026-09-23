@@ -3,6 +3,7 @@ from decimal import Decimal
 from typing import List, Optional
 from pydantic import BaseModel, ConfigDict, Field
 from app.schemas.credit_utilization import CardUtilizationItem
+from app.schemas.debt_stress import DebtStressAnalysisResponse
 
 
 class HealthMetricItem(BaseModel):
@@ -82,4 +83,10 @@ class FinancialHealthOverviewResponse(BaseModel):
     data_completeness_notes: List[str] = Field(
         default_factory=list,
         description="Explicit notes on required data for remaining metrics",
+    )
+
+    # Integrated Debt Stress Analysis (Phase 3D-5 Part 3)
+    debt_stress: Optional[DebtStressAnalysisResponse] = Field(
+        default=None,
+        description="Deterministic debt stress analysis including debt summary, cash flow pressure, burden metrics, and indicators",
     )

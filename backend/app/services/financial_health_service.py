@@ -14,6 +14,7 @@ from app.schemas.financial_health import (
 )
 from app.services.account_service import AccountService
 from app.services.credit_utilization_service import CreditUtilizationService
+from app.services.debt_stress_service import DebtStressService
 
 
 class FinancialHealthService:
@@ -149,6 +150,14 @@ class FinancialHealthService:
             "Essential vs. Discretionary spending breakdown requires category classification taxonomy.",
         ]
 
+        # 7. Integrate Debt Stress Analysis via DebtStressService
+        debt_stress = DebtStressService.analyze(
+            db=db,
+            user_id=user_id,
+            start_date=start_date,
+            end_date=end_date,
+        )
+
         return FinancialHealthOverviewResponse(
             start_date=start_date,
             end_date=end_date,
@@ -172,6 +181,7 @@ class FinancialHealthService:
             debt_to_income_ratio=debt_to_income_metric,
             credit_card_details=util_response.cards,
             data_completeness_notes=data_completeness_notes,
+            debt_stress=debt_stress,
         )
 
     @staticmethod
