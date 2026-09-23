@@ -181,22 +181,60 @@ class BudgetService:
         return BudgetRead.model_validate(budget)
 
     @staticmethod
+    def create_budget_with_spending(
+        db: Session,
+        user_id: uuid.UUID,
+        payload: BudgetCreate,
+    ) -> BudgetWithSpending:
+        """
+        Creates a new budget record and returns it enriched with its initial spending summary.
+        """
+        budget_read = BudgetService.create_budget(db, user_id, payload)
+        spending = BudgetService.calculate_budget_spending(
+            db=db,
+            user_id=user_id,
+            category=budget_read.category,
+            start_date=budget_read.start_date,
+            end_date=budget_read.end_date,
+            budget_amount=budget_read.amount,
+            budget_id=budget_read.id,
+            budget_name=budget_read.name,
+        )
+        return BudgetWithSpending(**budget_read.model_dump(), spending=spending)
+
+    @staticmethod
     def list_user_budgets(
         db: Session,
         user_id: uuid.UUID,
         category: Optional[str] = None,
         period: Optional[str] = None,
+        start_date: Optional[date] = None,
+        end_date: Optional[date] = None,
+        page: Optional[int] = None,
+        page_size: Optional[int] = None,
     ) -> List[BudgetRead]:
         """
-        Lists all budgets owned by the user with optional category and period filters.
+        Lists all budgets owned by the user with optional category, period, date filters, and pagination.
         """
         query = db.query(Budget).filter(Budget.user_id == user_id)
         if category:
             query = query.filter(Budget.category == category.strip().lower())
         if period:
             query = query.filter(Budget.period == period.strip().lower())
+        if start_date:
+            query = query.filter(Budget.start_date >= start_date)
+        if end_date:
+            query = query.filter(Budget.end_date <= end_date)
 
-        budgets = query.order_by(Budget.start_date.desc(), Budget.created_at.desc()).all()
+        query = query.order_by(Budget.start_date.desc(), Budget.created_at.desc())
+
+        if page is not None or page_size is not None:
+            p = page if page is not None and page >= 1 else 1
+            ps = page_size if page_size is not None and page_size >= 1 else 20
+            offset = (p - 1) * ps
+            query = query.offset(offset).limit(ps)
+
+        budgets = query.all()
         return [BudgetRead.model_validate(b) for b in budgets]
 
     @staticmethod
@@ -205,11 +243,24 @@ class BudgetService:
         user_id: uuid.UUID,
         category: Optional[str] = None,
         period: Optional[str] = None,
+        start_date: Optional[date] = None,
+        end_date: Optional[date] = None,
+        page: Optional[int] = None,
+        page_size: Optional[int] = None,
     ) -> List[BudgetWithSpending]:
         """
         Lists user budgets enriched with their real-time spending summaries.
         """
-        budgets = BudgetService.list_user_budgets(db, user_id, category=category, period=period)
+        budgets = BudgetService.list_user_budgets(
+            db=db,
+            user_id=user_id,
+            category=category,
+            period=period,
+            start_date=start_date,
+            end_date=end_date,
+            page=page,
+            page_size=page_size,
+        )
         results = []
         for b in budgets:
             spending = BudgetService.calculate_budget_spending(
@@ -224,6 +275,7 @@ class BudgetService:
             )
             results.append(BudgetWithSpending(**b.model_dump(), spending=spending))
         return results
+
 
     @staticmethod
     def get_user_budget_entity(
@@ -332,6 +384,32 @@ class BudgetService:
         db.commit()
         db.refresh(budget)
         return BudgetRead.model_validate(budget)
+
+    @staticmethod
+    def update_user_budget_with_spending(
+        db: Session,
+        user_id: uuid.UUID,
+        budget_id: uuid.UUID,
+        payload: BudgetUpdate,
+    ) -> Optional[BudgetWithSpending]:
+        """
+        Updates an existing budget and returns it with a freshly calculated spending summary.
+        """
+        updated = BudgetService.update_user_budget(db, user_id, budget_id, payload)
+        if not updated:
+            return None
+        spending = BudgetService.calculate_budget_spending(
+            db=db,
+            user_id=user_id,
+            category=updated.category,
+            start_date=updated.start_date,
+            end_date=updated.end_date,
+            budget_amount=updated.amount,
+            budget_id=updated.id,
+            budget_name=updated.name,
+        )
+        return BudgetWithSpending(**updated.model_dump(), spending=spending)
+
 
     @staticmethod
     def delete_user_budget(
