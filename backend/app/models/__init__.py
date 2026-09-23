@@ -4,5 +4,6 @@ from app.models.refresh_session import RefreshSession
 from app.models.account import Account
 from app.models.transaction import Transaction
 from app.models.loan import Loan
+from app.models.financial_goal import FinancialGoal
 
-__all__ = ["Base", "User", "RefreshSession", "Account", "Transaction", "Loan"]
+__all__ = ["Base", "User", "RefreshSession", "Account", "Transaction", "Loan", "FinancialGoal"]

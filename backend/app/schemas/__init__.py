@@ -65,6 +65,14 @@ from app.schemas.debt_stress import (
     DataCompletenessItem,
     DebtStressAnalysisResponse,
 )
+from app.schemas.goals import (
+    FinancialGoalBase,
+    FinancialGoalCreate,
+    FinancialGoalUpdate,
+    FinancialGoalRead,
+    GoalDerivedState,
+    FinancialGoalWithDerivedState,
+)
 
 __all__ = [
     "UserBase",
@@ -116,4 +124,10 @@ __all__ = [
     "StressIndicator",
     "DataCompletenessItem",
     "DebtStressAnalysisResponse",
+    "FinancialGoalBase",
+    "FinancialGoalCreate",
+    "FinancialGoalUpdate",
+    "FinancialGoalRead",
+    "GoalDerivedState",
+    "FinancialGoalWithDerivedState",
 ]
