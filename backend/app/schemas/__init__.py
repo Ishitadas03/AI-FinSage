@@ -56,6 +56,15 @@ from app.schemas.financial_health import (
     HealthMetricItem,
     FinancialHealthOverviewResponse,
 )
+from app.schemas.debt_stress import (
+    DebtSummary,
+    CashFlowPressure,
+    DebtBurdenMetric,
+    DebtBurdenMetrics,
+    StressIndicator,
+    DataCompletenessItem,
+    DebtStressAnalysisResponse,
+)
 
 __all__ = [
     "UserBase",
@@ -100,4 +109,11 @@ __all__ = [
     "AnalyticsOverviewResponse",
     "HealthMetricItem",
     "FinancialHealthOverviewResponse",
+    "DebtSummary",
+    "CashFlowPressure",
+    "DebtBurdenMetric",
+    "DebtBurdenMetrics",
+    "StressIndicator",
+    "DataCompletenessItem",
+    "DebtStressAnalysisResponse",
 ]
