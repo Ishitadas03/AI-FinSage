@@ -162,6 +162,15 @@ class GoalDerivedState(BaseModel):
     )
     is_overdue: bool = Field(..., description="True if target_date has passed and remaining_amount > 0")
     is_on_track: bool = Field(..., description="Deterministic indicator if goal is currently on track")
+    contribution_total: Optional[Decimal] = Field(
+        None,
+        description="Total sum of recorded contribution ledger entries if calculated",
+    )
+    has_contribution_history: bool = Field(
+        default=False,
+        description="True if goal has recorded contribution ledger entries",
+    )
+
 
 
 class FinancialGoalWithDerivedState(FinancialGoalRead):

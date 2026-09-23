@@ -73,6 +73,12 @@ from app.schemas.goals import (
     GoalDerivedState,
     FinancialGoalWithDerivedState,
 )
+from app.schemas.goal_contributions import (
+    GoalContributionBase,
+    GoalContributionCreate,
+    GoalContributionRead,
+    GoalContributionSummary,
+)
 
 __all__ = [
     "UserBase",
@@ -130,4 +136,9 @@ __all__ = [
     "FinancialGoalRead",
     "GoalDerivedState",
     "FinancialGoalWithDerivedState",
+    "GoalContributionBase",
+    "GoalContributionCreate",
+    "GoalContributionRead",
+    "GoalContributionSummary",
 ]
+

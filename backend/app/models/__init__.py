@@ -5,5 +5,16 @@ from app.models.account import Account
 from app.models.transaction import Transaction
 from app.models.loan import Loan
 from app.models.financial_goal import FinancialGoal
+from app.models.financial_goal_contribution import FinancialGoalContribution
 
-__all__ = ["Base", "User", "RefreshSession", "Account", "Transaction", "Loan", "FinancialGoal"]
+__all__ = [
+    "Base",
+    "User",
+    "RefreshSession",
+    "Account",
+    "Transaction",
+    "Loan",
+    "FinancialGoal",
+    "FinancialGoalContribution",
+]
+

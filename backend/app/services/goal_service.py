@@ -155,10 +155,12 @@ class GoalService:
     def calculate_goal_derived_state(
         goal: Union[FinancialGoal, FinancialGoalRead],
         reference_date: Optional[date] = None,
+        contribution_total: Optional[Decimal] = None,
+        has_contribution_history: Optional[bool] = None,
     ) -> GoalDerivedState:
         """
         Computes all deterministic derived states for a financial goal without
-        overwriting persisted database fields.
+        overwriting persisted database fields. Optionally supports contribution ledger metrics.
         """
         ref = reference_date or date.today()
 
@@ -188,6 +190,12 @@ class GoalService:
         else:
             is_on_track = False
 
+        has_history = (
+            has_contribution_history
+            if has_contribution_history is not None
+            else (contribution_total is not None and contribution_total > Decimal("0.00"))
+        )
+
         return GoalDerivedState(
             progress_percentage=progress,
             remaining_amount=remaining,
@@ -195,7 +203,10 @@ class GoalService:
             required_monthly_contribution=required_monthly,
             is_overdue=is_overdue,
             is_on_track=is_on_track,
+            contribution_total=contribution_total,
+            has_contribution_history=has_history,
         )
+
 
     # -----------------------------------------------------------------------
     # Domain & CRUD Service Operations (Strict User Ownership)
@@ -425,3 +436,90 @@ class GoalService:
             **goal_read.model_dump(),
             derived_state=derived,
         )
+
+    @staticmethod
+    def create_goal_with_derived_state(
+        db: Session,
+        user_id: uuid.UUID,
+        payload: FinancialGoalCreate,
+        reference_date: Optional[date] = None,
+    ) -> FinancialGoalWithDerivedState:
+        """
+        Creates a new goal record and returns it enriched with its derived calculation state.
+        """
+        goal_read = GoalService.create_goal(db, user_id, payload)
+        derived = GoalService.calculate_goal_derived_state(goal_read, reference_date=reference_date)
+        return FinancialGoalWithDerivedState(
+            **goal_read.model_dump(),
+            derived_state=derived,
+        )
+
+    @staticmethod
+    def update_user_goal_with_derived_state(
+        db: Session,
+        user_id: uuid.UUID,
+        goal_id: uuid.UUID,
+        payload: FinancialGoalUpdate,
+        reference_date: Optional[date] = None,
+    ) -> Optional[FinancialGoalWithDerivedState]:
+        """
+        Updates an existing goal and returns it enriched with fresh derived calculation state.
+        """
+        updated_read = GoalService.update_user_goal(db, user_id, goal_id, payload)
+        if not updated_read:
+            return None
+        derived = GoalService.calculate_goal_derived_state(updated_read, reference_date=reference_date)
+        return FinancialGoalWithDerivedState(
+            **updated_read.model_dump(),
+            derived_state=derived,
+        )
+
+    @staticmethod
+    def list_user_goals_with_derived_state(
+        db: Session,
+        user_id: uuid.UUID,
+        status_filter: Optional[str] = None,
+        goal_type_filter: Optional[str] = None,
+        priority_filter: Optional[str] = None,
+        page: Optional[int] = None,
+        page_size: Optional[int] = None,
+        reference_date: Optional[date] = None,
+    ) -> List[FinancialGoalWithDerivedState]:
+        """
+        Returns all financial goals owned by the user, with optional filters and pagination,
+        each enriched with its deterministic derived calculation state.
+        """
+        query = (
+            db.query(FinancialGoal)
+            .filter(FinancialGoal.user_id == user_id)
+        )
+        if status_filter:
+            query = query.filter(FinancialGoal.status == status_filter)
+        if goal_type_filter:
+            query = query.filter(FinancialGoal.goal_type == goal_type_filter)
+        if priority_filter:
+            query = query.filter(FinancialGoal.priority == priority_filter)
+
+        query = query.order_by(FinancialGoal.target_date.asc(), FinancialGoal.created_at.desc())
+
+        if page is not None or page_size is not None:
+            p = page if page is not None and page >= 1 else 1
+            ps = page_size if page_size is not None and page_size >= 1 else 20
+            offset = (p - 1) * ps
+            query = query.offset(offset).limit(ps)
+
+        goals = query.all()
+        ref = reference_date or date.today()
+
+        results = []
+        for g in goals:
+            goal_read = FinancialGoalRead.model_validate(g)
+            derived = GoalService.calculate_goal_derived_state(goal_read, reference_date=ref)
+            results.append(
+                FinancialGoalWithDerivedState(
+                    **goal_read.model_dump(),
+                    derived_state=derived,
+                )
+            )
+        return results
+
