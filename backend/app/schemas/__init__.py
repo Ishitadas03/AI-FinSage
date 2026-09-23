@@ -79,6 +79,14 @@ from app.schemas.goal_contributions import (
     GoalContributionRead,
     GoalContributionSummary,
 )
+from app.schemas.budgets import (
+    BudgetBase,
+    BudgetCreate,
+    BudgetUpdate,
+    BudgetRead,
+    BudgetSpendingSummary,
+    BudgetWithSpending,
+)
 
 __all__ = [
     "UserBase",
@@ -140,5 +148,12 @@ __all__ = [
     "GoalContributionCreate",
     "GoalContributionRead",
     "GoalContributionSummary",
+    "BudgetBase",
+    "BudgetCreate",
+    "BudgetUpdate",
+    "BudgetRead",
+    "BudgetSpendingSummary",
+    "BudgetWithSpending",
 ]
+
 

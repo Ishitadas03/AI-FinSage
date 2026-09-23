@@ -6,6 +6,7 @@ from app.models.transaction import Transaction
 from app.models.loan import Loan
 from app.models.financial_goal import FinancialGoal
 from app.models.financial_goal_contribution import FinancialGoalContribution
+from app.models.budget import Budget
 
 __all__ = [
     "Base",
@@ -16,5 +17,7 @@ __all__ = [
     "Loan",
     "FinancialGoal",
     "FinancialGoalContribution",
+    "Budget",
 ]
+
 
