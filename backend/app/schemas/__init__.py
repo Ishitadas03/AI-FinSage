@@ -89,10 +89,13 @@ from app.schemas.budgets import (
 )
 from app.schemas.bank_statement_import import (
     StatementFormat,
+    DuplicatePolicy,
+    DuplicateDetail,
     RowValidationError,
     NormalizedTransactionRow,
     BankStatementParseResult,
     BankStatementPreviewResponse,
+    BankStatementImportCommitResponse,
 )
 
 __all__ = [
@@ -162,10 +165,13 @@ __all__ = [
     "BudgetSpendingSummary",
     "BudgetWithSpending",
     "StatementFormat",
+    "DuplicatePolicy",
+    "DuplicateDetail",
     "RowValidationError",
     "NormalizedTransactionRow",
     "BankStatementParseResult",
     "BankStatementPreviewResponse",
+    "BankStatementImportCommitResponse",
 ]
 
 
