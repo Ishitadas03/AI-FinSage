@@ -87,6 +87,12 @@ from app.schemas.budgets import (
     BudgetSpendingSummary,
     BudgetWithSpending,
 )
+from app.schemas.bank_statement_import import (
+    StatementFormat,
+    RowValidationError,
+    NormalizedTransactionRow,
+    BankStatementParseResult,
+)
 
 __all__ = [
     "UserBase",
@@ -154,6 +160,10 @@ __all__ = [
     "BudgetRead",
     "BudgetSpendingSummary",
     "BudgetWithSpending",
+    "StatementFormat",
+    "RowValidationError",
+    "NormalizedTransactionRow",
+    "BankStatementParseResult",
 ]
 
 
