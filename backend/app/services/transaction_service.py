@@ -64,6 +64,8 @@ class TransactionService:
                 )
             destination_account_id = payload.destination_account_id
 
+        category_val = payload.category.value if payload.category is not None else None
+
         transaction = Transaction(
             id=uuid.uuid4(),
             user_id=user_id,
@@ -71,9 +73,12 @@ class TransactionService:
             destination_account_id=destination_account_id,
             amount=payload.amount,
             transaction_type=payload.transaction_type.value,
-            category=payload.category.value,
+            category=category_val,
             merchant=payload.merchant,
             description=payload.description,
+            reference=payload.reference,
+            source=payload.source,
+            import_fingerprint=payload.import_fingerprint,
             transaction_date=payload.transaction_date,
         )
         db.add(transaction)
