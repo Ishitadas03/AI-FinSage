@@ -2,7 +2,7 @@ from datetime import datetime
 from decimal import Decimal
 from typing import Optional
 import uuid
-from sqlalchemy import String, DateTime, Numeric, ForeignKey, Index, func
+from sqlalchemy import String, DateTime, Numeric, ForeignKey, Index, func, text
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.models.base import Base
@@ -45,10 +45,10 @@ class Transaction(Base):
         index=True,
         nullable=False,
     )
-    category: Mapped[str] = mapped_column(
+    category: Mapped[Optional[str]] = mapped_column(
         String(50),
         index=True,
-        nullable=False,
+        nullable=True,
     )
     merchant: Mapped[Optional[str]] = mapped_column(
         String(255),
@@ -57,6 +57,21 @@ class Transaction(Base):
     description: Mapped[Optional[str]] = mapped_column(
         String(500),
         nullable=True,
+    )
+    reference: Mapped[Optional[str]] = mapped_column(
+        String(255),
+        nullable=True,
+    )
+    source: Mapped[Optional[str]] = mapped_column(
+        String(50),
+        nullable=True,
+        default=None,
+    )
+    import_fingerprint: Mapped[Optional[str]] = mapped_column(
+        String(64),
+        index=True,
+        nullable=True,
+        default=None,
     )
     transaction_date: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
@@ -86,6 +101,15 @@ class Transaction(Base):
 
     __table_args__ = (
         Index("ix_transactions_user_id_transaction_date", "user_id", "transaction_date"),
+        Index(
+            "uq_transactions_user_account_fingerprint",
+            "user_id",
+            "account_id",
+            "import_fingerprint",
+            unique=True,
+            postgresql_where=text("import_fingerprint IS NOT NULL"),
+            sqlite_where=text("import_fingerprint IS NOT NULL"),
+        ),
     )
 
     def __repr__(self) -> str:
@@ -93,4 +117,3 @@ class Transaction(Base):
             f"<Transaction id={self.id} user_id={self.user_id} account_id={self.account_id} "
             f"dest={self.destination_account_id} type={self.transaction_type} amount={self.amount}>"
         )
-
