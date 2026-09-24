@@ -92,6 +92,7 @@ from app.schemas.bank_statement_import import (
     RowValidationError,
     NormalizedTransactionRow,
     BankStatementParseResult,
+    BankStatementPreviewResponse,
 )
 
 __all__ = [
@@ -164,6 +165,7 @@ __all__ = [
     "RowValidationError",
     "NormalizedTransactionRow",
     "BankStatementParseResult",
+    "BankStatementPreviewResponse",
 ]
 
 

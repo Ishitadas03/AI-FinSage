@@ -42,3 +42,15 @@ class BankStatementParseResult(BaseModel):
     validation_errors: List[RowValidationError] = Field(default_factory=list, description="List of structured row-level validation errors")
     format_detected: Optional[StatementFormat] = Field(None, description="Detected statement structure format")
     detected_columns: Optional[Dict[str, str]] = Field(None, description="Mapping of normalized canonical fields to original CSV headers")
+
+
+class BankStatementPreviewResponse(BaseModel):
+    filename: str = Field(..., description="Uploaded CSV filename (sanitized basename)")
+    detected_format: Optional[StatementFormat] = Field(None, description="Detected format: debit_credit or signed_amount")
+    total_rows: int = Field(..., ge=0, description="Total number of transaction data rows processed")
+    valid_rows: int = Field(..., ge=0, description="Number of valid rows successfully normalized")
+    invalid_rows: int = Field(..., ge=0, description="Number of rows with validation errors")
+    preview_count: int = Field(..., ge=0, description="Number of normalized rows returned in this preview")
+    has_more_preview_rows: bool = Field(..., description="True if total valid rows exceed preview_count")
+    normalized_rows: List[NormalizedTransactionRow] = Field(default_factory=list, description="Preview slice of normalized rows")
+    validation_errors: List[RowValidationError] = Field(default_factory=list, description="Structured row-level validation errors")
