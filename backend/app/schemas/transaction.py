@@ -42,9 +42,12 @@ class TransactionBase(BaseModel):
         description="Transaction amount in precise Decimal format (strictly greater than zero)",
     )
     transaction_type: TransactionType = Field(..., description="Transaction type (income, expense, transfer)")
-    category: TransactionCategory = Field(..., description="Controlled transaction category")
+    category: Optional[TransactionCategory] = Field(None, description="Controlled transaction category (optional for unclassified/imported transactions)")
     merchant: Optional[str] = Field(None, max_length=255, description="Merchant or payee name")
     description: Optional[str] = Field(None, max_length=500, description="Optional notes or description")
+    reference: Optional[str] = Field(None, max_length=255, description="Optional reference or transaction ID")
+    source: Optional[str] = Field(None, max_length=50, description="Source provenance (e.g., manual, bank_statement_csv)")
+    import_fingerprint: Optional[str] = Field(None, max_length=64, description="Deterministic import fingerprint")
     transaction_date: datetime = Field(..., description="Timestamp when the transaction occurred")
 
     @field_validator("merchant")
@@ -94,6 +97,8 @@ class TransactionUpdate(BaseModel):
     category: Optional[TransactionCategory] = Field(None, description="Updated category")
     merchant: Optional[str] = Field(None, max_length=255, description="Updated merchant name")
     description: Optional[str] = Field(None, max_length=500, description="Updated description")
+    reference: Optional[str] = Field(None, max_length=255, description="Updated reference or transaction ID")
+    source: Optional[str] = Field(None, max_length=50, description="Updated source")
     transaction_date: Optional[datetime] = Field(None, description="Updated transaction date")
 
     @field_validator("merchant")
