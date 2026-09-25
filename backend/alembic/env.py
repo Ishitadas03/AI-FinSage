@@ -9,12 +9,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from app.core.config import settings
 from app.models.base import Base
-# Import all models here so Alembic can detect them for autogenerate
-from app.models.user import User  # noqa: F401
-from app.models.refresh_session import RefreshSession  # noqa: F401
-from app.models.account import Account  # noqa: F401
-from app.models.transaction import Transaction  # noqa: F401
-from app.models.loan import Loan  # noqa: F401
+# Import all models here so Alembic can detect full schema
+import app.models  # noqa: F401
 
 config = context.config
 

@@ -1,6 +1,9 @@
 {
-  "buildCommand": "cd frontend && npm run build",
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "buildCommand": "cd frontend && npm install && npm run build",
+  "installCommand": "cd frontend && npm install",
   "outputDirectory": "frontend/dist",
+  "framework": "vite",
   "headers": [
     {
       "source": "/(.*\\.(?:ico|svg|png|webmanifest|json|txt))",
@@ -14,7 +17,7 @@
   ],
   "rewrites": [
     {
-      "source": "/((?!assets/|images/|.*\\..*).*)",
+      "source": "/(.*)",
       "destination": "/index.html"
     }
   ]
