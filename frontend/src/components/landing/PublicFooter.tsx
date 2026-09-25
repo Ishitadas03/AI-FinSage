@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Leaf, ArrowRight, ShieldCheck, Heart } from 'lucide-react';
+import { ShieldCheck } from 'lucide-react';
+import { FinSageLogo } from '@/components/brand/FinSageLogo';
 
 export const PublicFooter: React.FC = () => {
   const navigate = useNavigate();
@@ -12,18 +13,8 @@ export const PublicFooter: React.FC = () => {
           
           {/* Brand Info (2 cols on lg) */}
           <div className="md:col-span-2 space-y-4">
-            <Link to="/" className="flex items-center gap-3">
-              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-teal-50/90 text-teal-700 border border-teal-200/60 shadow-xs">
-                <Leaf className="h-6 w-6 transform -rotate-12 fill-teal-600/20 stroke-[2.2]" />
-              </div>
-              <div>
-                <span className="text-xl font-extrabold tracking-tight text-slate-900 leading-none block">
-                  FinSage
-                </span>
-                <span className="text-[11px] font-medium text-slate-400 tracking-tight mt-0.5">
-                  Smarter Money. Brighter Tomorrow.
-                </span>
-              </div>
+            <Link to="/" className="inline-flex items-center group py-1">
+              <FinSageLogo variant="horizontal" height={38} />
             </Link>
 
             <p className="text-xs text-slate-500 leading-relaxed max-w-sm">

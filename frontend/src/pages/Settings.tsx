@@ -209,19 +209,21 @@ export const Settings: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
         {/* Navigation Sidebar Tabs (3 cols) */}
         <div className="md:col-span-3 flex md:flex-col gap-1.5 overflow-x-auto pb-2 md:pb-0">
-          {[
-            { id: 'profile', label: 'Profile & Identity', icon: User },
-            { id: 'security', label: 'Security & 2FA', icon: Shield },
-            { id: 'notifications', label: 'Notifications', icon: Bell },
-            { id: 'preferences', label: 'Preferences', icon: Sliders },
-            { id: 'accounts', label: 'Connected Accounts', icon: Building },
-            { id: 'data', label: 'Data & Privacy', icon: Lock },
-          ].map((tab) => {
+          {(
+            [
+              { id: 'profile', label: 'Profile & Identity', icon: User },
+              { id: 'security', label: 'Security & 2FA', icon: Shield },
+              { id: 'notifications', label: 'Notifications', icon: Bell },
+              { id: 'preferences', label: 'Preferences', icon: Sliders },
+              { id: 'accounts', label: 'Connected Accounts', icon: Building },
+              { id: 'data', label: 'Data & Privacy', icon: Lock },
+            ] as const
+          ).map((tab) => {
             const Icon = tab.icon;
             return (
               <button
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id as any)}
+                onClick={() => setActiveTab(tab.id)}
                 className={cn(
                   "flex shrink-0 md:w-full items-center gap-2 md:gap-3 rounded-xl px-3 py-2 md:px-3.5 md:py-2.5 text-xs font-semibold transition-all text-left whitespace-nowrap",
                   activeTab === tab.id

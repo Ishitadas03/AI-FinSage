@@ -2,6 +2,9 @@
   "name": "ai-finsage-root",
   "version": "1.0.0",
   "private": true,
+  "engines": {
+    "node": ">=18.0.0"
+  },
   "scripts": {
     "install:all": "npm --prefix frontend install",
     "build": "cd frontend && npm install && npm run build",

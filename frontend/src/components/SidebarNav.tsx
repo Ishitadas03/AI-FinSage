@@ -9,6 +9,7 @@ import {
   Target,
   LayoutDashboard,
 } from "lucide-react";
+import { FinSageLogo } from "@/components/brand/FinSageLogo";
 
 const navItems = [
   { icon: LayoutDashboard, label: "Dashboard", id: "dashboard" },
@@ -29,13 +30,9 @@ interface SidebarNavProps {
 const SidebarNav = ({ activeSection, onNavigate }: SidebarNavProps) => {
   return (
     <aside className="fixed left-0 top-0 z-40 flex h-screen w-[72px] flex-col items-center border-r border-border bg-sidebar py-6 lg:w-[220px]">
-      <div className="mb-8 flex items-center gap-2 px-4">
-        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 glow-primary">
-          <Brain className="h-5 w-5 text-primary" />
-        </div>
-        <span className="hidden text-lg font-bold text-foreground lg:block">
-          Fin<span className="text-gradient-primary">Sage</span>
-        </span>
+      <div className="mb-8 flex items-center justify-center lg:justify-start px-2 lg:px-4 w-full">
+        <FinSageLogo variant="icon" height={32} width={32} className="lg:hidden" />
+        <FinSageLogo variant="horizontal" height={32} className="hidden lg:inline-flex" />
       </div>
 
       <nav className="flex flex-1 flex-col gap-1 px-2 w-full">

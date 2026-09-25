@@ -13,9 +13,11 @@ export const PWAInstallBanner: React.FC = () => {
     <div className="fixed bottom-20 sm:bottom-6 left-4 right-4 sm:left-auto sm:right-6 sm:max-w-md z-50 animate-in slide-in-from-bottom-5 duration-300">
       <div className="flex items-center justify-between gap-3 rounded-2xl border border-teal-200/90 bg-white/95 p-3.5 shadow-2xl backdrop-blur-md">
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-teal-700 text-white shadow-sm">
-            <Smartphone className="h-5 w-5" />
-          </div>
+          <img
+            src="/images/finsage-emblem.png"
+            alt="FinSage"
+            className="h-10 w-10 shrink-0 rounded-xl object-contain p-0.5 bg-white border border-slate-200/80 shadow-2xs"
+          />
           <div className="min-w-0">
             <div className="flex items-center gap-1.5">
               <span className="text-xs font-bold text-slate-900">Install FinSage App</span>

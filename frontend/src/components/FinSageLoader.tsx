@@ -221,49 +221,24 @@ export const FinSageLoader: React.FC<FinSageLoaderProps> = ({
       {/* ========================================================================= */}
       <div className="relative z-10 flex flex-col items-center justify-center animate-in fade-in-50 zoom-in-95 duration-700 ease-out">
         
-        {/* FinSage Leaf Brand Icon */}
-        <div className="flex items-center justify-center mb-3 sm:mb-4">
-          <svg
-            className="w-14 h-14 sm:w-16 sm:h-16 transform transition-transform duration-700 hover:scale-105"
-            viewBox="0 0 64 64"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <defs>
-              <linearGradient id="finsageLeafGrad" x1="15%" y1="90%" x2="85%" y2="10%">
-                <stop offset="0%" stopColor="#0F766E" />
-                <stop offset="50%" stopColor="#14B8A6" />
-                <stop offset="100%" stopColor="#2DD4BF" />
-              </linearGradient>
-              <filter id="leafShadow" x="-20%" y="-20%" width="140%" height="140%">
-                <feDropShadow dx="0" dy="4" stdDeviation="6" floodColor="#0F766E" floodOpacity="0.15" />
-              </filter>
-            </defs>
-            {/* Smooth stylized leaf */}
-            <path
-              d="M12 50 C12 50 14 30 32 16 C46 5 54 8 54 8 C54 8 57 18 48 34 C36 54 18 53 12 50 Z"
-              fill="url(#finsageLeafGrad)"
-              filter="url(#leafShadow)"
-            />
-            {/* Center vein line */}
-            <path
-              d="M12 50 Q 28 36 54 8"
-              stroke="#FFFFFF"
-              strokeWidth="2.2"
-              strokeLinecap="round"
-              opacity="0.9"
-            />
-          </svg>
+        {/* FinSage Official Emblem */}
+        <div className="flex items-center justify-center mb-2">
+          <img
+            src="/images/finsage-emblem.png"
+            alt="FinSage"
+            className="w-20 h-20 sm:w-24 sm:h-24 object-contain select-none drop-shadow-sm transition-transform duration-700 hover:scale-105"
+          />
         </div>
 
-        {/* FinSage Wordmark */}
-        <div className="text-center tracking-tight mb-8 sm:mb-9">
-          <span className="text-3xl sm:text-4xl font-extrabold text-[#0F172A] tracking-tight">
-            Fin
-          </span>
-          <span className="text-3xl sm:text-4xl font-extrabold text-[#0F766E] tracking-tight">
-            Sage
-          </span>
+        {/* FinSage Wordmark & Tagline */}
+        <div className="text-center tracking-tight mb-8 sm:mb-9 flex flex-col items-center">
+          <div className="text-3xl sm:text-4xl font-extrabold tracking-tight">
+            <span className="text-[#0B2545]">Fin</span>
+            <span className="text-[#10B981]">Sage</span>
+          </div>
+          <div className="text-[10px] sm:text-[11px] font-bold text-slate-500 tracking-[0.24em] mt-1 uppercase">
+            PLAN &bull; TRACK &bull; GROW
+          </div>
         </div>
 
         {/* Minimal Horizontal Progress Bar */}

@@ -11,7 +11,10 @@ const PRECACHE_ASSETS = [
   '/favicon.ico',
   '/android-chrome-192x192.png',
   '/android-chrome-512x512.png',
-  '/apple-touch-icon.png'
+  '/pwa-maskable-512x512.png',
+  '/apple-touch-icon.png',
+  '/images/finsage-emblem.png',
+  '/images/finsage-logo-horizontal.png'
 ];
 
 self.addEventListener('install', (event) => {

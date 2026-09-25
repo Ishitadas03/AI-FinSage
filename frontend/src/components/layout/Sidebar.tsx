@@ -18,6 +18,7 @@ import {
   Leaf,
   X,
 } from 'lucide-react';
+import { FinSageLogo } from '@/components/brand/FinSageLogo';
 import { cn } from '@/lib/utils';
 import { useFinance } from '@/context/FinanceContext';
 
@@ -113,18 +114,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileOpen, onCloseMobile }) =
       >
         {/* Brand Header */}
         <div className="flex h-16 items-center justify-between px-5 border-b border-slate-100">
-          <NavLink to="/" className="flex items-center gap-3 group" onClick={onCloseMobile}>
-            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-teal-50/90 text-teal-800 border border-teal-200/60 shadow-xs transition-colors group-hover:bg-teal-100/90">
-              <Leaf className="h-5.5 w-5.5 text-teal-700 stroke-[2.2] transform -rotate-12 fill-teal-600/20" />
-            </div>
-            <div>
-              <div className="text-[17px] font-bold tracking-tight text-slate-900 flex items-center">
-                FinSage
-              </div>
-              <div className="text-[10px] font-medium text-slate-400 -mt-0.5 tracking-tight">
-                Smarter Money. Brighter Tomorrow.
-              </div>
-            </div>
+          <NavLink to="/" className="flex items-center group py-1" onClick={onCloseMobile}>
+            <FinSageLogo variant="horizontal" height={34} />
           </NavLink>
 
           {onCloseMobile && (

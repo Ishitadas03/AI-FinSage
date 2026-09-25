@@ -2,7 +2,8 @@ import React from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { AuthBrandPanel } from './AuthBrandPanel';
 import { AuthTrustSection } from './AuthTrustSection';
-import { ArrowRight, Leaf } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
+import { FinSageLogo } from '@/components/brand/FinSageLogo';
 
 interface FinSageAuthLayoutProps {
   children: React.ReactNode;
@@ -42,11 +43,8 @@ export const FinSageAuthLayout: React.FC<FinSageAuthLayoutProps> = ({
 
         {/* Mobile / Tablet Header (Visible only on < lg screens) */}
         <div className="lg:hidden p-6 pb-2 flex items-center justify-between border-b border-slate-100 bg-[#F8FAFA]">
-          <Link to="/" className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-teal-50/90 text-teal-700 border border-teal-200/60 shadow-xs">
-              <Leaf className="h-5.5 w-5.5 stroke-[2.2] transform -rotate-12 fill-teal-600/20" />
-            </div>
-            <span className="font-bold text-slate-900 text-lg">FinSage</span>
+          <Link to="/" className="inline-flex items-center py-1">
+            <FinSageLogo variant="horizontal" height={36} />
           </Link>
 
           <button

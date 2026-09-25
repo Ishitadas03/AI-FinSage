@@ -1,13 +1,13 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import {
-  Leaf,
   BarChart3,
   Target,
   ShieldCheck,
   Sparkles,
   Quote,
 } from 'lucide-react';
+import { FinSageLogo } from '@/components/brand/FinSageLogo';
 
 export const AuthBrandPanel: React.FC = () => {
   return (
@@ -20,18 +20,8 @@ export const AuthBrandPanel: React.FC = () => {
       {/* Top Header & Brand */}
       <div className="relative z-10 space-y-8">
         {/* Logo */}
-        <Link to="/" className="inline-flex items-center gap-3 group">
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-teal-700 border border-teal-200/80 shadow-xs transition-all group-hover:scale-105 group-hover:bg-teal-50">
-            <Leaf className="h-6.5 w-6.5 transform -rotate-12 fill-teal-600/20 text-teal-700 stroke-[2.2]" />
-          </div>
-          <div>
-            <span className="text-2xl font-black tracking-tight text-slate-900 leading-none block">
-              FinSage
-            </span>
-            <span className="text-[11px] font-medium text-slate-500 tracking-tight mt-0.5 block">
-              Smarter Money. Brighter Tomorrow.
-            </span>
-          </div>
+        <Link to="/" className="inline-flex items-center group py-1">
+          <FinSageLogo variant="horizontal" height={46} />
         </Link>
 
         {/* Pill Badge */}

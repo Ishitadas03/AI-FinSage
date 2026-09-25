@@ -88,8 +88,8 @@ export const OnboardingWizard: React.FC = () => {
           {/* STEP 1: Welcome */}
           {step === 1 && (
             <div className="space-y-4 text-center py-4">
-              <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-teal-50 text-teal-700 border border-teal-200">
-                <Sparkles className="h-8 w-8" />
+              <div className="mx-auto flex h-16 w-16 items-center justify-center">
+                <img src="/images/finsage-emblem.png" alt="FinSage" className="h-16 w-16 object-contain" />
               </div>
               <h3 className="text-2xl font-bold text-slate-900">
                 Welcome to FinSage
