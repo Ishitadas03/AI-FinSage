@@ -74,7 +74,7 @@ export const FinSageLogo: React.FC<FinSageLogoProps> = ({
   priority = true,
   onClick,
 }) => {
-  const BRAND_ASSET_VERSION = 'v=4.0.0';
+  const BRAND_ASSET_VERSION = 'v=5.0.0';
 
   // Determine asset source based on variant & theme
   const getAssetSrc = (isDark: boolean = false): string => {

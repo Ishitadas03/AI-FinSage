@@ -1,5 +1,5 @@
 // FinSage Service Worker
-const CACHE_NAME = 'finsage-cache-v4';
+const CACHE_NAME = 'finsage-cache-v5';
 const OFFLINE_FALLBACK = '/index.html';
 
 // Critical shell assets to precache on install
@@ -13,8 +13,8 @@ const PRECACHE_ASSETS = [
   '/android-chrome-512x512.png',
   '/pwa-maskable-512x512.png',
   '/apple-touch-icon.png',
-  '/images/finsage-emblem.png?v=4.0.0',
-  '/images/finsage-logo-horizontal.png?v=4.0.0'
+  '/images/finsage-emblem.png?v=5.0.0',
+  '/images/finsage-logo-horizontal.png?v=5.0.0'
 ];
 
 self.addEventListener('install', (event) => {
