@@ -3,10 +3,12 @@
   "buildCommand": "cd frontend && npm install && npm run build",
   "installCommand": "cd frontend && npm install",
   "outputDirectory": "frontend/dist",
-  "framework": "vite",
+  "framework": null,
+  "cleanUrls": true,
+  "trailingSlash": false,
   "headers": [
     {
-      "source": "/(site\\.webmanifest|manifest\\.json|manifest\\.webmanifest)",
+      "source": "/manifest.json",
       "headers": [
         {
           "key": "Content-Type",
@@ -19,7 +21,33 @@
       ]
     },
     {
-      "source": "/sw\\.js",
+      "source": "/site.webmanifest",
+      "headers": [
+        {
+          "key": "Content-Type",
+          "value": "application/manifest+json"
+        },
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=0, must-revalidate"
+        }
+      ]
+    },
+    {
+      "source": "/manifest.webmanifest",
+      "headers": [
+        {
+          "key": "Content-Type",
+          "value": "application/manifest+json"
+        },
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=0, must-revalidate"
+        }
+      ]
+    },
+    {
+      "source": "/sw.js",
       "headers": [
         {
           "key": "Content-Type",
@@ -34,20 +62,11 @@
           "value": "public, max-age=0, must-revalidate"
         }
       ]
-    },
-    {
-      "source": "/(.*\\.(?:ico|svg|png|webmanifest|json|txt|js|css))",
-      "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "public, max-age=0, must-revalidate"
-        }
-      ]
     }
   ],
   "rewrites": [
     {
-      "source": "/(.*)",
+      "source": "/((?!manifest\\.json$|manifest\\.webmanifest$|site\\.webmanifest$|sw\\.js$|robots\\.txt$|favicon\\.ico$|favicon\\.svg$|favicon-16x16\\.png$|favicon-32x32\\.png$|android-chrome-192x192\\.png$|android-chrome-512x512\\.png$|apple-touch-icon\\.png$|placeholder\\.svg$|assets/|images/).*)",
       "destination": "/index.html"
     }
   ]
