@@ -14,7 +14,7 @@ export const PWAInstallBanner: React.FC = () => {
       <div className="flex items-center justify-between gap-3 rounded-2xl border border-teal-200/90 bg-white/95 p-3.5 shadow-2xl backdrop-blur-md">
         <div className="flex items-center gap-3">
           <img
-            src="/images/finsage-emblem.png"
+            src="/images/finsage-emblem.png?v=3.0.0"
             alt="FinSage"
             className="h-10 w-10 shrink-0 rounded-xl object-contain p-0.5 bg-white border border-slate-200/80 shadow-2xs"
           />

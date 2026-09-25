@@ -224,7 +224,7 @@ export const FinSageLoader: React.FC<FinSageLoaderProps> = ({
         {/* FinSage Official Emblem */}
         <div className="flex items-center justify-center mb-2">
           <img
-            src="/images/finsage-emblem.png"
+            src="/images/finsage-emblem.png?v=3.0.0"
             alt="FinSage"
             className="w-20 h-20 sm:w-24 sm:h-24 object-contain select-none drop-shadow-sm transition-transform duration-700 hover:scale-105"
           />

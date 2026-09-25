@@ -1,5 +1,5 @@
 // FinSage Service Worker
-const CACHE_NAME = 'finsage-cache-v1';
+const CACHE_NAME = 'finsage-cache-v3';
 const OFFLINE_FALLBACK = '/index.html';
 
 // Critical shell assets to precache on install
@@ -13,17 +13,18 @@ const PRECACHE_ASSETS = [
   '/android-chrome-512x512.png',
   '/pwa-maskable-512x512.png',
   '/apple-touch-icon.png',
-  '/images/finsage-emblem.png',
-  '/images/finsage-logo-horizontal.png'
+  '/images/finsage-emblem.png?v=3.0.0',
+  '/images/finsage-logo-horizontal.png?v=3.0.0'
 ];
 
 self.addEventListener('install', (event) => {
+  self.skipWaiting();
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
       return cache.addAll(PRECACHE_ASSETS).catch((err) => {
         console.warn('FinSage SW Precache notice:', err);
       });
-    }).then(() => self.skipWaiting())
+    })
   );
 });
 
@@ -79,12 +80,29 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Static assets (CSS, JS, Fonts, Images) -> Cache first, fallback to network
+  // Brand images -> Network-first / Stale-While-Revalidate to ensure updates are immediate
+  if (url.pathname.startsWith('/images/')) {
+    event.respondWith(
+      fetch(request)
+        .then((networkResponse) => {
+          if (networkResponse && networkResponse.status === 200) {
+            const responseClone = networkResponse.clone();
+            caches.open(CACHE_NAME).then((cache) => {
+              cache.put(request, responseClone);
+            });
+          }
+          return networkResponse;
+        })
+        .catch(() => {
+          return caches.match(request);
+        })
+    );
+    return;
+  }
+
+  // Static hashed assets (CSS, JS, Fonts) -> Cache first, fallback to network
   if (
     url.pathname.startsWith('/assets/') ||
-    url.pathname.endsWith('.png') ||
-    url.pathname.endsWith('.svg') ||
-    url.pathname.endsWith('.ico') ||
     url.pathname.endsWith('.woff2') ||
     url.pathname.endsWith('.webmanifest') ||
     url.pathname.endsWith('.json')

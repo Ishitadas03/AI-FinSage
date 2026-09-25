@@ -74,19 +74,21 @@ export const FinSageLogo: React.FC<FinSageLogoProps> = ({
   priority = true,
   onClick,
 }) => {
+  const BRAND_ASSET_VERSION = 'v=3.0.0';
+
   // Determine asset source based on variant & theme
   const getAssetSrc = (isDark: boolean = false): string => {
     switch (variant) {
       case 'icon':
-        return '/images/finsage-emblem.png';
+        return `/images/finsage-emblem.png?${BRAND_ASSET_VERSION}`;
       case 'wordmark':
-        return isDark ? '/images/finsage-wordmark-dark.png' : '/images/finsage-wordmark.png';
+        return isDark ? `/images/finsage-wordmark-dark.png?${BRAND_ASSET_VERSION}` : `/images/finsage-wordmark.png?${BRAND_ASSET_VERSION}`;
       case 'full':
-        return '/images/finsage-logo.png';
+        return `/images/finsage-logo.png?${BRAND_ASSET_VERSION}`;
       case 'compact':
       case 'horizontal':
       default:
-        return isDark ? '/images/finsage-logo-horizontal-dark.png' : '/images/finsage-logo-horizontal.png';
+        return isDark ? `/images/finsage-logo-horizontal-dark.png?${BRAND_ASSET_VERSION}` : `/images/finsage-logo-horizontal.png?${BRAND_ASSET_VERSION}`;
     }
   };
 
