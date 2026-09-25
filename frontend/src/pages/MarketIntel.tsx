@@ -114,51 +114,51 @@ export const MarketIntel: React.FC = () => {
       </div>
 
       {/* Portfolio Overview Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="card-fintech p-4">
-          <span className="text-xs font-semibold text-slate-500">Total Portfolio Value</span>
-          <div className="mt-2 text-xl font-bold text-slate-900 font-numeric">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
+        <div className="card-fintech p-3 sm:p-4">
+          <span className="text-[11px] sm:text-xs font-semibold text-slate-500">Total Portfolio Value</span>
+          <div className="mt-1 sm:mt-2 text-base sm:text-xl font-bold text-slate-900 font-numeric">
             {formatCurrency(totalPortfolioValue)}
           </div>
-          <p className="text-[11px] text-slate-400 mt-1">Live market valuation</p>
+          <p className="text-[10px] sm:text-[11px] text-slate-400 mt-0.5 sm:mt-1">Live market valuation</p>
         </div>
 
-        <div className="card-fintech p-4">
-          <span className="text-xs font-semibold text-slate-500">Total Capital Invested</span>
-          <div className="mt-2 text-xl font-bold text-slate-900 font-numeric">
+        <div className="card-fintech p-3 sm:p-4">
+          <span className="text-[11px] sm:text-xs font-semibold text-slate-500">Capital Invested</span>
+          <div className="mt-1 sm:mt-2 text-base sm:text-xl font-bold text-slate-900 font-numeric">
             {formatCurrency(totalPortfolioInvested)}
           </div>
-          <p className="text-[11px] text-slate-400 mt-1">Net acquisition cost</p>
+          <p className="text-[10px] sm:text-[11px] text-slate-400 mt-0.5 sm:mt-1">Net acquisition cost</p>
         </div>
 
-        <div className="card-fintech p-4">
-          <span className="text-xs font-semibold text-slate-500">All-Time Returns (P&L)</span>
-          <div className="mt-2 text-xl font-bold text-emerald-700 font-numeric">
+        <div className="card-fintech p-3 sm:p-4">
+          <span className="text-[11px] sm:text-xs font-semibold text-slate-500">All-Time Returns</span>
+          <div className="mt-1 sm:mt-2 text-base sm:text-xl font-bold text-emerald-700 font-numeric">
             +{formatCurrency(totalPortfolioPnl)}
           </div>
-          <p className="text-[11px] text-emerald-600 font-semibold mt-1">+{totalPortfolioPnlPercent}% Absolute Return</p>
+          <p className="text-[10px] sm:text-[11px] text-emerald-600 font-semibold mt-0.5 sm:mt-1">+{totalPortfolioPnlPercent}% Return</p>
         </div>
 
-        <div className="card-fintech p-4">
-          <span className="text-xs font-semibold text-slate-500">1-Day Change</span>
-          <div className="mt-2 text-xl font-bold text-emerald-700 font-numeric">
+        <div className="card-fintech p-3 sm:p-4">
+          <span className="text-[11px] sm:text-xs font-semibold text-slate-500">1-Day Change</span>
+          <div className="mt-1 sm:mt-2 text-base sm:text-xl font-bold text-emerald-700 font-numeric">
             +₹3,420
           </div>
-          <p className="text-[11px] text-emerald-600 font-semibold mt-1">+0.59% Today</p>
+          <p className="text-[10px] sm:text-[11px] text-emerald-600 font-semibold mt-0.5 sm:mt-1">+0.59% Today</p>
         </div>
       </div>
 
       {/* 2-Column: Holdings Table (8 cols) + Asset Allocation Donut (4 cols) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Holdings Table */}
-        <div className="lg:col-span-8 card-fintech p-5 space-y-4">
+        <div className="lg:col-span-8 card-fintech p-4 sm:p-5 space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
             <div>
               <h3 className="text-sm font-bold text-slate-900">Your Investment Holdings</h3>
               <p className="text-xs text-slate-400">Synced with Zerodha & Groww Demat feeds</p>
             </div>
 
-            <div className="flex items-center gap-2 text-xs">
+            <div className="flex items-center gap-2 text-xs flex-wrap">
               <select
                 value={assetFilter}
                 onChange={(e) => setAssetFilter(e.target.value)}
@@ -176,12 +176,46 @@ export const MarketIntel: React.FC = () => {
                 placeholder="Search symbol..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs text-slate-900 focus:bg-white focus:outline-none w-32 sm:w-40"
+                className="rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs text-slate-900 focus:bg-white focus:outline-none flex-1 sm:flex-initial sm:w-40"
               />
             </div>
           </div>
 
-          <div className="overflow-x-auto">
+          {/* Mobile Holdings Card List (Hidden on desktop) */}
+          <div className="block md:hidden divide-y divide-slate-100">
+            {filteredHoldings.map((h) => (
+              <div key={h.id} className="py-3 first:pt-0 last:pb-0 space-y-2">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <span className="font-bold text-slate-900 text-xs">{h.symbol}</span>
+                    <span className="block text-[10px] text-slate-400 truncate max-w-[180px]">{h.name}</span>
+                  </div>
+                  <span className="rounded-md bg-slate-100 px-1.5 py-0.5 text-[9px] font-medium text-slate-700">
+                    {h.assetClass}
+                  </span>
+                </div>
+                <div className="grid grid-cols-2 gap-2 text-[11px] bg-slate-50/70 p-2 rounded-lg">
+                  <div>
+                    <span className="text-[10px] text-slate-400 block">Current LTP</span>
+                    <span className="font-semibold text-slate-800 font-numeric">₹{h.currentPrice.toLocaleString()}</span>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-[10px] text-slate-400 block">Holding Value</span>
+                    <span className="font-bold text-slate-900 font-numeric">{formatCurrency(h.currentValue)}</span>
+                  </div>
+                  <div className="col-span-2 pt-1 border-t border-slate-100 flex items-center justify-between">
+                    <span className="text-[10px] text-slate-400">Total Gain / Loss</span>
+                    <span className={cn("font-bold font-numeric", h.pnl >= 0 ? 'text-emerald-700' : 'text-rose-600')}>
+                      {h.pnl >= 0 ? '+' : ''}{formatCurrency(h.pnl)} ({h.pnlPercentage}%)
+                    </span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Desktop Table */}
+          <div className="hidden md:block overflow-x-auto">
             <table className="w-full text-left border-collapse text-xs">
               <thead>
                 <tr className="border-b border-slate-100 text-slate-400 font-semibold">

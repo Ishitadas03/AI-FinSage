@@ -76,9 +76,9 @@ export const OnboardingWizard: React.FC = () => {
           />
         </div>
 
-        <div className="p-6 sm:p-8">
+        <div className="p-4 sm:p-8">
           {/* Step Indicator */}
-          <div className="flex items-center justify-between text-xs font-semibold text-slate-400 mb-6">
+          <div className="flex items-center justify-between text-xs font-semibold text-slate-400 mb-4 sm:mb-6">
             <span>Step {step} of {totalSteps}</span>
             <span className="text-teal-700 font-bold">
               {Math.round((step / totalSteps) * 100)}% Completed

@@ -103,7 +103,7 @@ export const HeroSection: React.FC = () => {
             <div className="relative">
               
               {/* CARD 1: Top Left Floating Card */}
-              <div className="hidden sm:block absolute -top-6 -left-6 z-20 animate-in fade-in zoom-in duration-500">
+              <div className="hidden lg:block absolute -top-6 -left-6 z-20 animate-in fade-in zoom-in duration-500">
                 <FloatingFeatureCard
                   iconType="target"
                   title="Build Goals"
@@ -115,7 +115,7 @@ export const HeroSection: React.FC = () => {
               </div>
 
               {/* CARD 2: Top Right Floating Card */}
-              <div className="hidden sm:block absolute -top-5 -right-4 z-20 animate-in fade-in zoom-in duration-700">
+              <div className="hidden lg:block absolute -top-5 -right-4 z-20 animate-in fade-in zoom-in duration-700">
                 <FloatingFeatureCard
                   iconType="sparkles"
                   title="Smarter Insights"
@@ -132,7 +132,7 @@ export const HeroSection: React.FC = () => {
               </div>
 
               {/* CARD 3: Bottom Left Floating Card */}
-              <div className="hidden sm:block absolute -bottom-6 -left-6 z-20 animate-in fade-in zoom-in duration-700">
+              <div className="hidden lg:block absolute -bottom-6 -left-6 z-20 animate-in fade-in zoom-in duration-700">
                 <FloatingFeatureCard
                   iconType="chart"
                   title="Plan Your Future"
@@ -144,7 +144,7 @@ export const HeroSection: React.FC = () => {
               </div>
 
               {/* CARD 4: Bottom Right Floating Card */}
-              <div className="hidden sm:block absolute -bottom-5 -right-4 z-20 animate-in fade-in zoom-in duration-500">
+              <div className="hidden lg:block absolute -bottom-5 -right-4 z-20 animate-in fade-in zoom-in duration-500">
                 <FloatingFeatureCard
                   iconType="shield"
                   title="Stay Protected"
@@ -156,8 +156,8 @@ export const HeroSection: React.FC = () => {
               </div>
             </div>
 
-            {/* Mobile-Friendly Grid for Feature Cards on small screens */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 sm:hidden gap-2 mt-4">
+            {/* Mobile/Tablet Grid for Feature Cards */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:hidden gap-2.5 mt-4">
               <FloatingFeatureCard
                 iconType="target"
                 title="Build Goals"

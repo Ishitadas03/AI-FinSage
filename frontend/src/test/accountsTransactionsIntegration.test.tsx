@@ -358,7 +358,7 @@ describe('Accounts and Transactions FinanceContext Integration', () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByText('Swiggy Food Order')).toBeInTheDocument();
+      expect(screen.getAllByText('Swiggy Food Order')[0]).toBeInTheDocument();
     });
 
     // The transaction with null category should render "Uncategorized"
