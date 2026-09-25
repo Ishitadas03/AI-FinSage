@@ -7,7 +7,6 @@ const PRECACHE_ASSETS = [
   '/',
   '/index.html',
   '/site.webmanifest',
-  '/manifest.json',
   '/favicon.svg',
   '/favicon.ico',
   '/android-chrome-192x192.png',
