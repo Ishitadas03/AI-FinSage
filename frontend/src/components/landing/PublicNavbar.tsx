@@ -547,8 +547,8 @@ export const PublicNavbar: React.FC = () => {
 
         </nav>
 
-        {/* Right: Auth & CTA Buttons */}
-        <div className="hidden sm:flex items-center gap-3.5 shrink-0">
+        {/* Right: Auth & CTA Buttons (Desktop only) */}
+        <div className="hidden lg:flex items-center gap-3.5 shrink-0">
           <button
             onClick={() => navigate('/signin')}
             className="rounded-xl px-4 py-2.5 text-[15px] font-medium text-slate-700 hover:text-teal-800 hover:bg-slate-100/70 transition-colors whitespace-nowrap"
@@ -566,7 +566,7 @@ export const PublicNavbar: React.FC = () => {
           </button>
         </div>
 
-        {/* Mobile menu hamburger button */}
+        {/* Mobile menu hamburger button (Mobile & Tablet) */}
         <button
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
           className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 hover:bg-slate-100 lg:hidden transition-colors"

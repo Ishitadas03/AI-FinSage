@@ -8,10 +8,10 @@ export const PublicFooter: React.FC = () => {
   return (
     <footer className="border-t border-slate-200 bg-white text-slate-600 text-xs">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-8 lg:gap-12">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8 lg:gap-12">
           
           {/* Brand Info (2 cols on lg) */}
-          <div className="sm:col-span-2 space-y-4">
+          <div className="md:col-span-2 space-y-4">
             <Link to="/" className="flex items-center gap-3">
               <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-teal-50/90 text-teal-700 border border-teal-200/60 shadow-xs">
                 <Leaf className="h-6 w-6 transform -rotate-12 fill-teal-600/20 stroke-[2.2]" />

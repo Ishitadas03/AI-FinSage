@@ -35,7 +35,7 @@ export const ValuePropositionSection: React.FC = () => {
   return (
     <section id="features" className="border-t border-slate-200/80 bg-white py-16 sm:py-20">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 sm:gap-8">
           {columns.map((col, idx) => {
             const Icon = col.icon;
             return (
