@@ -49,6 +49,8 @@ import { EmiCalculatorPage } from "./pages/public/calculators/EmiCalculatorPage"
 import { SavingsCalculatorPage } from "./pages/public/calculators/SavingsCalculatorPage";
 import { CompoundInterestPage } from "./pages/public/calculators/CompoundInterestPage";
 import { GoalCalculatorPage } from "./pages/public/calculators/GoalCalculatorPage";
+import { PWAInstallProvider } from "@/context/PWAInstallContext";
+import { PWAInstallBanner } from "@/components/pwa/PWAInstallBanner";
 
 const queryClient = new QueryClient();
 
@@ -60,14 +62,16 @@ const App = () => {
       <TooltipProvider>
         <Toaster />
         <Sonner position="top-right" richColors />
-        {isInitialLoading && (
-          <FinSageLoader
-            isFullScreen={true}
-            duration={1500}
-            onFinish={() => setIsInitialLoading(false)}
-          />
-        )}
-        <FinanceProvider>
+        <PWAInstallProvider>
+          {isInitialLoading && (
+            <FinSageLoader
+              isFullScreen={true}
+              duration={1500}
+              onFinish={() => setIsInitialLoading(false)}
+            />
+          )}
+          <PWAInstallBanner />
+          <FinanceProvider>
           <BrowserRouter>
             <Routes>
               {/* Standalone Loader Preview Routes */}
@@ -357,6 +361,7 @@ const App = () => {
             </Routes>
           </BrowserRouter>
         </FinanceProvider>
+        </PWAInstallProvider>
       </TooltipProvider>
     </QueryClientProvider>
   );

@@ -24,6 +24,8 @@ import { Account, AccountType } from '@/types/account';
 import { formatCurrency } from '@/lib/formatters';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { PWAInstallButton } from '@/components/pwa/PWAInstallButton';
+import { Smartphone } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -412,6 +414,31 @@ export const Settings: React.FC = () => {
                     <option>Indian (Lakhs & Crores - ₹12,40,000)</option>
                     <option>International (Millions - $1,240,000)</option>
                   </select>
+                </div>
+              </div>
+
+              {/* PWA Mobile Application Install Card */}
+              <div className="pt-4 border-t border-slate-100">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl bg-teal-50/60 border border-teal-200/80">
+                  <div className="flex items-start gap-3">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-teal-700 text-white shadow-sm">
+                      <Smartphone className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <h4 className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+                        FinSage Mobile App (PWA)
+                        <span className="rounded bg-teal-100 px-1.5 py-0.5 text-[9px] font-bold text-teal-800">
+                          Active
+                        </span>
+                      </h4>
+                      <p className="text-[11px] text-slate-600 mt-0.5">
+                        Install FinSage on your Android, iOS, or Desktop home screen for fast offline-ready finance management.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="shrink-0">
+                    <PWAInstallButton variant="primary" label="Install App Now" />
+                  </div>
                 </div>
               </div>
             </div>

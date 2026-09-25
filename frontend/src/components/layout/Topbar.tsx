@@ -34,6 +34,7 @@ import {
 } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { PWAInstallButton } from '@/components/pwa/PWAInstallButton';
 
 interface TopbarProps {
   onOpenMobileMenu: () => void;
@@ -107,6 +108,9 @@ export const Topbar: React.FC<TopbarProps> = ({ onOpenMobileMenu }) => {
 
       {/* Right side controls */}
       <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
+        {/* PWA Install Button (renders when installable) */}
+        <PWAInstallButton variant="compact" label="Install" />
+
         {/* Ask AI FinSage Quick Trigger (Desktop & Tablet) */}
         <button
           onClick={() => setIsChatOpen(true)}

@@ -5,6 +5,7 @@ import { HeroDashboardPreview } from './HeroDashboardPreview';
 import { FloatingFeatureCard } from './FloatingFeatureCard';
 import { TrustIndicators } from './TrustIndicators';
 import { useFinance } from '@/context/FinanceContext';
+import { PWAInstallButton } from '@/components/pwa/PWAInstallButton';
 
 export const HeroSection: React.FC = () => {
   const navigate = useNavigate();
@@ -83,6 +84,8 @@ export const HeroSection: React.FC = () => {
                 <span>Get Started Free</span>
                 <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-1" />
               </button>
+
+              <PWAInstallButton variant="outline" label="Install Mobile App" className="py-3.5" />
 
               <button
                 onClick={handleSeeHowItWorks}

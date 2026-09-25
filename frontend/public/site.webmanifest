@@ -2,7 +2,7 @@
   "name": "FinSage — Your AI Financial Copilot",
   "short_name": "FinSage",
   "description": "AI-powered personal finance copilot for cash flow intelligence, wealth simulations, scam shield security, and milestone tracking.",
-  "id": "/dashboard",
+  "id": "/",
   "start_url": "/dashboard",
   "scope": "/",
   "display": "standalone",
@@ -10,6 +10,7 @@
   "orientation": "portrait",
   "theme_color": "#0F766E",
   "background_color": "#FFFFFF",
+  "prefer_related_applications": false,
   "categories": ["finance", "productivity", "utilities"],
   "icons": [
     {

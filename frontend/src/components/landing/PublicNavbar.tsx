@@ -29,6 +29,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useFinance } from '@/context/FinanceContext';
+import { PWAInstallButton } from '@/components/pwa/PWAInstallButton';
 
 export const PublicNavbar: React.FC = () => {
   const navigate = useNavigate();
@@ -549,6 +550,7 @@ export const PublicNavbar: React.FC = () => {
 
         {/* Right: Auth & CTA Buttons (Desktop only) */}
         <div className="hidden lg:flex items-center gap-3.5 shrink-0">
+          <PWAInstallButton variant="outline" label="Install App" />
           <button
             onClick={() => navigate('/signin')}
             className="rounded-xl px-4 py-2.5 text-[15px] font-medium text-slate-700 hover:text-teal-800 hover:bg-slate-100/70 transition-colors whitespace-nowrap"
@@ -704,6 +706,7 @@ export const PublicNavbar: React.FC = () => {
           </nav>
 
           <div className="flex flex-col gap-2.5 pt-4 border-t border-slate-100">
+            <PWAInstallButton variant="primary" label="Install FinSage Mobile App" className="w-full h-11" />
             <button
               onClick={() => {
                 setMobileMenuOpen(false);
