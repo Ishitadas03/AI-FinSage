@@ -6,24 +6,63 @@ import {
   Shield,
   Bell,
   Sliders,
-  Palette,
-  Lock,
   Building,
+  Lock,
   Download,
   Trash2,
-  CheckCircle2,
+  Edit2,
   Plus,
   RefreshCw,
   LogOut,
+  CreditCard,
+  Wallet,
+  AlertTriangle,
+  CheckCircle2,
 } from 'lucide-react';
 import { useFinance } from '@/context/FinanceContext';
+import { Account, AccountType } from '@/types/account';
+import { formatCurrency } from '@/lib/formatters';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+
+const ACCOUNT_TYPES: { label: string; value: AccountType }[] = [
+  { label: 'Savings Account', value: 'savings' },
+  { label: 'Current Account', value: 'current' },
+  { label: 'Credit Card', value: 'credit_card' },
+  { label: 'Investment / Demat', value: 'investment' },
+  { label: 'Cash Wallet', value: 'cash' },
+  { label: 'Other', value: 'other' },
+];
 
 export const Settings: React.FC = () => {
   const navigate = useNavigate();
-  const { user, updateProfile, resetAllData, transactions, budgets, goals, loans, logout } = useFinance();
-  const [activeTab, setActiveTab] = useState<'profile' | 'security' | 'notifications' | 'preferences' | 'accounts' | 'data'>('profile');
+  const {
+    user,
+    updateProfile,
+    resetAllData,
+    transactions,
+    budgets,
+    goals,
+    loans,
+    logout,
+    accounts,
+    isLoadingAccounts,
+    accountsError,
+    loadAccounts,
+    createAccount,
+    updateAccount,
+    deleteAccount,
+  } = useFinance();
+
+  const [activeTab, setActiveTab] = useState<
+    'profile' | 'security' | 'notifications' | 'preferences' | 'accounts' | 'data'
+  >('profile');
 
   // Profile Form State
   const [name, setName] = useState(user.name);
@@ -42,13 +81,15 @@ export const Settings: React.FC = () => {
   const [scamAlerts, setScamAlerts] = useState(true);
   const [weeklyReport, setWeeklyReport] = useState(true);
 
-  // Connected Accounts
-  const [connectedAccounts, setConnectedAccounts] = useState([
-    { id: 'acc-1', name: 'HDFC Bank Salary Account', number: '•••• 4892', status: 'Synced (10m ago)', type: 'Bank' },
-    { id: 'acc-2', name: 'ICICI Sapphiro Credit Card', number: '•••• 1104', status: 'Synced (1h ago)', type: 'Credit Card' },
-    { id: 'acc-3', name: 'Zerodha Kite Demat', number: '1849201', status: 'Synced (Today)', type: 'Investment' },
-    { id: 'acc-4', name: 'Groww Mutual Funds', number: 'GRW-88392', status: 'Synced (Today)', type: 'Investment' },
-  ]);
+  // Account Modals State
+  const [isAddAccountOpen, setIsAddAccountOpen] = useState(false);
+  const [editingAccount, setEditingAccount] = useState<Account | null>(null);
+  const [newAccountName, setNewAccountName] = useState('');
+  const [newAccountType, setNewAccountType] = useState<AccountType>('savings');
+  const [newAccountBalance, setNewAccountBalance] = useState('0');
+  const [newAccountCreditLimit, setNewAccountCreditLimit] = useState('');
+  const [isSubmittingAccount, setIsSubmittingAccount] = useState(false);
+  const [deletingAccountId, setDeletingAccountId] = useState<string | null>(null);
 
   const handleSaveProfile = (e: React.FormEvent) => {
     e.preventDefault();
@@ -62,9 +103,79 @@ export const Settings: React.FC = () => {
     toast.success('Profile settings updated successfully!');
   };
 
+  const handleCreateAccount = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newAccountName.trim()) {
+      toast.error('Please provide an account name.');
+      return;
+    }
+
+    setIsSubmittingAccount(true);
+    try {
+      await createAccount({
+        name: newAccountName.trim(),
+        account_type: newAccountType,
+        balance: Number(newAccountBalance) || 0,
+        credit_limit:
+          newAccountType === 'credit_card' && newAccountCreditLimit
+            ? Number(newAccountCreditLimit)
+            : null,
+        currency: 'INR',
+      });
+      toast.success(`Account "${newAccountName}" added successfully.`);
+      setIsAddAccountOpen(false);
+      setNewAccountName('');
+      setNewAccountBalance('0');
+      setNewAccountCreditLimit('');
+      setNewAccountType('savings');
+    } catch {
+      toast.error('Failed to create account.');
+    } finally {
+      setIsSubmittingAccount(false);
+    }
+  };
+
+  const handleUpdateAccount = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingAccount || !newAccountName.trim()) return;
+
+    setIsSubmittingAccount(true);
+    try {
+      await updateAccount(editingAccount.id, {
+        name: newAccountName.trim(),
+        credit_limit:
+          editingAccount.account_type === 'credit_card' && newAccountCreditLimit
+            ? Number(newAccountCreditLimit)
+            : undefined,
+      });
+      toast.success('Account updated successfully.');
+      setEditingAccount(null);
+      setNewAccountName('');
+    } catch {
+      toast.error('Failed to update account.');
+    } finally {
+      setIsSubmittingAccount(false);
+    }
+  };
+
+  const handleDeleteAccount = async (id: string, accName: string) => {
+    setDeletingAccountId(id);
+    try {
+      const success = await deleteAccount(id);
+      if (success) {
+        toast.success(`Account "${accName}" removed.`);
+      } else {
+        toast.error('Failed to delete account.');
+      }
+    } finally {
+      setDeletingAccountId(null);
+    }
+  };
+
   const handleExportFullJSON = () => {
     const fullBackup = {
       user,
+      accounts,
       transactions,
       budgets,
       goals,
@@ -184,12 +295,12 @@ export const Settings: React.FC = () => {
                 />
               </div>
 
-              <div className="flex justify-end pt-3 border-t border-slate-100">
+              <div className="pt-2 flex justify-end">
                 <button
                   type="submit"
-                  className="rounded-xl bg-teal-700 px-5 py-2 text-xs font-bold text-white shadow-sm hover:bg-teal-800"
+                  className="rounded-xl bg-teal-700 px-5 py-2 text-xs font-bold text-white shadow-sm hover:bg-teal-800 transition-colors"
                 >
-                  Save Profile Changes
+                  Save Profile
                 </button>
               </div>
             </form>
@@ -199,44 +310,39 @@ export const Settings: React.FC = () => {
           {activeTab === 'security' && (
             <div className="space-y-4 text-xs">
               <h3 className="text-sm font-bold text-slate-900 border-b border-slate-100 pb-2">
-                Authentication & Security Guardrails
+                Security & Authentication
               </h3>
 
               <div className="space-y-3">
                 <div className="flex items-center justify-between p-3.5 rounded-xl border border-slate-100 bg-slate-50">
                   <div>
-                    <h4 className="font-bold text-slate-900">Two-Factor Authentication (2FA)</h4>
-                    <p className="text-[11px] text-slate-500">Require TOTP authenticator prompt on each new device login.</p>
+                    <h4 className="font-bold text-slate-900">Two-Factor Authentication (TOTP / SMS)</h4>
+                    <p className="text-[11px] text-slate-500">Require an OTP when signing in from unknown devices.</p>
                   </div>
-                  <button
-                    onClick={() => {
-                      setTwoFactor(!twoFactor);
-                      toast.success(`2FA ${!twoFactor ? 'Enabled' : 'Disabled'}`);
-                    }}
-                    className={cn("px-3 py-1 rounded-lg font-bold text-xs", twoFactor ? "bg-teal-700 text-white" : "bg-slate-200 text-slate-600")}
-                  >
-                    {twoFactor ? 'Enabled' : 'Disabled'}
-                  </button>
+                  <input
+                    type="checkbox"
+                    checked={twoFactor}
+                    onChange={() => setTwoFactor(!twoFactor)}
+                    className="rounded text-teal-700 cursor-pointer h-4 w-4"
+                  />
                 </div>
 
                 <div className="flex items-center justify-between p-3.5 rounded-xl border border-slate-100 bg-slate-50">
                   <div>
-                    <h4 className="font-bold text-slate-900">Biometric TouchID / Face Unlock</h4>
-                    <p className="text-[11px] text-slate-500">Fast authentication for web sessions and approvals.</p>
+                    <h4 className="font-bold text-slate-900">Biometric / Passkey Quick Login</h4>
+                    <p className="text-[11px] text-slate-500">Authenticate using TouchID, FaceID, or Windows Hello.</p>
                   </div>
-                  <button
-                    onClick={() => {
-                      setBiometric(!biometric);
-                      toast.success(`Biometrics ${!biometric ? 'Enabled' : 'Disabled'}`);
-                    }}
-                    className={cn("px-3 py-1 rounded-lg font-bold text-xs", biometric ? "bg-teal-700 text-white" : "bg-slate-200 text-slate-600")}
-                  >
-                    {biometric ? 'Enabled' : 'Disabled'}
-                  </button>
+                  <input
+                    type="checkbox"
+                    checked={biometric}
+                    onChange={() => setBiometric(!biometric)}
+                    className="rounded text-teal-700 cursor-pointer h-4 w-4"
+                  />
                 </div>
+
                 <div className="flex items-center justify-between p-3.5 rounded-xl border border-slate-100 bg-slate-50">
                   <div>
-                    <h4 className="font-bold text-slate-900">Active Authentication Session</h4>
+                    <h4 className="font-bold text-slate-900">Sign Out of FinSage</h4>
                     <p className="text-[11px] text-slate-500">Sign out of your active session on this browser.</p>
                   </div>
                   <button
@@ -315,33 +421,124 @@ export const Settings: React.FC = () => {
           {activeTab === 'accounts' && (
             <div className="space-y-4 text-xs">
               <div className="flex items-center justify-between border-b border-slate-100 pb-2">
-                <h3 className="text-sm font-bold text-slate-900">
-                  Connected Banking & Demat Feeds
-                </h3>
+                <div>
+                  <h3 className="text-sm font-bold text-slate-900">
+                    Connected Financial Accounts
+                  </h3>
+                  <p className="text-[11px] text-slate-500 mt-0.5">
+                    Live bank, card, and investment ledger accounts synchronized with backend APIs.
+                  </p>
+                </div>
                 <button
-                  onClick={() => toast.info('Account aggregator linking flow ready.')}
-                  className="flex items-center gap-1 text-xs font-bold text-teal-700 hover:text-teal-900"
+                  onClick={() => setIsAddAccountOpen(true)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-teal-700 text-white font-bold text-xs hover:bg-teal-800 shadow-sm transition-colors"
                 >
-                  <Plus className="h-3.5 w-3.5" /> Link New Bank Account
+                  <Plus className="h-3.5 w-3.5" /> Add Account
                 </button>
               </div>
 
-              <div className="space-y-2.5">
-                {connectedAccounts.map((acc) => (
-                  <div key={acc.id} className="flex items-center justify-between p-3 rounded-xl border border-slate-100 bg-slate-50">
-                    <div className="flex items-center gap-3">
-                      <Building className="h-4 w-4 text-teal-700" />
-                      <div>
-                        <h4 className="font-bold text-slate-900">{acc.name}</h4>
-                        <p className="text-[10px] text-slate-400">{acc.number} • {acc.type}</p>
+              {accountsError && (
+                <div className="flex items-center justify-between p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs">
+                  <div className="flex items-center gap-2">
+                    <AlertTriangle className="h-4 w-4 text-rose-600 shrink-0" />
+                    <span>{accountsError}</span>
+                  </div>
+                  <button
+                    onClick={() => loadAccounts()}
+                    className="font-bold text-rose-700 hover:text-rose-900 underline"
+                  >
+                    Retry
+                  </button>
+                </div>
+              )}
+
+              {isLoadingAccounts ? (
+                <div className="p-8 text-center text-slate-400">
+                  <RefreshCw className="h-5 w-5 animate-spin mx-auto text-teal-700 mb-2" />
+                  <p className="font-semibold text-slate-600">Loading accounts from backend...</p>
+                </div>
+              ) : accounts.length === 0 ? (
+                <div className="p-8 text-center border-2 border-dashed border-slate-200 rounded-2xl">
+                  <Wallet className="h-8 w-8 mx-auto text-slate-400 mb-2" />
+                  <p className="font-bold text-slate-800 text-sm">No Accounts Connected</p>
+                  <p className="text-slate-500 text-xs mt-1">
+                    Add your first bank account, credit card, or investment portfolio to begin tracking transactions.
+                  </p>
+                  <button
+                    onClick={() => setIsAddAccountOpen(true)}
+                    className="mt-3 inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-teal-700 text-white font-bold text-xs hover:bg-teal-800"
+                  >
+                    <Plus className="h-3.5 w-3.5" /> Create Account
+                  </button>
+                </div>
+              ) : (
+                <div className="space-y-2.5">
+                  {accounts.map((acc) => (
+                    <div
+                      key={acc.id}
+                      className="flex items-center justify-between p-3.5 rounded-xl border border-slate-100 bg-slate-50 hover:bg-slate-100/60 transition-colors"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-teal-100 text-teal-800">
+                          {acc.account_type === 'credit_card' ? (
+                            <CreditCard className="h-4 w-4" />
+                          ) : (
+                            <Building className="h-4 w-4" />
+                          )}
+                        </div>
+                        <div>
+                          <h4 className="font-bold text-slate-900 text-xs">{acc.name}</h4>
+                          <p className="text-[10px] text-slate-500 capitalize">
+                            {acc.account_type.replace('_', ' ')} • {acc.currency}
+                            {acc.credit_limit && (
+                              <span> • Limit: {formatCurrency(acc.credit_limit)}</span>
+                            )}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-3">
+                        <div className="text-right">
+                          <span className="font-bold font-numeric text-slate-900 text-xs block">
+                            {formatCurrency(acc.current_balance || acc.balance || 0)}
+                          </span>
+                          <span className="text-[10px] text-emerald-700 font-semibold bg-emerald-50 px-2 py-0.5 rounded-full inline-block mt-0.5">
+                            Active
+                          </span>
+                        </div>
+
+                        <div className="flex items-center gap-1 pl-2 border-l border-slate-200">
+                          <button
+                            onClick={() => {
+                              setEditingAccount(acc);
+                              setNewAccountName(acc.name);
+                              setNewAccountCreditLimit(
+                                acc.credit_limit ? String(acc.credit_limit) : ''
+                              );
+                            }}
+                            title="Edit account"
+                            className="p-1.5 text-slate-400 hover:text-teal-700 hover:bg-white rounded-lg transition-colors"
+                          >
+                            <Edit2 className="h-3.5 w-3.5" />
+                          </button>
+                          <button
+                            disabled={deletingAccountId === acc.id}
+                            onClick={() => handleDeleteAccount(acc.id, acc.name)}
+                            title="Delete account"
+                            className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-white rounded-lg transition-colors disabled:opacity-50"
+                          >
+                            {deletingAccountId === acc.id ? (
+                              <RefreshCw className="h-3.5 w-3.5 animate-spin text-rose-600" />
+                            ) : (
+                              <Trash2 className="h-3.5 w-3.5" />
+                            )}
+                          </button>
+                        </div>
                       </div>
                     </div>
-                    <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">
-                      {acc.status}
-                    </span>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 
@@ -368,7 +565,7 @@ export const Settings: React.FC = () => {
                   <Trash2 className="h-4 w-4 text-rose-600" /> Danger Zone
                 </h4>
                 <p className="text-rose-800 text-[11px] leading-relaxed">
-                  Resetting mock data will restore Rahul Sharma's default ledger records. This action will clear custom additions.
+                  Resetting mock data will restore baseline demo values for budgets and goals. Accounts and transactions remain securely stored in the backend database.
                 </p>
                 <button
                   onClick={() => {
@@ -377,13 +574,160 @@ export const Settings: React.FC = () => {
                   }}
                   className="flex items-center gap-1.5 rounded-xl bg-rose-600 px-4 py-2 font-bold text-white hover:bg-rose-700 shadow-sm"
                 >
-                  <RefreshCw className="h-3.5 w-3.5" /> Reset All Data to Baseline
+                  <RefreshCw className="h-3.5 w-3.5" /> Reset Demo Features
                 </button>
               </div>
             </div>
           )}
         </div>
       </div>
+
+      {/* Add Account Modal */}
+      {isAddAccountOpen && (
+        <Dialog open={isAddAccountOpen} onOpenChange={setIsAddAccountOpen}>
+          <DialogContent className="sm:max-w-md bg-white border border-slate-200 rounded-3xl p-6 shadow-dropdown">
+            <DialogHeader>
+              <DialogTitle className="text-base font-bold text-slate-900">
+                Link New Financial Account
+              </DialogTitle>
+            </DialogHeader>
+
+            <form onSubmit={handleCreateAccount} className="space-y-4 pt-2 text-xs">
+              <div>
+                <label className="font-semibold text-slate-700">Account Display Name</label>
+                <input
+                  type="text"
+                  required
+                  value={newAccountName}
+                  onChange={(e) => setNewAccountName(e.target.value)}
+                  placeholder="e.g. HDFC Salary Account, ICICI Sapphiro"
+                  className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2 text-xs font-semibold text-slate-900 focus:bg-white focus:border-teal-600 focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="font-semibold text-slate-700">Account Type</label>
+                <select
+                  value={newAccountType}
+                  onChange={(e) => setNewAccountType(e.target.value as AccountType)}
+                  className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-900 focus:bg-white focus:border-teal-600 focus:outline-none"
+                >
+                  {ACCOUNT_TYPES.map((t) => (
+                    <option key={t.value} value={t.value}>
+                      {t.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="font-semibold text-slate-700">Initial Balance (₹)</label>
+                <input
+                  type="number"
+                  step="any"
+                  value={newAccountBalance}
+                  onChange={(e) => setNewAccountBalance(e.target.value)}
+                  placeholder="₹ 0.00"
+                  className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2 text-xs font-semibold text-slate-900 focus:bg-white focus:border-teal-600 focus:outline-none"
+                />
+              </div>
+
+              {newAccountType === 'credit_card' && (
+                <div>
+                  <label className="font-semibold text-slate-700">Credit Limit (₹)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="any"
+                    value={newAccountCreditLimit}
+                    onChange={(e) => setNewAccountCreditLimit(e.target.value)}
+                    placeholder="e.g. 150000"
+                    className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2 text-xs font-semibold text-slate-900 focus:bg-white focus:border-teal-600 focus:outline-none"
+                  />
+                </div>
+              )}
+
+              <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
+                <button
+                  type="button"
+                  disabled={isSubmittingAccount}
+                  onClick={() => setIsAddAccountOpen(false)}
+                  className="rounded-xl border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmittingAccount}
+                  className="rounded-xl bg-teal-700 px-5 py-2 text-xs font-bold text-white shadow-sm hover:bg-teal-800 disabled:opacity-50 flex items-center gap-1.5"
+                >
+                  {isSubmittingAccount && <RefreshCw className="h-3 w-3 animate-spin" />}
+                  <span>Create Account</span>
+                </button>
+              </div>
+            </form>
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {/* Edit Account Modal */}
+      {editingAccount && (
+        <Dialog open={!!editingAccount} onOpenChange={(open) => !open && setEditingAccount(null)}>
+          <DialogContent className="sm:max-w-md bg-white border border-slate-200 rounded-3xl p-6 shadow-dropdown">
+            <DialogHeader>
+              <DialogTitle className="text-base font-bold text-slate-900">
+                Edit Account Details
+              </DialogTitle>
+            </DialogHeader>
+
+            <form onSubmit={handleUpdateAccount} className="space-y-4 pt-2 text-xs">
+              <div>
+                <label className="font-semibold text-slate-700">Account Display Name</label>
+                <input
+                  type="text"
+                  required
+                  value={newAccountName}
+                  onChange={(e) => setNewAccountName(e.target.value)}
+                  className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2 text-xs font-semibold text-slate-900 focus:bg-white focus:border-teal-600 focus:outline-none"
+                />
+              </div>
+
+              {editingAccount.account_type === 'credit_card' && (
+                <div>
+                  <label className="font-semibold text-slate-700">Credit Limit (₹)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="any"
+                    value={newAccountCreditLimit}
+                    onChange={(e) => setNewAccountCreditLimit(e.target.value)}
+                    className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2 text-xs font-semibold text-slate-900 focus:bg-white focus:border-teal-600 focus:outline-none"
+                  />
+                </div>
+              )}
+
+              <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
+                <button
+                  type="button"
+                  disabled={isSubmittingAccount}
+                  onClick={() => setEditingAccount(null)}
+                  className="rounded-xl border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmittingAccount}
+                  className="rounded-xl bg-teal-700 px-5 py-2 text-xs font-bold text-white shadow-sm hover:bg-teal-800 disabled:opacity-50 flex items-center gap-1.5"
+                >
+                  {isSubmittingAccount && <RefreshCw className="h-3 w-3 animate-spin" />}
+                  <span>Save Changes</span>
+                </button>
+              </div>
+            </form>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 };

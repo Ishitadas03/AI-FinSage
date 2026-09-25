@@ -1,6 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import {
-  Transaction,
   Budget,
   Goal,
   Loan,
@@ -14,8 +13,18 @@ import {
   ChatMessage,
 } from '@/types';
 import { AuthUser } from '@/types/auth';
+import { Account, AccountCreate, AccountUpdate } from '@/types/account';
+import {
+  ApiTransaction,
+  TransactionCreate,
+  TransactionFilterParams,
+  TransactionPaginatedResponse,
+  TransactionUpdate,
+} from '@/types/transaction';
 import {
   authApi,
+  accountsApi,
+  transactionsApi,
   tokenStorage,
   getApiErrorMessage,
   setOnUnauthorizedCallback,
@@ -24,6 +33,7 @@ import {
 export type AuthStatus = 'idle' | 'loading' | 'authenticated' | 'unauthenticated' | 'error';
 
 interface FinanceContextType {
+  // Auth State
   user: UserProfile;
   authUser: AuthUser | null;
   isAuthenticated: boolean;
@@ -32,18 +42,37 @@ interface FinanceContextType {
   selectedPeriod: string;
   setSelectedPeriod: (period: string) => void;
 
+  // Real Backend Accounts State & Operations
+  accounts: Account[];
+  isLoadingAccounts: boolean;
+  accountsError: string | null;
+  loadAccounts: () => Promise<Account[]>;
+  createAccount: (payload: AccountCreate) => Promise<Account>;
+  updateAccount: (id: string, payload: AccountUpdate) => Promise<Account>;
+  deleteAccount: (id: string) => Promise<boolean>;
+
+  // Real Backend Transactions State & Operations
+  transactions: ApiTransaction[];
+  transactionsTotal: number;
+  transactionsPage: number;
+  transactionsPageSize: number;
+  transactionsTotalPages: number;
+  isLoadingTransactions: boolean;
+  transactionsError: string | null;
+  activeTransactionFilters: TransactionFilterParams;
+  loadTransactions: (filters?: TransactionFilterParams) => Promise<TransactionPaginatedResponse>;
+  createTransaction: (payload: TransactionCreate) => Promise<ApiTransaction>;
+  updateTransaction: (id: string, payload: TransactionUpdate) => Promise<ApiTransaction>;
+  deleteTransaction: (id: string) => Promise<boolean>;
+  addTransaction: (tx: TransactionCreate) => Promise<void>;
+  editTransaction: (id: string, tx: TransactionUpdate) => Promise<void>;
+  importTransactions: (newTxs: TransactionCreate[]) => Promise<void>;
+
   // Derived Financial Metrics
   netWorth: number;
   monthlyIncome: number;
   monthlyExpenses: number;
   savingsRate: number;
-
-  // Transactions
-  transactions: Transaction[];
-  addTransaction: (tx: Omit<Transaction, 'id'>) => void;
-  editTransaction: (id: string, tx: Partial<Transaction>) => void;
-  deleteTransaction: (id: string) => void;
-  importTransactions: (newTxs: Omit<Transaction, 'id'>[]) => void;
 
   // Budgets
   budgets: Budget[];
@@ -115,7 +144,7 @@ interface FinanceContextType {
   isSearchOpen: boolean;
   setIsSearchOpen: (open: boolean) => void;
 
-  // Real Auth & Session Operations
+  // Real Auth Operations
   login: (email: string, password?: string, rememberMe?: boolean) => Promise<boolean>;
   register: (email: string, password: string, fullName: string) => Promise<boolean>;
   logout: () => Promise<void>;
@@ -123,7 +152,7 @@ interface FinanceContextType {
   loadCurrentUser: () => Promise<boolean>;
   clearAuthError: () => void;
 
-  // Profile update
+  // Profile update & Reset
   updateProfile: (profile: Partial<UserProfile>) => void;
   resetAllData: () => void;
 }
@@ -175,27 +204,6 @@ const mapAuthUserToProfile = (
     avatarUrl: savedProfile?.avatarUrl,
   };
 };
-
-const INITIAL_TRANSACTIONS: Transaction[] = [
-  { id: "tx-1", date: "2026-09-18", merchant: "Prestige Hiranandani Rent", category: "Housing", type: "expense", amount: 18000, status: "cleared", paymentMethod: "Net Banking", isRecurring: true },
-  { id: "tx-2", date: "2026-09-17", merchant: "Acme Tech Solutions (Salary)", category: "Income", type: "income", amount: 85000, status: "cleared", paymentMethod: "Net Banking" },
-  { id: "tx-3", date: "2026-09-16", merchant: "Swiggy Gourmet", category: "Food", type: "expense", amount: 1240, status: "cleared", paymentMethod: "UPI" },
-  { id: "tx-4", date: "2026-09-15", merchant: "Nature's Basket Grocery", category: "Food", type: "expense", amount: 3450, status: "cleared", paymentMethod: "Credit Card" },
-  { id: "tx-5", date: "2026-09-14", merchant: "Uber Premier", category: "Transport", type: "expense", amount: 620, status: "cleared", paymentMethod: "UPI" },
-  { id: "tx-6", date: "2026-09-13", merchant: "Unknown Intl Gateway - London", category: "Shopping", type: "expense", amount: 18450, status: "flagged", paymentMethod: "Credit Card", riskReason: "Foreign IP location & unusual amount discrepancy" },
-  { id: "tx-7", date: "2026-09-12", merchant: "Indian Oil Fuel Station", category: "Transport", type: "expense", amount: 2500, status: "cleared", paymentMethod: "Credit Card" },
-  { id: "tx-8", date: "2026-09-11", merchant: "Amazon India Electronics", category: "Shopping", type: "expense", amount: 4800, status: "cleared", paymentMethod: "Credit Card" },
-  { id: "tx-9", date: "2026-09-10", merchant: "Netflix Premium 4K", category: "Subscriptions", type: "expense", amount: 649, status: "cleared", paymentMethod: "Auto-Debit", isRecurring: true },
-  { id: "tx-10", date: "2026-09-09", merchant: "Spotify Family Plan", category: "Subscriptions", type: "expense", amount: 179, status: "cleared", paymentMethod: "Auto-Debit", isRecurring: true },
-  { id: "tx-11", date: "2026-09-08", merchant: "Tata Power Electricity", category: "Others", type: "expense", amount: 3200, status: "cleared", paymentMethod: "UPI", isRecurring: true },
-  { id: "tx-12", date: "2026-09-07", merchant: "Apollo Pharmacy Medicals", category: "Others", type: "expense", amount: 1150, status: "cleared", paymentMethod: "UPI" },
-  { id: "tx-13", date: "2026-09-06", merchant: "Starbucks Coffee Reserve", category: "Food", type: "expense", amount: 480, status: "cleared", paymentMethod: "UPI" },
-  { id: "tx-14", date: "2026-09-05", merchant: "Freelance UI Consulting", category: "Income", type: "income", amount: 15000, status: "cleared", paymentMethod: "UPI" },
-  { id: "tx-15", date: "2026-09-04", merchant: "Zomato Gold Delivery", category: "Food", type: "expense", amount: 680, status: "cleared", paymentMethod: "UPI" },
-  { id: "tx-16", date: "2026-09-03", merchant: "Airtel Fiber Broadband", category: "Subscriptions", type: "expense", amount: 1199, status: "cleared", paymentMethod: "Auto-Debit", isRecurring: true },
-  { id: "tx-17", date: "2026-09-02", merchant: "Crypto-Fast Trade Global", category: "Others", type: "expense", amount: 5000, status: "flagged", paymentMethod: "Credit Card", riskReason: "New high-risk merchant flagged in national cybercrime registry" },
-  { id: "tx-18", date: "2026-09-01", merchant: "Cult.fit Fitness Annual", category: "Others", type: "expense", amount: 5800, status: "cleared", paymentMethod: "Credit Card" },
-];
 
 const INITIAL_BUDGETS: Budget[] = [
   { id: "b-1", category: "Housing", allocated: 20000, spent: 18000, color: "#3B82F6", icon: "Home" },
@@ -532,7 +540,7 @@ const INITIAL_NOTIFICATIONS: NotificationItem[] = [
   {
     id: "notif-3",
     title: "Budget Warning: Food & Dining",
-    message: "You have used 77% (₹9,200/₹12,000) of your dining budget with 12 days left.",
+    message: "You have used 77% (₹9,200/₹12,00,000) of your dining budget with 12 days left.",
     timestamp: "1d ago",
     read: true,
     type: "alert",
@@ -584,11 +592,23 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
     : { ...GUEST_USER, ...customProfile };
 
   const [selectedPeriod, setSelectedPeriod] = useState<string>("September 2026");
-  const [transactions, setTransactions] = useState<Transaction[]>(() => {
-    const saved = localStorage.getItem('finsage_txs');
-    return saved ? JSON.parse(saved) : INITIAL_TRANSACTIONS;
-  });
 
+  // Real Backend Accounts State
+  const [accounts, setAccounts] = useState<Account[]>([]);
+  const [isLoadingAccounts, setIsLoadingAccounts] = useState<boolean>(false);
+  const [accountsError, setAccountsError] = useState<string | null>(null);
+
+  // Real Backend Transactions State
+  const [transactions, setTransactions] = useState<ApiTransaction[]>([]);
+  const [transactionsTotal, setTransactionsTotal] = useState<number>(0);
+  const [transactionsPage, setTransactionsPage] = useState<number>(1);
+  const [transactionsPageSize, setTransactionsPageSize] = useState<number>(20);
+  const [transactionsTotalPages, setTransactionsTotalPages] = useState<number>(1);
+  const [isLoadingTransactions, setIsLoadingTransactions] = useState<boolean>(false);
+  const [transactionsError, setTransactionsError] = useState<string | null>(null);
+  const [activeTransactionFilters, setActiveTransactionFilters] = useState<TransactionFilterParams>({});
+
+  // Non-integrated modules (Budgets, Goals, Loans, Security) preserved
   const [budgets, setBudgets] = useState<Budget[]>(() => {
     const saved = localStorage.getItem('finsage_budgets');
     return saved ? JSON.parse(saved) : INITIAL_BUDGETS;
@@ -624,14 +644,10 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
 
-  // Sync state to local storage
+  // Sync custom profile and preserved features to local storage
   useEffect(() => {
     localStorage.setItem('finsage_custom_profile', JSON.stringify(customProfile));
   }, [customProfile]);
-
-  useEffect(() => {
-    localStorage.setItem('finsage_txs', JSON.stringify(transactions));
-  }, [transactions]);
 
   useEffect(() => {
     localStorage.setItem('finsage_budgets', JSON.stringify(budgets));
@@ -651,9 +667,13 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   // Derived Financial Metrics
   const monthlyIncome = user.monthlyIncome || 85000;
+  const totalAccountBalances = accounts.reduce(
+    (acc, a) => acc + Number(a.current_balance || a.balance || 0),
+    0
+  );
+  const netWorth = totalAccountBalances > 0 ? totalAccountBalances : 1240000;
   const monthlyExpenses = 54200;
-  const netWorth = 1240000;
-  const savingsRate = 28; // 28%
+  const savingsRate = 28;
 
   const totalDebt = loans.reduce((acc, l) => acc + l.principalRemaining, 0);
   const totalMonthlyEmi = loans.reduce((acc, l) => acc + l.monthlyEmi, 0);
@@ -676,6 +696,190 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
       setAuthStatus(isAuthenticated ? 'authenticated' : 'unauthenticated');
     }
   }, [authStatus, isAuthenticated]);
+
+  // Real Accounts Operations
+  const loadAccounts = useCallback(async (): Promise<Account[]> => {
+    setIsLoadingAccounts(true);
+    setAccountsError(null);
+    try {
+      const data = await accountsApi.list();
+      setAccounts(data);
+      return data;
+    } catch (err) {
+      const msg = getApiErrorMessage(err, 'Failed to load accounts.');
+      setAccountsError(msg);
+      return [];
+    } finally {
+      setIsLoadingAccounts(false);
+    }
+  }, []);
+
+  const createAccount = useCallback(async (payload: AccountCreate): Promise<Account> => {
+    setIsLoadingAccounts(true);
+    setAccountsError(null);
+    try {
+      const newAcc = await accountsApi.create(payload);
+      setAccounts((prev) => [...prev, newAcc]);
+      return newAcc;
+    } catch (err) {
+      const msg = getApiErrorMessage(err, 'Failed to create account.');
+      setAccountsError(msg);
+      throw err;
+    } finally {
+      setIsLoadingAccounts(false);
+    }
+  }, []);
+
+  const updateAccount = useCallback(async (id: string, payload: AccountUpdate): Promise<Account> => {
+    setIsLoadingAccounts(true);
+    setAccountsError(null);
+    try {
+      const updated = await accountsApi.update(id, payload);
+      setAccounts((prev) => prev.map((a) => (a.id === id ? updated : a)));
+      return updated;
+    } catch (err) {
+      const msg = getApiErrorMessage(err, 'Failed to update account.');
+      setAccountsError(msg);
+      throw err;
+    } finally {
+      setIsLoadingAccounts(false);
+    }
+  }, []);
+
+  const deleteAccount = useCallback(async (id: string): Promise<boolean> => {
+    setIsLoadingAccounts(true);
+    setAccountsError(null);
+    try {
+      await accountsApi.delete(id);
+      setAccounts((prev) => prev.filter((a) => a.id !== id));
+      return true;
+    } catch (err) {
+      const msg = getApiErrorMessage(err, 'Failed to delete account.');
+      setAccountsError(msg);
+      return false;
+    } finally {
+      setIsLoadingAccounts(false);
+    }
+  }, []);
+
+  // Real Transactions Operations
+  const loadTransactions = useCallback(
+    async (filters?: TransactionFilterParams): Promise<TransactionPaginatedResponse> => {
+      setIsLoadingTransactions(true);
+      setTransactionsError(null);
+      const effectiveFilters = filters || activeTransactionFilters;
+      setActiveTransactionFilters(effectiveFilters);
+
+      try {
+        const response = await transactionsApi.list(effectiveFilters);
+        setTransactions(response.items);
+        setTransactionsTotal(response.total);
+        setTransactionsPage(response.page);
+        setTransactionsPageSize(response.page_size);
+        setTransactionsTotalPages(response.total_pages);
+        return response;
+      } catch (err) {
+        const msg = getApiErrorMessage(err, 'Failed to load transactions.');
+        setTransactionsError(msg);
+        return {
+          items: [],
+          total: 0,
+          page: 1,
+          page_size: 20,
+          total_pages: 1,
+        };
+      } finally {
+        setIsLoadingTransactions(false);
+      }
+    },
+    [activeTransactionFilters]
+  );
+
+  const createTransaction = useCallback(
+    async (payload: TransactionCreate): Promise<ApiTransaction> => {
+      setIsLoadingTransactions(true);
+      setTransactionsError(null);
+      try {
+        const created = await transactionsApi.create(payload);
+        // Refresh transaction list and accounts to update authoritative balances
+        await loadTransactions();
+        await loadAccounts();
+        return created;
+      } catch (err) {
+        const msg = getApiErrorMessage(err, 'Failed to create transaction.');
+        setTransactionsError(msg);
+        throw err;
+      } finally {
+        setIsLoadingTransactions(false);
+      }
+    },
+    [loadTransactions, loadAccounts]
+  );
+
+  const updateTransaction = useCallback(
+    async (id: string, payload: TransactionUpdate): Promise<ApiTransaction> => {
+      setIsLoadingTransactions(true);
+      setTransactionsError(null);
+      try {
+        const updated = await transactionsApi.update(id, payload);
+        await loadTransactions();
+        await loadAccounts();
+        return updated;
+      } catch (err) {
+        const msg = getApiErrorMessage(err, 'Failed to update transaction.');
+        setTransactionsError(msg);
+        throw err;
+      } finally {
+        setIsLoadingTransactions(false);
+      }
+    },
+    [loadTransactions, loadAccounts]
+  );
+
+  const deleteTransaction = useCallback(
+    async (id: string): Promise<boolean> => {
+      setIsLoadingTransactions(true);
+      setTransactionsError(null);
+      try {
+        await transactionsApi.delete(id);
+        await loadTransactions();
+        await loadAccounts();
+        return true;
+      } catch (err) {
+        const msg = getApiErrorMessage(err, 'Failed to delete transaction.');
+        setTransactionsError(msg);
+        return false;
+      } finally {
+        setIsLoadingTransactions(false);
+      }
+    },
+    [loadTransactions, loadAccounts]
+  );
+
+  const addTransaction = useCallback(
+    async (tx: TransactionCreate) => {
+      await createTransaction(tx);
+    },
+    [createTransaction]
+  );
+
+  const editTransaction = useCallback(
+    async (id: string, tx: TransactionUpdate) => {
+      await updateTransaction(id, tx);
+    },
+    [updateTransaction]
+  );
+
+  const importTransactions = useCallback(
+    async (newTxs: TransactionCreate[]) => {
+      for (const tx of newTxs) {
+        await transactionsApi.create(tx);
+      }
+      await loadTransactions();
+      await loadAccounts();
+    },
+    [loadTransactions, loadAccounts]
+  );
 
   // Load Current User from Backend
   const loadCurrentUser = useCallback(async (): Promise<boolean> => {
@@ -705,6 +909,8 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
       setAuthUser(null);
       setIsAuthenticated(false);
       setAuthStatus('unauthenticated');
+      setAccounts([]);
+      setTransactions([]);
       return false;
     }
   }, []);
@@ -721,7 +927,6 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
           try {
             userProfile = await authApi.getCurrentUser();
           } catch {
-            // Access token might be missing or expired, attempt refresh
             const tokenRes = await authApi.refresh();
             userProfile = tokenRes.user;
           }
@@ -738,6 +943,8 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
             setAuthUser(null);
             setIsAuthenticated(false);
             setAuthStatus('unauthenticated');
+            setAccounts([]);
+            setTransactions([]);
           }
         }
       } else {
@@ -745,6 +952,8 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
           setAuthUser(null);
           setIsAuthenticated(false);
           setAuthStatus('unauthenticated');
+          setAccounts([]);
+          setTransactions([]);
         }
       }
     };
@@ -757,6 +966,8 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
         setAuthUser(null);
         setIsAuthenticated(false);
         setAuthStatus('unauthenticated');
+        setAccounts([]);
+        setTransactions([]);
       }
     });
 
@@ -765,6 +976,14 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
       setOnUnauthorizedCallback(null);
     };
   }, []);
+
+  // Auto-fetch accounts & transactions upon authentication
+  useEffect(() => {
+    if (isAuthenticated) {
+      loadAccounts();
+      loadTransactions();
+    }
+  }, [isAuthenticated, loadAccounts, loadTransactions]);
 
   // Real Login Method
   const login = async (email: string, password?: string, _rememberMe = true): Promise<boolean> => {
@@ -834,7 +1053,6 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
         full_name: fullName.trim(),
       });
 
-      // Auto-authenticate upon successful registration
       const loginRes = await authApi.login({
         email: email.trim(),
         password,
@@ -866,6 +1084,8 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
       setIsAuthenticated(false);
       setAuthStatus('unauthenticated');
       setAuthError(null);
+      setAccounts([]);
+      setTransactions([]);
     }
   };
 
@@ -874,31 +1094,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
     setCustomProfile((prev) => ({ ...prev, ...updated }));
   };
 
-  // Financial Handlers
-  const addTransaction = (tx: Omit<Transaction, 'id'>) => {
-    const newTx: Transaction = {
-      ...tx,
-      id: `tx-${Date.now()}`,
-    };
-    setTransactions((prev) => [newTx, ...prev]);
-  };
-
-  const editTransaction = (id: string, updated: Partial<Transaction>) => {
-    setTransactions((prev) => prev.map((t) => (t.id === id ? { ...t, ...updated } : t)));
-  };
-
-  const deleteTransaction = (id: string) => {
-    setTransactions((prev) => prev.filter((t) => t.id !== id));
-  };
-
-  const importTransactions = (newTxs: Omit<Transaction, 'id'>[]) => {
-    const formatted = newTxs.map((tx, idx) => ({
-      ...tx,
-      id: `tx-imp-${Date.now()}-${idx}`,
-    }));
-    setTransactions((prev) => [...formatted, ...prev]);
-  };
-
+  // Budgets, Goals, Loans Helpers
   const addBudget = (b: Omit<Budget, 'id'>) => {
     const newB: Budget = {
       ...b,
@@ -1065,7 +1261,6 @@ On your HDFC Home Loan (₹18.5L balance at 8.65%):
   };
 
   const resetAllData = () => {
-    setTransactions(INITIAL_TRANSACTIONS);
     setBudgets(INITIAL_BUDGETS);
     setGoals(INITIAL_GOALS);
     setLoans(INITIAL_LOANS);
@@ -1073,7 +1268,6 @@ On your HDFC Home Loan (₹18.5L balance at 8.65%):
     setChatMessages(INITIAL_CHAT);
     setNotifications(INITIAL_NOTIFICATIONS);
     setCustomProfile({});
-    localStorage.removeItem('finsage_txs');
     localStorage.removeItem('finsage_budgets');
     localStorage.removeItem('finsage_goals');
     localStorage.removeItem('finsage_loans');
@@ -1095,17 +1289,34 @@ On your HDFC Home Loan (₹18.5L balance at 8.65%):
         loadCurrentUser,
         clearAuthError,
         user,
+        accounts,
+        isLoadingAccounts,
+        accountsError,
+        loadAccounts,
+        createAccount,
+        updateAccount,
+        deleteAccount,
+        transactions,
+        transactionsTotal,
+        transactionsPage,
+        transactionsPageSize,
+        transactionsTotalPages,
+        isLoadingTransactions,
+        transactionsError,
+        activeTransactionFilters,
+        loadTransactions,
+        createTransaction,
+        updateTransaction,
+        deleteTransaction,
+        addTransaction,
+        editTransaction,
+        importTransactions,
         netWorth,
         monthlyIncome,
         monthlyExpenses,
         savingsRate,
         selectedPeriod,
         setSelectedPeriod,
-        transactions,
-        addTransaction,
-        editTransaction,
-        deleteTransaction,
-        importTransactions,
         budgets,
         addBudget,
         editBudget,

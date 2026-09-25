@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   Search,
   Filter,
@@ -7,7 +7,6 @@ import {
   Download,
   Trash2,
   Edit2,
-  ShieldAlert,
   ArrowUpRight,
   ArrowDownLeft,
   Calendar,
@@ -16,11 +15,13 @@ import {
   ChevronLeft,
   ChevronRight,
   RefreshCw,
+  AlertTriangle,
   FileSpreadsheet,
+  ArrowLeftRight,
 } from 'lucide-react';
 import { useFinance } from '@/context/FinanceContext';
 import { formatCurrency, formatDate } from '@/lib/formatters';
-import { Transaction, TransactionType, TransactionStatus } from '@/types';
+import { ApiTransaction, TransactionCategory, TransactionType } from '@/types/transaction';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import {
@@ -30,86 +31,102 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 
+const CATEGORIES: { label: string; value: string }[] = [
+  { label: 'All Categories', value: 'All' },
+  { label: 'Salary', value: 'salary' },
+  { label: 'Food & Dining', value: 'food' },
+  { label: 'Shopping', value: 'shopping' },
+  { label: 'Transport', value: 'transport' },
+  { label: 'Bills & Utilities', value: 'bills' },
+  { label: 'Rent', value: 'rent' },
+  { label: 'Entertainment', value: 'entertainment' },
+  { label: 'Healthcare', value: 'healthcare' },
+  { label: 'Education', value: 'education' },
+  { label: 'Investment', value: 'investment' },
+  { label: 'Loan EMI', value: 'emi' },
+  { label: 'Insurance', value: 'insurance' },
+  { label: 'Cash Withdrawal', value: 'cash' },
+  { label: 'Other', value: 'other' },
+];
+
 export const Transactions: React.FC = () => {
   const {
     transactions,
+    accounts,
+    transactionsTotal,
+    transactionsPage,
+    transactionsTotalPages,
+    transactionsPageSize,
+    isLoadingTransactions,
+    transactionsError,
+    loadTransactions,
     deleteTransaction,
-    editTransaction,
+    updateTransaction,
     setIsAddTransactionOpen,
     setIsImportModalOpen,
   } = useFinance();
 
   const [searchQuery, setSearchQuery] = useState('');
-  const [activeTab, setActiveTab] = useState<'all' | 'income' | 'expense'>('all');
+  const [activeTab, setActiveTab] = useState<'all' | 'income' | 'expense' | 'transfer'>('all');
   const [selectedCategory, setSelectedCategory] = useState('All');
-  const [selectedStatus, setSelectedStatus] = useState('All');
-  const [selectedPayment, setSelectedPayment] = useState('All');
+  const [selectedAccount, setSelectedAccount] = useState('All');
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 8;
+  const [isDeleting, setIsDeleting] = useState<string | null>(null);
 
   // Edit / Details Modal State
-  const [viewingTx, setViewingTx] = useState<Transaction | null>(null);
-  const [editingTx, setEditingTx] = useState<Transaction | null>(null);
+  const [viewingTx, setViewingTx] = useState<ApiTransaction | null>(null);
+  const [editingTx, setEditingTx] = useState<ApiTransaction | null>(null);
+  const [editMerchant, setEditMerchant] = useState('');
+  const [editAmount, setEditAmount] = useState('');
+  const [editCategory, setEditCategory] = useState<string>('');
+  const [editDescription, setEditDescription] = useState('');
+  const [isSavingEdit, setIsSavingEdit] = useState(false);
 
-  // Filter logic
-  const filteredTransactions = useMemo(() => {
-    return transactions.filter((tx) => {
-      // Tab filter
-      if (activeTab === 'income' && tx.type !== 'income') return false;
-      if (activeTab === 'expense' && tx.type !== 'expense') return false;
-
-      // Category filter
-      if (selectedCategory !== 'All' && tx.category !== selectedCategory) return false;
-
-      // Status filter
-      if (selectedStatus !== 'All' && tx.status !== selectedStatus.toLowerCase()) return false;
-
-      // Payment method filter
-      if (selectedPayment !== 'All' && tx.paymentMethod !== selectedPayment) return false;
-
-      // Search query
-      if (searchQuery.trim()) {
-        const q = searchQuery.toLowerCase();
-        return (
-          tx.merchant.toLowerCase().includes(q) ||
-          tx.category.toLowerCase().includes(q) ||
-          tx.paymentMethod.toLowerCase().includes(q) ||
-          (tx.notes && tx.notes.toLowerCase().includes(q))
-        );
-      }
-
-      return true;
-    });
-  }, [transactions, activeTab, selectedCategory, selectedStatus, selectedPayment, searchQuery]);
-
-  // Pagination calculation
-  const totalPages = Math.ceil(filteredTransactions.length / itemsPerPage) || 1;
-  const paginatedTransactions = filteredTransactions.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
+  // Fetch transactions with server-side filters & pagination
+  const fetchFilteredTransactions = useCallback(
+    (page: number, query: string, tab: string, category: string, accountId: string) => {
+      loadTransactions({
+        page,
+        page_size: 10,
+        merchant: query.trim() || undefined,
+        transaction_type: tab === 'all' ? undefined : (tab as TransactionType),
+        category: category === 'All' ? undefined : (category as TransactionCategory),
+        account_id: accountId === 'All' ? undefined : accountId,
+      });
+    },
+    [loadTransactions]
   );
 
-  // Financial summary metrics
-  const totalInflow = transactions
-    .filter((t) => t.type === 'income')
-    .reduce((acc, t) => acc + t.amount, 0);
-  const totalOutflow = transactions
-    .filter((t) => t.type === 'expense')
-    .reduce((acc, t) => acc + t.amount, 0);
-  const netBalance = totalInflow - totalOutflow;
-  const flaggedCount = transactions.filter((t) => t.status === 'flagged').length;
+  useEffect(() => {
+    fetchFilteredTransactions(currentPage, searchQuery, activeTab, selectedCategory, selectedAccount);
+  }, [fetchFilteredTransactions, currentPage, searchQuery, activeTab, selectedCategory, selectedAccount]);
 
-  const categories = ['All', 'Housing', 'Food', 'Transport', 'Shopping', 'Subscriptions', 'Income', 'Others'];
-  const paymentMethods = ['All', 'UPI', 'Credit Card', 'Debit Card', 'Net Banking', 'Auto-Debit', 'Cash'];
-  const statuses = ['All', 'Cleared', 'Pending', 'Flagged'];
+  // Financial summary metrics based on loaded transactions
+  const totalInflow = useMemo(
+    () =>
+      transactions
+        .filter((t) => t.transaction_type === 'income')
+        .reduce((acc, t) => acc + Number(t.amount), 0),
+    [transactions]
+  );
+
+  const totalOutflow = useMemo(
+    () =>
+      transactions
+        .filter((t) => t.transaction_type === 'expense')
+        .reduce((acc, t) => acc + Number(t.amount), 0),
+    [transactions]
+  );
+
+  const netBalance = totalInflow - totalOutflow;
 
   const handleExportCSV = () => {
-    const headers = 'ID,Date,Merchant,Category,Type,Amount,Status,PaymentMethod,Notes\n';
-    const rows = filteredTransactions
-      .map(
-        (t) =>
-          `"${t.id}","${t.date}","${t.merchant}","${t.category}","${t.type}",${t.amount},"${t.status}","${t.paymentMethod}","${t.notes || ''}"`
-      )
+    const headers = 'ID,Date,Merchant,Description,Category,Type,Amount,Account\n';
+    const rows = transactions
+      .map((t) => {
+        const accName = accounts.find((a) => a.id === t.account_id)?.name || t.account_id;
+        return `"${t.id}","${t.transaction_date}","${t.merchant || ''}","${t.description || ''}","${t.category || 'Uncategorized'}","${t.transaction_type}",${t.amount},"${accName}"`;
+      })
       .join('\n');
     const blob = new Blob([headers + rows], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
@@ -120,18 +137,52 @@ export const Transactions: React.FC = () => {
     toast.success('Transactions exported to CSV!');
   };
 
-  const handleSaveEdit = (e: React.FormEvent) => {
+  const handleOpenEdit = (tx: ApiTransaction) => {
+    setEditingTx(tx);
+    setEditMerchant(tx.merchant || '');
+    setEditAmount(String(tx.amount));
+    setEditCategory(tx.category || '');
+    setEditDescription(tx.description || '');
+  };
+
+  const handleSaveEdit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingTx) return;
-    editTransaction(editingTx.id, {
-      merchant: editingTx.merchant,
-      amount: Number(editingTx.amount),
-      category: editingTx.category,
-      paymentMethod: editingTx.paymentMethod,
-      notes: editingTx.notes,
-    });
-    toast.success('Transaction updated successfully.');
-    setEditingTx(null);
+
+    setIsSavingEdit(true);
+    try {
+      await updateTransaction(editingTx.id, {
+        merchant: editMerchant.trim() || undefined,
+        amount: Number(editAmount),
+        category: editCategory ? (editCategory as TransactionCategory) : null,
+        description: editDescription.trim() || undefined,
+      });
+      toast.success('Transaction updated successfully.');
+      setEditingTx(null);
+    } catch {
+      toast.error('Failed to update transaction.');
+    } finally {
+      setIsSavingEdit(false);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    setIsDeleting(id);
+    try {
+      const success = await deleteTransaction(id);
+      if (success) {
+        toast.success('Transaction deleted successfully.');
+      } else {
+        toast.error('Failed to delete transaction.');
+      }
+    } finally {
+      setIsDeleting(null);
+    }
+  };
+
+  const formatCategoryLabel = (cat?: string | null) => {
+    if (!cat) return 'Uncategorized';
+    return cat.charAt(0).toUpperCase() + cat.slice(1);
   };
 
   return (
@@ -143,7 +194,7 @@ export const Transactions: React.FC = () => {
             Transactions & Ledger
           </h1>
           <p className="text-xs text-slate-500 mt-0.5">
-            Real-time categorized ledger with automated bank feed reconciliation.
+            Real-time categorized ledger integrated with backend accounts and balance tracking.
           </p>
         </div>
 
@@ -178,7 +229,7 @@ export const Transactions: React.FC = () => {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="card-fintech p-4">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-500">Total Inflow</span>
+            <span className="text-xs font-semibold text-slate-500">Inflow (Current View)</span>
             <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-50 text-emerald-700">
               <ArrowUpRight className="h-4 w-4" />
             </div>
@@ -186,12 +237,12 @@ export const Transactions: React.FC = () => {
           <div className="mt-2 text-xl font-bold text-slate-900 font-numeric">
             {formatCurrency(totalInflow)}
           </div>
-          <p className="text-[11px] text-emerald-600 font-semibold mt-0.5">Salary & freelance credits</p>
+          <p className="text-[11px] text-emerald-600 font-semibold mt-0.5">Salary & credits</p>
         </div>
 
         <div className="card-fintech p-4">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-500">Total Outflow</span>
+            <span className="text-xs font-semibold text-slate-500">Outflow (Current View)</span>
             <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-rose-50 text-rose-600">
               <ArrowDownLeft className="h-4 w-4" />
             </div>
@@ -199,7 +250,7 @@ export const Transactions: React.FC = () => {
           <div className="mt-2 text-xl font-bold text-slate-900 font-numeric">
             {formatCurrency(totalOutflow)}
           </div>
-          <p className="text-[11px] text-slate-400 mt-0.5">Fixed & variable spends</p>
+          <p className="text-[11px] text-slate-400 mt-0.5">Expenses & debits</p>
         </div>
 
         <div className="card-fintech p-4">
@@ -210,31 +261,47 @@ export const Transactions: React.FC = () => {
             </div>
           </div>
           <div className="mt-2 text-xl font-bold text-teal-800 font-numeric">
-            +{formatCurrency(netBalance)}
+            {netBalance >= 0 ? `+${formatCurrency(netBalance)}` : formatCurrency(netBalance)}
           </div>
-          <p className="text-[11px] text-teal-600 font-semibold mt-0.5">Available for compounding</p>
+          <p className="text-[11px] text-teal-600 font-semibold mt-0.5">Net balance difference</p>
         </div>
 
         <div className="card-fintech p-4">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-500">Flagged For Review</span>
-            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-rose-50 text-rose-600">
-              <ShieldAlert className="h-4 w-4" />
+            <span className="text-xs font-semibold text-slate-500">Total Records</span>
+            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-slate-100 text-slate-700">
+              <FileSpreadsheet className="h-4 w-4" />
             </div>
           </div>
-          <div className="mt-2 text-xl font-bold text-rose-600 font-numeric">
-            {flaggedCount} Anomalies
+          <div className="mt-2 text-xl font-bold text-slate-900 font-numeric">
+            {transactionsTotal}
           </div>
-          <p className="text-[11px] text-rose-500 font-medium mt-0.5">Scam Shield active</p>
+          <p className="text-[11px] text-slate-500 font-medium mt-0.5">Synced with database</p>
         </div>
       </div>
+
+      {/* Error state alert */}
+      {transactionsError && (
+        <div className="flex items-center justify-between p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 text-xs">
+          <div className="flex items-center gap-2">
+            <AlertTriangle className="h-4 w-4 text-rose-600 shrink-0" />
+            <span>{transactionsError}</span>
+          </div>
+          <button
+            onClick={() => fetchFilteredTransactions(currentPage, searchQuery, activeTab, selectedCategory, selectedAccount)}
+            className="flex items-center gap-1 font-bold text-rose-700 hover:text-rose-900 underline"
+          >
+            <RefreshCw className="h-3 w-3" /> Retry
+          </button>
+        </div>
+      )}
 
       {/* Table Controls: Tabs, Filters & Search */}
       <div className="card-fintech p-4 space-y-3.5">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
           {/* Tabs */}
           <div className="flex items-center rounded-xl bg-slate-100 p-1 w-fit">
-            {(['all', 'expense', 'income'] as const).map((tab) => (
+            {(['all', 'expense', 'income', 'transfer'] as const).map((tab) => (
               <button
                 key={tab}
                 onClick={() => {
@@ -248,7 +315,13 @@ export const Transactions: React.FC = () => {
                     : "text-slate-500 hover:text-slate-800"
                 )}
               >
-                {tab === 'all' ? 'All Transactions' : tab === 'expense' ? 'Expenses' : 'Income'}
+                {tab === 'all'
+                  ? 'All'
+                  : tab === 'expense'
+                  ? 'Expenses'
+                  : tab === 'income'
+                  ? 'Income'
+                  : 'Transfers'}
               </button>
             ))}
           </div>
@@ -263,7 +336,7 @@ export const Transactions: React.FC = () => {
                 setSearchQuery(e.target.value);
                 setCurrentPage(1);
               }}
-              placeholder="Search by merchant, category, notes..."
+              placeholder="Search by merchant or description..."
               className="w-full rounded-xl border border-slate-200 bg-slate-50/70 pl-8 pr-4 py-1.5 text-xs text-slate-900 focus:bg-white focus:border-teal-600 focus:outline-none"
             />
           </div>
@@ -275,6 +348,24 @@ export const Transactions: React.FC = () => {
             <Filter className="h-3 w-3" /> Filters:
           </span>
 
+          {/* Account Filter */}
+          <select
+            value={selectedAccount}
+            onChange={(e) => {
+              setSelectedAccount(e.target.value);
+              setCurrentPage(1);
+            }}
+            className="rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-slate-700 focus:border-teal-600 focus:outline-none"
+          >
+            <option value="All">All Accounts</option>
+            {accounts.map((acc) => (
+              <option key={acc.id} value={acc.id}>
+                {acc.name} ({acc.account_type})
+              </option>
+            ))}
+          </select>
+
+          {/* Category Filter */}
           <select
             value={selectedCategory}
             onChange={(e) => {
@@ -283,43 +374,19 @@ export const Transactions: React.FC = () => {
             }}
             className="rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-slate-700 focus:border-teal-600 focus:outline-none"
           >
-            {categories.map((c) => (
-              <option key={c} value={c}>Category: {c}</option>
+            {CATEGORIES.map((c) => (
+              <option key={c.value} value={c.value}>
+                {c.label}
+              </option>
             ))}
           </select>
 
-          <select
-            value={selectedPayment}
-            onChange={(e) => {
-              setSelectedPayment(e.target.value);
-              setCurrentPage(1);
-            }}
-            className="rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-slate-700 focus:border-teal-600 focus:outline-none"
-          >
-            {paymentMethods.map((p) => (
-              <option key={p} value={p}>Payment: {p}</option>
-            ))}
-          </select>
-
-          <select
-            value={selectedStatus}
-            onChange={(e) => {
-              setSelectedStatus(e.target.value);
-              setCurrentPage(1);
-            }}
-            className="rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-slate-700 focus:border-teal-600 focus:outline-none"
-          >
-            {statuses.map((s) => (
-              <option key={s} value={s}>Status: {s}</option>
-            ))}
-          </select>
-
-          {(selectedCategory !== 'All' || selectedPayment !== 'All' || selectedStatus !== 'All' || searchQuery) && (
+          {(selectedCategory !== 'All' || selectedAccount !== 'All' || searchQuery || activeTab !== 'all') && (
             <button
               onClick={() => {
                 setSelectedCategory('All');
-                setSelectedPayment('All');
-                setSelectedStatus('All');
+                setSelectedAccount('All');
+                setActiveTab('all');
                 setSearchQuery('');
                 setCurrentPage(1);
               }}
@@ -339,104 +406,133 @@ export const Transactions: React.FC = () => {
               <tr className="border-b border-slate-100 bg-slate-50/60 font-semibold text-slate-500">
                 <th className="py-3 px-4">Date</th>
                 <th className="py-3 px-4">Merchant / Description</th>
+                <th className="py-3 px-4">Account</th>
                 <th className="py-3 px-4">Category</th>
-                <th className="py-3 px-4">Payment Method</th>
-                <th className="py-3 px-4">Status</th>
+                <th className="py-3 px-4">Type</th>
                 <th className="py-3 px-4 text-right">Amount</th>
                 <th className="py-3 px-4 text-center">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {paginatedTransactions.length === 0 ? (
+              {isLoadingTransactions ? (
                 <tr>
                   <td colSpan={7} className="py-12 text-center text-slate-400">
-                    <p className="font-semibold text-slate-700">No transactions match your filter criteria.</p>
-                    <p className="text-[11px] mt-1">Try broadening your search or resetting filters.</p>
+                    <div className="flex flex-col items-center justify-center gap-2">
+                      <RefreshCw className="h-5 w-5 animate-spin text-teal-700" />
+                      <p className="font-semibold text-slate-600">Loading transactions from backend...</p>
+                    </div>
+                  </td>
+                </tr>
+              ) : transactions.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="py-12 text-center text-slate-400">
+                    <p className="font-semibold text-slate-700">No transactions found.</p>
+                    <p className="text-[11px] mt-1">
+                      Add a transaction or link an account to view ledger history.
+                    </p>
                   </td>
                 </tr>
               ) : (
-                paginatedTransactions.map((tx) => (
-                  <tr
-                    key={tx.id}
-                    className="hover:bg-slate-50/80 transition-colors group cursor-pointer"
-                    onClick={() => setViewingTx(tx)}
-                  >
-                    <td className="py-3 px-4 text-slate-500 whitespace-nowrap">
-                      {formatDate(tx.date)}
-                    </td>
-                    <td className="py-3 px-4">
-                      <div className="flex items-center gap-2">
-                        <span className="font-semibold text-slate-900">{tx.merchant}</span>
-                        {tx.isRecurring && (
-                          <span className="rounded-full bg-blue-50 px-1.5 py-0.5 text-[9px] font-semibold text-blue-700">
-                            Recurring
-                          </span>
-                        )}
-                      </div>
-                      {tx.riskReason && (
-                        <p className="text-[10px] text-rose-600 font-medium mt-0.5 flex items-center gap-1">
-                          <ShieldAlert className="h-3 w-3" /> {tx.riskReason}
-                        </p>
-                      )}
-                    </td>
-                    <td className="py-3 px-4">
-                      <span className="inline-block rounded-lg bg-slate-100 px-2 py-0.5 font-medium text-slate-700 text-[11px]">
-                        {tx.category}
-                      </span>
-                    </td>
-                    <td className="py-3 px-4 text-slate-500 whitespace-nowrap">
-                      {tx.paymentMethod}
-                    </td>
-                    <td className="py-3 px-4">
-                      <span
-                        className={cn(
-                          "rounded-full px-2 py-0.5 text-[10px] font-bold capitalize",
-                          tx.status === 'cleared'
-                            ? "bg-emerald-50 text-emerald-700"
-                            : tx.status === 'flagged'
-                            ? "bg-rose-50 text-rose-700 border border-rose-200"
-                            : "bg-amber-50 text-amber-700"
-                        )}
-                      >
-                        {tx.status}
-                      </span>
-                    </td>
-                    <td className="py-3 px-4 text-right font-numeric font-bold">
-                      <span
-                        className={
-                          tx.type === 'income' ? 'text-emerald-700' : 'text-slate-900'
-                        }
-                      >
-                        {tx.type === 'income' ? '+' : '-'}
-                        {formatCurrency(tx.amount)}
-                      </span>
-                    </td>
-                    <td
-                      className="py-3 px-4 text-center"
-                      onClick={(e) => e.stopPropagation()}
+                transactions.map((tx) => {
+                  const account = accounts.find((a) => a.id === tx.account_id);
+                  const isIncome = tx.transaction_type === 'income';
+                  const isTransfer = tx.transaction_type === 'transfer';
+
+                  return (
+                    <tr
+                      key={tx.id}
+                      className="hover:bg-slate-50/80 transition-colors group cursor-pointer"
+                      onClick={() => setViewingTx(tx)}
                     >
-                      <div className="flex items-center justify-center gap-1">
-                        <button
-                          onClick={() => setEditingTx(tx)}
-                          title="Edit transaction"
-                          className="p-1.5 text-slate-400 hover:text-teal-700 hover:bg-slate-100 rounded-lg transition-colors"
+                      <td className="py-3 px-4 text-slate-500 whitespace-nowrap">
+                        {formatDate(tx.transaction_date)}
+                      </td>
+                      <td className="py-3 px-4">
+                        <div className="flex items-center gap-2">
+                          <span className="font-semibold text-slate-900">
+                            {tx.merchant || tx.description || (isTransfer ? 'Account Transfer' : 'Transaction')}
+                          </span>
+                        </div>
+                        {tx.description && tx.merchant && (
+                          <p className="text-[10px] text-slate-400 mt-0.5 truncate max-w-xs">
+                            {tx.description}
+                          </p>
+                        )}
+                      </td>
+                      <td className="py-3 px-4 text-slate-600 whitespace-nowrap">
+                        <div className="flex items-center gap-1.5">
+                          <CreditCard className="h-3 w-3 text-slate-400" />
+                          <span>{account ? account.name : 'Primary Account'}</span>
+                        </div>
+                      </td>
+                      <td className="py-3 px-4">
+                        <span
+                          className={cn(
+                            "inline-block rounded-lg px-2 py-0.5 font-medium text-[11px]",
+                            tx.category
+                              ? "bg-slate-100 text-slate-700"
+                              : "bg-amber-50 text-amber-700 italic border border-amber-200"
+                          )}
                         >
-                          <Edit2 className="h-3.5 w-3.5" />
-                        </button>
-                        <button
-                          onClick={() => {
-                            deleteTransaction(tx.id);
-                            toast.success('Transaction removed.');
-                          }}
-                          title="Delete transaction"
-                          className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-slate-100 rounded-lg transition-colors"
+                          {formatCategoryLabel(tx.category)}
+                        </span>
+                      </td>
+                      <td className="py-3 px-4">
+                        <span
+                          className={cn(
+                            "rounded-full px-2 py-0.5 text-[10px] font-bold capitalize",
+                            isIncome
+                              ? "bg-emerald-50 text-emerald-700"
+                              : isTransfer
+                              ? "bg-blue-50 text-blue-700 border border-blue-200"
+                              : "bg-slate-100 text-slate-700"
+                          )}
                         >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
+                          {tx.transaction_type}
+                        </span>
+                      </td>
+                      <td className="py-3 px-4 text-right font-numeric font-bold">
+                        <span
+                          className={
+                            isIncome
+                              ? 'text-emerald-700'
+                              : isTransfer
+                              ? 'text-blue-700'
+                              : 'text-slate-900'
+                          }
+                        >
+                          {isIncome ? '+' : '-'}{formatCurrency(tx.amount)}
+                        </span>
+                      </td>
+                      <td
+                        className="py-3 px-4 text-center"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <div className="flex items-center justify-center gap-1">
+                          <button
+                            onClick={() => handleOpenEdit(tx)}
+                            title="Edit transaction"
+                            className="p-1.5 text-slate-400 hover:text-teal-700 hover:bg-slate-100 rounded-lg transition-colors"
+                          >
+                            <Edit2 className="h-3.5 w-3.5" />
+                          </button>
+                          <button
+                            disabled={isDeleting === tx.id}
+                            onClick={() => handleDelete(tx.id)}
+                            title="Delete transaction"
+                            className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-slate-100 rounded-lg transition-colors disabled:opacity-50"
+                          >
+                            {isDeleting === tx.id ? (
+                              <RefreshCw className="h-3.5 w-3.5 animate-spin text-rose-600" />
+                            ) : (
+                              <Trash2 className="h-3.5 w-3.5" />
+                            )}
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
               )}
             </tbody>
           </table>
@@ -447,29 +543,29 @@ export const Transactions: React.FC = () => {
           <span className="text-slate-500">
             Showing{' '}
             <strong className="text-slate-800">
-              {filteredTransactions.length === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1}
+              {transactionsTotal === 0 ? 0 : (transactionsPage - 1) * transactionsPageSize + 1}
             </strong>{' '}
             to{' '}
             <strong className="text-slate-800">
-              {Math.min(currentPage * itemsPerPage, filteredTransactions.length)}
+              {Math.min(transactionsPage * transactionsPageSize, transactionsTotal)}
             </strong>{' '}
-            of <strong className="text-slate-800">{filteredTransactions.length}</strong> records
+            of <strong className="text-slate-800">{transactionsTotal}</strong> records
           </span>
 
           <div className="flex items-center gap-1.5">
             <button
-              disabled={currentPage === 1}
+              disabled={transactionsPage <= 1 || isLoadingTransactions}
               onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
               className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-40"
             >
               <ChevronLeft className="h-4 w-4" />
             </button>
             <span className="px-2 font-semibold text-slate-700">
-              Page {currentPage} of {totalPages}
+              Page {transactionsPage} of {transactionsTotalPages || 1}
             </span>
             <button
-              disabled={currentPage === totalPages}
-              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+              disabled={transactionsPage >= transactionsTotalPages || isLoadingTransactions}
+              onClick={() => setCurrentPage((p) => p + 1)}
               className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-40"
             >
               <ChevronRight className="h-4 w-4" />
@@ -491,45 +587,55 @@ export const Transactions: React.FC = () => {
             <div className="space-y-4 pt-2 text-xs">
               <div className="rounded-2xl bg-slate-50 p-4 border border-slate-100 text-center">
                 <span className="text-[11px] text-slate-400 block uppercase tracking-wider font-semibold">Amount</span>
-                <span className={cn("text-2xl font-bold font-numeric block mt-1", viewingTx.type === 'income' ? 'text-emerald-700' : 'text-slate-900')}>
-                  {viewingTx.type === 'income' ? '+' : '-'}{formatCurrency(viewingTx.amount)}
+                <span className={cn("text-2xl font-bold font-numeric block mt-1", viewingTx.transaction_type === 'income' ? 'text-emerald-700' : 'text-slate-900')}>
+                  {viewingTx.transaction_type === 'income' ? '+' : '-'}{formatCurrency(viewingTx.amount)}
                 </span>
-                <span className="text-slate-600 font-semibold text-sm mt-1 block">{viewingTx.merchant}</span>
+                <span className="text-slate-600 font-semibold text-sm mt-1 block">
+                  {viewingTx.merchant || viewingTx.description || 'Transaction'}
+                </span>
               </div>
 
               <div className="space-y-2.5 divide-y divide-slate-100">
                 <div className="flex justify-between py-1.5">
                   <span className="text-slate-400">Transaction ID:</span>
-                  <span className="font-mono text-slate-700">{viewingTx.id}</span>
+                  <span className="font-mono text-slate-700 text-[10px]">{viewingTx.id}</span>
                 </div>
                 <div className="flex justify-between py-1.5">
                   <span className="text-slate-400">Date:</span>
-                  <span className="font-semibold text-slate-800">{formatDate(viewingTx.date)}</span>
+                  <span className="font-semibold text-slate-800">{formatDate(viewingTx.transaction_date)}</span>
+                </div>
+                <div className="flex justify-between py-1.5">
+                  <span className="text-slate-400">Type:</span>
+                  <span className="font-bold capitalize text-slate-800">{viewingTx.transaction_type}</span>
                 </div>
                 <div className="flex justify-between py-1.5">
                   <span className="text-slate-400">Category:</span>
-                  <span className="font-semibold text-slate-800">{viewingTx.category}</span>
+                  <span className="font-semibold text-slate-800">{formatCategoryLabel(viewingTx.category)}</span>
                 </div>
                 <div className="flex justify-between py-1.5">
-                  <span className="text-slate-400">Payment Method:</span>
-                  <span className="font-semibold text-slate-800">{viewingTx.paymentMethod}</span>
+                  <span className="text-slate-400">Source Account:</span>
+                  <span className="font-semibold text-slate-800">
+                    {accounts.find((a) => a.id === viewingTx.account_id)?.name || viewingTx.account_id}
+                  </span>
                 </div>
-                <div className="flex justify-between py-1.5">
-                  <span className="text-slate-400">Status:</span>
-                  <span className="font-bold text-emerald-700 capitalize">{viewingTx.status}</span>
-                </div>
-                {viewingTx.notes && (
+                {viewingTx.destination_account_id && (
                   <div className="flex justify-between py-1.5">
-                    <span className="text-slate-400">Notes:</span>
-                    <span className="text-slate-800">{viewingTx.notes}</span>
+                    <span className="text-slate-400">Destination Account:</span>
+                    <span className="font-semibold text-slate-800">
+                      {accounts.find((a) => a.id === viewingTx.destination_account_id)?.name || viewingTx.destination_account_id}
+                    </span>
                   </div>
                 )}
-                {viewingTx.riskReason && (
-                  <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-rose-700 mt-2">
-                    <strong className="block text-[11px] font-bold flex items-center gap-1">
-                      <ShieldAlert className="h-3.5 w-3.5" /> Scam Shield Audit Flag
-                    </strong>
-                    <p className="mt-1">{viewingTx.riskReason}</p>
+                {viewingTx.description && (
+                  <div className="flex justify-between py-1.5">
+                    <span className="text-slate-400">Description:</span>
+                    <span className="text-slate-800">{viewingTx.description}</span>
+                  </div>
+                )}
+                {viewingTx.source && (
+                  <div className="flex justify-between py-1.5">
+                    <span className="text-slate-400">Source:</span>
+                    <span className="text-slate-600 font-mono text-[10px]">{viewingTx.source}</span>
                   </div>
                 )}
               </div>
@@ -559,12 +665,12 @@ export const Transactions: React.FC = () => {
 
             <form onSubmit={handleSaveEdit} className="space-y-4 pt-2 text-xs">
               <div>
-                <label className="font-semibold text-slate-700">Merchant</label>
+                <label className="font-semibold text-slate-700">Merchant / Payee</label>
                 <input
                   type="text"
-                  required
-                  value={editingTx.merchant}
-                  onChange={(e) => setEditingTx({ ...editingTx, merchant: e.target.value })}
+                  value={editMerchant}
+                  onChange={(e) => setEditMerchant(e.target.value)}
+                  placeholder="e.g. Swiggy, Amazon"
                   className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2 text-xs font-semibold text-slate-900 focus:bg-white focus:border-teal-600 focus:outline-none"
                 />
               </div>
@@ -575,32 +681,37 @@ export const Transactions: React.FC = () => {
                   <input
                     type="number"
                     required
-                    value={editingTx.amount}
-                    onChange={(e) => setEditingTx({ ...editingTx, amount: Number(e.target.value) })}
+                    min="0.01"
+                    step="any"
+                    value={editAmount}
+                    onChange={(e) => setEditAmount(e.target.value)}
                     className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2 text-xs font-semibold text-slate-900 focus:bg-white focus:border-teal-600 focus:outline-none"
                   />
                 </div>
                 <div>
                   <label className="font-semibold text-slate-700">Category</label>
                   <select
-                    value={editingTx.category}
-                    onChange={(e) => setEditingTx({ ...editingTx, category: e.target.value })}
+                    value={editCategory}
+                    onChange={(e) => setEditCategory(e.target.value)}
                     className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-900 focus:bg-white focus:border-teal-600 focus:outline-none"
                   >
-                    {categories.filter((c) => c !== 'All').map((c) => (
-                      <option key={c} value={c}>{c}</option>
+                    <option value="">Uncategorized</option>
+                    {CATEGORIES.filter((c) => c.value !== 'All').map((c) => (
+                      <option key={c.value} value={c.value}>
+                        {c.label}
+                      </option>
                     ))}
                   </select>
                 </div>
               </div>
 
               <div>
-                <label className="font-semibold text-slate-700">Notes</label>
+                <label className="font-semibold text-slate-700">Description / Note</label>
                 <input
                   type="text"
-                  value={editingTx.notes || ''}
-                  onChange={(e) => setEditingTx({ ...editingTx, notes: e.target.value })}
-                  placeholder="Add note..."
+                  value={editDescription}
+                  onChange={(e) => setEditDescription(e.target.value)}
+                  placeholder="Add note or memo..."
                   className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2 text-xs text-slate-900 focus:bg-white focus:border-teal-600 focus:outline-none"
                 />
               </div>
@@ -608,16 +719,19 @@ export const Transactions: React.FC = () => {
               <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
                 <button
                   type="button"
+                  disabled={isSavingEdit}
                   onClick={() => setEditingTx(null)}
-                  className="rounded-xl border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50"
+                  className="rounded-xl border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 disabled:opacity-50"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="rounded-xl bg-teal-700 px-5 py-2 text-xs font-bold text-white shadow-sm hover:bg-teal-800"
+                  disabled={isSavingEdit}
+                  className="rounded-xl bg-teal-700 px-5 py-2 text-xs font-bold text-white shadow-sm hover:bg-teal-800 disabled:opacity-50 flex items-center gap-1.5"
                 >
-                  Save Changes
+                  {isSavingEdit && <RefreshCw className="h-3 w-3 animate-spin" />}
+                  <span>Save Changes</span>
                 </button>
               </div>
             </form>
