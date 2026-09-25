@@ -51,6 +51,7 @@ export const Topbar: React.FC<TopbarProps> = ({ onOpenMobileMenu }) => {
     setIsChatOpen,
     setIsOnboardingOpen,
     resetAllData,
+    logout,
   } = useFinance();
 
   const [isNotifOpen, setIsNotifOpen] = useState(false);
@@ -287,6 +288,18 @@ export const Topbar: React.FC<TopbarProps> = ({ onOpenMobileMenu }) => {
             >
               <RotateCcw className="h-3.5 w-3.5 text-slate-400" />
               Reset All Mock Data
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              onClick={async () => {
+                await logout();
+                toast.success('Signed out successfully.');
+                navigate('/signin');
+              }}
+              className="flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-xs font-semibold text-rose-600 cursor-pointer hover:bg-rose-50"
+            >
+              <User className="h-3.5 w-3.5 text-rose-500" />
+              Sign Out
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

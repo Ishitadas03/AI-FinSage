@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Settings as SettingsIcon,
   User,
@@ -13,13 +14,15 @@ import {
   CheckCircle2,
   Plus,
   RefreshCw,
+  LogOut,
 } from 'lucide-react';
 import { useFinance } from '@/context/FinanceContext';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 
 export const Settings: React.FC = () => {
-  const { user, updateProfile, resetAllData, transactions, budgets, goals, loans } = useFinance();
+  const navigate = useNavigate();
+  const { user, updateProfile, resetAllData, transactions, budgets, goals, loans, logout } = useFinance();
   const [activeTab, setActiveTab] = useState<'profile' | 'security' | 'notifications' | 'preferences' | 'accounts' | 'data'>('profile');
 
   // Profile Form State
@@ -229,6 +232,22 @@ export const Settings: React.FC = () => {
                     className={cn("px-3 py-1 rounded-lg font-bold text-xs", biometric ? "bg-teal-700 text-white" : "bg-slate-200 text-slate-600")}
                   >
                     {biometric ? 'Enabled' : 'Disabled'}
+                  </button>
+                </div>
+                <div className="flex items-center justify-between p-3.5 rounded-xl border border-slate-100 bg-slate-50">
+                  <div>
+                    <h4 className="font-bold text-slate-900">Active Authentication Session</h4>
+                    <p className="text-[11px] text-slate-500">Sign out of your active session on this browser.</p>
+                  </div>
+                  <button
+                    onClick={async () => {
+                      await logout();
+                      toast.success('Signed out successfully.');
+                      navigate('/signin');
+                    }}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-bold text-xs bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200 transition-colors"
+                  >
+                    <LogOut className="h-3.5 w-3.5" /> Sign Out
                   </button>
                 </div>
               </div>

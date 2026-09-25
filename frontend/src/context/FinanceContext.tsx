@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import {
   Transaction,
   Budget,
@@ -13,16 +13,31 @@ import {
   NotificationItem,
   ChatMessage,
 } from '@/types';
+import { AuthUser } from '@/types/auth';
+import {
+  authApi,
+  tokenStorage,
+  getApiErrorMessage,
+  setOnUnauthorizedCallback,
+} from '@/lib/api';
+
+export type AuthStatus = 'idle' | 'loading' | 'authenticated' | 'unauthenticated' | 'error';
 
 interface FinanceContextType {
   user: UserProfile;
+  authUser: AuthUser | null;
+  isAuthenticated: boolean;
+  authStatus: AuthStatus;
+  authError: string | null;
+  selectedPeriod: string;
+  setSelectedPeriod: (period: string) => void;
+
+  // Derived Financial Metrics
   netWorth: number;
   monthlyIncome: number;
   monthlyExpenses: number;
   savingsRate: number;
-  selectedPeriod: string;
-  setSelectedPeriod: (period: string) => void;
-  
+
   // Transactions
   transactions: Transaction[];
   addTransaction: (tx: Omit<Transaction, 'id'>) => void;
@@ -100,10 +115,13 @@ interface FinanceContextType {
   isSearchOpen: boolean;
   setIsSearchOpen: (open: boolean) => void;
 
-  // Auth & Session
-  isAuthenticated: boolean;
-  login: (email: string, name?: string, rememberMe?: boolean) => boolean;
-  logout: () => void;
+  // Real Auth & Session Operations
+  login: (email: string, password?: string, rememberMe?: boolean) => Promise<boolean>;
+  register: (email: string, password: string, fullName: string) => Promise<boolean>;
+  logout: () => Promise<void>;
+  refreshSession: () => Promise<boolean>;
+  loadCurrentUser: () => Promise<boolean>;
+  clearAuthError: () => void;
 
   // Profile update
   updateProfile: (profile: Partial<UserProfile>) => void;
@@ -112,17 +130,50 @@ interface FinanceContextType {
 
 const FinanceContext = createContext<FinanceContextType | undefined>(undefined);
 
-// Initial Mock Data matching Reference Design
-const INITIAL_USER: UserProfile = {
-  name: "Rahul Sharma",
-  initials: "RS",
-  email: "rahul.sharma@finsage.io",
+const GUEST_USER: UserProfile = {
+  name: "FinSage User",
+  initials: "FU",
+  email: "",
   phone: "+91 98765 43210",
   currency: "INR",
   panNumber: "ABCDE1234F",
   monthlyIncome: 85000,
   riskAppetite: "Moderate",
-  joinedDate: "January 2025",
+  joinedDate: "Recently",
+};
+
+const mapAuthUserToProfile = (
+  authUser: AuthUser,
+  savedProfile?: Partial<UserProfile>
+): UserProfile => {
+  const name = authUser.full_name?.trim() || authUser.email.split('@')[0];
+  const initials = name
+    .split(' ')
+    .filter(Boolean)
+    .map((part) => part[0])
+    .join('')
+    .toUpperCase()
+    .slice(0, 2) || 'FS';
+
+  const joinedDate = authUser.created_at
+    ? new Date(authUser.created_at).toLocaleDateString('en-US', {
+        month: 'long',
+        year: 'numeric',
+      })
+    : 'Recently';
+
+  return {
+    name,
+    initials,
+    email: authUser.email,
+    phone: savedProfile?.phone || GUEST_USER.phone,
+    currency: savedProfile?.currency || 'INR',
+    panNumber: savedProfile?.panNumber || GUEST_USER.panNumber,
+    monthlyIncome: savedProfile?.monthlyIncome || 85000,
+    riskAppetite: savedProfile?.riskAppetite || 'Moderate',
+    joinedDate,
+    avatarUrl: savedProfile?.avatarUrl,
+  };
 };
 
 const INITIAL_TRANSACTIONS: Transaction[] = [
@@ -251,19 +302,19 @@ const INITIAL_SECURITY_ALERTS: SecurityAlert[] = [
   {
     id: "sec-1",
     transactionId: "tx-6",
-    merchant: "Unknown Intl Gateway - London, UK",
+    merchant: "Unknown Intl Gateway - London",
     amount: 18450,
-    date: "13 Sep 2026, 03:42 AM",
-    riskScore: 88,
+    date: "2026-09-13 03:42 AM",
+    riskScore: 92,
     riskLevel: "high",
     reasons: [
-      "Unusual transaction amount (3.4x higher than standard card checkout)",
-      "Foreign currency cross-border merchant with no prior overseas travel notice",
-      "Off-peak timestamp execution (03:42 AM IST)",
+      "Foreign IP (United Kingdom) detected during off-hours",
+      "Transaction amount 4.2x above your 90-day typical shopping spend",
+      "Device fingerprint (Linux Desktop) does not match your trusted profile",
     ],
     status: "pending",
-    location: "London, United Kingdom (IP: 185.220.101.5)",
-    device: "Chrome on Windows NT 10.0 (Unrecognized Fingerprint)",
+    location: "London, United Kingdom",
+    device: "Linux x86_64 • Firefox 129",
     ipAddress: "185.220.101.5",
   },
   {
@@ -271,33 +322,33 @@ const INITIAL_SECURITY_ALERTS: SecurityAlert[] = [
     transactionId: "tx-17",
     merchant: "Crypto-Fast Trade Global",
     amount: 5000,
-    date: "02 Sep 2026, 11:15 PM",
-    riskScore: 79,
+    date: "2026-09-02 11:15 PM",
+    riskScore: 84,
     riskLevel: "high",
     reasons: [
-      "Merchant listed on FinTech Cyber-Defense blacklisted gateway registry",
-      "Velocity spike: Instantaneous card verification attempt without OTP Challenge",
+      "Merchant entity flagged in international cybercrime risk registry",
+      "High-risk crypto exchange categorized under speculative transfers",
     ],
     status: "pending",
-    location: "Seychelles (Proxy Tunnel detected)",
-    device: "Automated API Client v1.4",
-    ipAddress: "103.241.11.89",
+    location: "Nicosia, Cyprus",
+    device: "Android 14 • Chrome Mobile",
+    ipAddress: "194.26.29.112",
   },
   {
     id: "sec-3",
-    merchant: "QuickLoan MicroCharge Sub",
-    amount: 199,
-    date: "28 Aug 2026, 09:20 AM",
-    riskScore: 62,
-    riskLevel: "medium",
+    merchant: "Steam Games EU Store",
+    amount: 3200,
+    date: "2026-08-25 09:12 PM",
+    riskScore: 28,
+    riskLevel: "low",
     reasons: [
-      "Unusual repetitive micro-deduction pattern matching unauthorized subscription trojans",
-      "Merchant registered under generic unverified payment aggregator",
+      "Frequent recurring digital entertainment vendor",
+      "Verified 3D Secure OTP authentication succeeded",
     ],
-    status: "pending",
-    location: "Cyberabad, India",
-    device: "Android App Background WebView",
-    ipAddress: "49.207.214.12",
+    status: "safe",
+    location: "Luxembourg",
+    device: "MacBook Pro • Safari 17.5",
+    ipAddress: "49.37.142.9",
   },
 ];
 
@@ -305,44 +356,44 @@ const INITIAL_HOLDINGS: MarketHolding[] = [
   {
     id: "h-1",
     symbol: "NIFTYBEES",
-    name: "Nippon India Nifty 50 BeES ETF",
+    name: "Nippon India ETF Nifty 50 BeES",
     assetClass: "Mutual Funds",
-    units: 850,
+    units: 680,
     avgBuyPrice: 245.5,
     currentPrice: 278.4,
-    investedValue: 208675,
-    currentValue: 236640,
-    pnl: 27965,
+    investedValue: 166940,
+    currentValue: 189312,
+    pnl: 22372,
     pnlPercentage: 13.4,
-    dailyChangePercentage: 0.62,
+    dailyChangePercentage: 0.42,
   },
   {
     id: "h-2",
     symbol: "HDFCBANK",
-    name: "HDFC Bank Ltd.",
+    name: "HDFC Bank Limited",
     assetClass: "Stocks",
-    units: 75,
-    avgBuyPrice: 1540.0,
-    currentPrice: 1682.5,
-    investedValue: 115500,
-    currentValue: 126187,
-    pnl: 10687,
-    pnlPercentage: 9.25,
-    dailyChangePercentage: 1.15,
+    units: 95,
+    avgBuyPrice: 1520.0,
+    currentPrice: 1672.5,
+    investedValue: 144400,
+    currentValue: 158887,
+    pnl: 14487,
+    pnlPercentage: 10.03,
+    dailyChangePercentage: 0.65,
   },
   {
     id: "h-3",
     symbol: "RELIANCE",
-    name: "Reliance Industries Ltd.",
+    name: "Reliance Industries Limited",
     assetClass: "Stocks",
-    units: 35,
-    avgBuyPrice: 2720.0,
-    currentPrice: 2985.0,
-    investedValue: 95200,
-    currentValue: 104475,
-    pnl: 9275,
-    pnlPercentage: 9.74,
-    dailyChangePercentage: -0.34,
+    units: 24,
+    avgBuyPrice: 2780.0,
+    currentPrice: 2990.6,
+    investedValue: 66720,
+    currentValue: 71774,
+    pnl: 5054,
+    pnlPercentage: 7.57,
+    dailyChangePercentage: -0.15,
   },
   {
     id: "h-4",
@@ -449,14 +500,14 @@ const INITIAL_HEALTH: FinancialHealth = {
       action: "Redirect freelance or bonus inflows to achieve 6 full months of living costs.",
     },
     {
-      title: "Prepay ₹5,000/mo on Car Loan",
+      title: "Slash Home Loan Interest by ₹4.8L",
       impact: "+5 Health Points",
-      action: "Knocks 8 months off tenure and saves ₹18,400 in interest charges.",
+      action: "Add ₹5,000 extra monthly prepayment to reduce tenure by 38 months.",
     },
     {
-      title: "Cap Dining Out to ₹8,000/mo",
+      title: "Optimize Swiggy / Dining Out",
       impact: "+3 Health Points",
-      action: "Food delivery is currently ₹1,200 above optimal discretionary spending limit.",
+      action: "Cap weekend delivery spends to ₹1,500/week to recover ₹3,200 monthly.",
     },
   ],
 };
@@ -464,39 +515,35 @@ const INITIAL_HEALTH: FinancialHealth = {
 const INITIAL_NOTIFICATIONS: NotificationItem[] = [
   {
     id: "notif-1",
-    title: "Suspicious International Charge",
-    message: "A charge of ₹18,450 at 'Unknown Intl Gateway London' was flagged by Scam Shield.",
-    timestamp: "10 mins ago",
+    title: "Scam Shield Alert: Foreign IP Attempt",
+    message: "A ₹18,450 transaction was attempted from London, UK. Review & approve if valid.",
+    timestamp: "10m ago",
     read: false,
     type: "security",
-    link: "/scam-shield",
   },
   {
     id: "notif-2",
-    title: "Salary Credited",
-    message: "₹85,000 credited from Acme Tech Solutions. Monthly savings automated.",
-    timestamp: "2 days ago",
-    read: true,
-    type: "alert",
-    link: "/transactions",
+    title: "SIP Deduction Completed",
+    message: "₹8,000 auto-invested into Emergency Fund Goal for September.",
+    timestamp: "2h ago",
+    read: false,
+    type: "goal",
   },
   {
     id: "notif-3",
-    title: "Emergency Fund Milestone",
-    message: "You've reached 60% of your Emergency Fund goal (₹1.80L saved). Keep going!",
-    timestamp: "3 days ago",
+    title: "Budget Warning: Food & Dining",
+    message: "You have used 77% (₹9,200/₹12,000) of your dining budget with 12 days left.",
+    timestamp: "1d ago",
     read: true,
-    type: "goal",
-    link: "/goals",
+    type: "alert",
   },
   {
     id: "notif-4",
-    title: "September AI Report Ready",
-    message: "Your monthly financial audit is ready for review with actionable recommendations.",
-    timestamp: "4 days ago",
+    title: "Monthly Financial Audit Ready",
+    message: "Your September 2026 AI Financial Diagnostic Report has been generated.",
+    timestamp: "3d ago",
     read: true,
     type: "insight",
-    link: "/ai-report",
   },
 ];
 
@@ -504,7 +551,7 @@ const INITIAL_CHAT: ChatMessage[] = [
   {
     id: "chat-1",
     sender: "assistant",
-    text: "Hello Rahul! 👋 I'm FinSage, your AI Financial Copilot. I have full context on your ₹12.4L net worth, monthly cash flow, budgets, and goals. How can I assist you today?",
+    text: "Hello! 👋 I'm FinSage, your AI Financial Copilot. I have full context on your net worth, monthly cash flow, budgets, and goals. How can I assist you today?",
     timestamp: "Just now",
     suggestions: [
       "How can I save ₹10,000 more this month?",
@@ -516,14 +563,25 @@ const INITIAL_CHAT: ChatMessage[] = [
 ];
 
 export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
-    return localStorage.getItem('finsage_auth') === 'true' || sessionStorage.getItem('finsage_auth') === 'true';
+  // Real Backend Auth State
+  const [authUser, setAuthUser] = useState<AuthUser | null>(null);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => tokenStorage.hasSession());
+  const [authStatus, setAuthStatus] = useState<AuthStatus>('idle');
+  const [authError, setAuthError] = useState<string | null>(null);
+
+  // User Profile representation
+  const [customProfile, setCustomProfile] = useState<Partial<UserProfile>>(() => {
+    try {
+      const saved = localStorage.getItem('finsage_custom_profile');
+      return saved ? JSON.parse(saved) : {};
+    } catch {
+      return {};
+    }
   });
 
-  const [user, setUser] = useState<UserProfile>(() => {
-    const saved = localStorage.getItem('finsage_user');
-    return saved ? JSON.parse(saved) : INITIAL_USER;
-  });
+  const user: UserProfile = authUser
+    ? mapAuthUserToProfile(authUser, customProfile)
+    : { ...GUEST_USER, ...customProfile };
 
   const [selectedPeriod, setSelectedPeriod] = useState<string>("September 2026");
   const [transactions, setTransactions] = useState<Transaction[]>(() => {
@@ -566,10 +624,10 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
 
-  // Sync to local storage
+  // Sync state to local storage
   useEffect(() => {
-    localStorage.setItem('finsage_user', JSON.stringify(user));
-  }, [user]);
+    localStorage.setItem('finsage_custom_profile', JSON.stringify(customProfile));
+  }, [customProfile]);
 
   useEffect(() => {
     localStorage.setItem('finsage_txs', JSON.stringify(transactions));
@@ -592,7 +650,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
   }, [securityAlerts]);
 
   // Derived Financial Metrics
-  const monthlyIncome = 85000;
+  const monthlyIncome = user.monthlyIncome || 85000;
   const monthlyExpenses = 54200;
   const netWorth = 1240000;
   const savingsRate = 28; // 28%
@@ -611,7 +669,212 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const totalPortfolioPnl = totalPortfolioValue - totalPortfolioInvested;
   const totalPortfolioPnlPercent = Number(((totalPortfolioPnl / totalPortfolioInvested) * 100).toFixed(2));
 
-  // Handlers
+  // Clear auth error
+  const clearAuthError = useCallback(() => {
+    setAuthError(null);
+    if (authStatus === 'error') {
+      setAuthStatus(isAuthenticated ? 'authenticated' : 'unauthenticated');
+    }
+  }, [authStatus, isAuthenticated]);
+
+  // Load Current User from Backend
+  const loadCurrentUser = useCallback(async (): Promise<boolean> => {
+    try {
+      const current = await authApi.getCurrentUser();
+      setAuthUser(current);
+      setIsAuthenticated(true);
+      setAuthStatus('authenticated');
+      setAuthError(null);
+      return true;
+    } catch {
+      return false;
+    }
+  }, []);
+
+  // Refresh Session from Backend
+  const refreshSession = useCallback(async (): Promise<boolean> => {
+    try {
+      const res = await authApi.refresh();
+      setAuthUser(res.user);
+      setIsAuthenticated(true);
+      setAuthStatus('authenticated');
+      setAuthError(null);
+      return true;
+    } catch {
+      tokenStorage.clearTokens();
+      setAuthUser(null);
+      setIsAuthenticated(false);
+      setAuthStatus('unauthenticated');
+      return false;
+    }
+  }, []);
+
+  // Session Initialization on Mount
+  useEffect(() => {
+    let mounted = true;
+
+    const restoreSession = async () => {
+      if (tokenStorage.hasSession()) {
+        setAuthStatus('loading');
+        try {
+          let userProfile: AuthUser;
+          try {
+            userProfile = await authApi.getCurrentUser();
+          } catch {
+            // Access token might be missing or expired, attempt refresh
+            const tokenRes = await authApi.refresh();
+            userProfile = tokenRes.user;
+          }
+
+          if (mounted) {
+            setAuthUser(userProfile);
+            setIsAuthenticated(true);
+            setAuthStatus('authenticated');
+            setAuthError(null);
+          }
+        } catch {
+          if (mounted) {
+            tokenStorage.clearTokens();
+            setAuthUser(null);
+            setIsAuthenticated(false);
+            setAuthStatus('unauthenticated');
+          }
+        }
+      } else {
+        if (mounted) {
+          setAuthUser(null);
+          setIsAuthenticated(false);
+          setAuthStatus('unauthenticated');
+        }
+      }
+    };
+
+    restoreSession();
+
+    setOnUnauthorizedCallback(() => {
+      if (mounted) {
+        tokenStorage.clearTokens();
+        setAuthUser(null);
+        setIsAuthenticated(false);
+        setAuthStatus('unauthenticated');
+      }
+    });
+
+    return () => {
+      mounted = false;
+      setOnUnauthorizedCallback(null);
+    };
+  }, []);
+
+  // Real Login Method
+  const login = async (email: string, password?: string, _rememberMe = true): Promise<boolean> => {
+    setAuthStatus('loading');
+    setAuthError(null);
+
+    if (!email || !email.includes('@')) {
+      const msg = 'Please enter a valid email address.';
+      setAuthError(msg);
+      setAuthStatus('error');
+      return false;
+    }
+
+    if (!password) {
+      const msg = 'Password is required to sign in.';
+      setAuthError(msg);
+      setAuthStatus('error');
+      return false;
+    }
+
+    try {
+      const res = await authApi.login({ email: email.trim(), password });
+      setAuthUser(res.user);
+      setIsAuthenticated(true);
+      setAuthStatus('authenticated');
+      setAuthError(null);
+      return true;
+    } catch (err) {
+      const msg = getApiErrorMessage(err, 'Invalid email address or password.');
+      setAuthError(msg);
+      setAuthStatus('error');
+      setIsAuthenticated(false);
+      return false;
+    }
+  };
+
+  // Real Registration Method
+  const register = async (email: string, password: string, fullName: string): Promise<boolean> => {
+    setAuthStatus('loading');
+    setAuthError(null);
+
+    if (!fullName || fullName.trim().length === 0) {
+      const msg = 'Full name is required.';
+      setAuthError(msg);
+      setAuthStatus('error');
+      return false;
+    }
+
+    if (!email || !email.includes('@')) {
+      const msg = 'Please enter a valid email address.';
+      setAuthError(msg);
+      setAuthStatus('error');
+      return false;
+    }
+
+    if (!password || password.length < 8) {
+      const msg = 'Password must be at least 8 characters long.';
+      setAuthError(msg);
+      setAuthStatus('error');
+      return false;
+    }
+
+    try {
+      await authApi.register({
+        email: email.trim(),
+        password,
+        full_name: fullName.trim(),
+      });
+
+      // Auto-authenticate upon successful registration
+      const loginRes = await authApi.login({
+        email: email.trim(),
+        password,
+      });
+
+      setAuthUser(loginRes.user);
+      setIsAuthenticated(true);
+      setAuthStatus('authenticated');
+      setAuthError(null);
+      return true;
+    } catch (err) {
+      const msg = getApiErrorMessage(err, 'Registration failed. An account with this email may already exist.');
+      setAuthError(msg);
+      setAuthStatus('error');
+      setIsAuthenticated(false);
+      return false;
+    }
+  };
+
+  // Real Logout Method
+  const logout = async (): Promise<void> => {
+    try {
+      await authApi.logout();
+    } catch {
+      // Local cleanup occurs regardless
+    } finally {
+      tokenStorage.clearTokens();
+      setAuthUser(null);
+      setIsAuthenticated(false);
+      setAuthStatus('unauthenticated');
+      setAuthError(null);
+    }
+  };
+
+  // Profile update
+  const updateProfile = (updated: Partial<UserProfile>) => {
+    setCustomProfile((prev) => ({ ...prev, ...updated }));
+  };
+
+  // Financial Handlers
   const addTransaction = (tx: Omit<Transaction, 'id'>) => {
     const newTx: Transaction = {
       ...tx,
@@ -653,11 +916,11 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
   };
 
   const addGoal = (g: Omit<Goal, 'id'>) => {
-    const newGoal: Goal = {
+    const newG: Goal = {
       ...g,
       id: `g-${Date.now()}`,
     };
-    setGoals((prev) => [newGoal, ...prev]);
+    setGoals((prev) => [...prev, newG]);
   };
 
   const editGoal = (id: string, updated: Partial<Goal>) => {
@@ -672,43 +935,47 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
     setGoals((prev) =>
       prev.map((g) => {
         if (g.id !== id) return g;
-        const updatedAmt = Math.min(g.targetAmount, g.currentAmount + amount);
+        const newAmt = g.currentAmount + amount;
         return {
           ...g,
-          currentAmount: updatedAmt,
-          status: updatedAmt >= g.targetAmount ? 'completed' : g.status,
+          currentAmount: newAmt,
+          status: newAmt >= g.targetAmount ? 'completed' : g.status,
         };
       })
     );
   };
 
   const addLoan = (l: Omit<Loan, 'id'>) => {
-    const newLoan: Loan = {
+    const newL: Loan = {
       ...l,
       id: `l-${Date.now()}`,
     };
-    setLoans((prev) => [...prev, newLoan]);
+    setLoans((prev) => [...prev, newL]);
   };
 
   const simulatePrepayment = (loanId: string, extraMonthly: number) => {
-    const loan = loans.find((l) => l.id === loanId) || loans[0];
-    const P = loan.principalRemaining;
-    const r = loan.interestRate / 12 / 100;
-    const standardEmi = loan.monthlyEmi;
-    const standardTotalInterest = standardEmi * loan.remainingTenureMonths - P;
+    const targetLoan = loans.find((l) => l.id === loanId) || loans[0];
+    if (!targetLoan) return { interestSaved: 0, monthsSaved: 0, newTenureMonths: 0 };
 
-    const newEmi = standardEmi + extraMonthly;
-    // n = -log(1 - (P*r)/E) / log(1+r)
-    const months = Math.ceil(-Math.log(1 - (P * r) / newEmi) / Math.log(1 + r));
-    const newTotalPaid = newEmi * months;
-    const newTotalInterest = newTotalPaid - P;
-    const interestSaved = Math.max(0, Math.round(standardTotalInterest - newTotalInterest));
-    const monthsSaved = Math.max(0, loan.remainingTenureMonths - months);
+    const P = targetLoan.principalRemaining;
+    const r = targetLoan.interestRate / 12 / 100;
+    const baseEmi = targetLoan.monthlyEmi;
+    const newEmi = baseEmi + extraMonthly;
+
+    if (newEmi <= P * r) {
+      return { interestSaved: 0, monthsSaved: 0, newTenureMonths: targetLoan.remainingTenureMonths };
+    }
+
+    const nNew = Math.ceil(-Math.log(1 - (P * r) / newEmi) / Math.log(1 + r));
+    const totalOriginalPayment = baseEmi * targetLoan.remainingTenureMonths;
+    const totalNewPayment = newEmi * nNew;
+    const interestSaved = Math.max(0, Math.round(totalOriginalPayment - totalNewPayment));
+    const monthsSaved = Math.max(0, targetLoan.remainingTenureMonths - nNew);
 
     return {
       interestSaved,
       monthsSaved,
-      newTenureMonths: months,
+      newTenureMonths: Math.max(1, nNew),
     };
   };
 
@@ -748,7 +1015,6 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
     setChatMessages((prev) => [...prev, userMsg]);
 
-    // Generate smart context-aware response
     setTimeout(() => {
       let replyText = "";
       const lower = text.toLowerCase();
@@ -798,48 +1064,7 @@ On your HDFC Home Loan (₹18.5L balance at 8.65%):
     setChatMessages(INITIAL_CHAT);
   };
 
-  const updateProfile = (updated: Partial<UserProfile>) => {
-    setUser((prev) => ({ ...prev, ...updated }));
-  };
-
-  const login = (email: string, name?: string, rememberMe?: boolean): boolean => {
-    if (!email || !email.includes('@')) return false;
-    
-    // Auto-update user profile name and email if provided
-    let displayName = name || user.name;
-    if (!name && email.includes('@')) {
-      const prefix = email.split('@')[0];
-      displayName = prefix.charAt(0).toUpperCase() + prefix.slice(1).replace(/[._-]/g, ' ');
-    }
-
-    const updatedUser: UserProfile = {
-      ...user,
-      email,
-      name: displayName,
-      initials: displayName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) || 'FS',
-    };
-
-    setUser(updatedUser);
-    localStorage.setItem('finsage_user', JSON.stringify(updatedUser));
-    setIsAuthenticated(true);
-
-    if (rememberMe) {
-      localStorage.setItem('finsage_auth', 'true');
-    } else {
-      sessionStorage.setItem('finsage_auth', 'true');
-    }
-
-    return true;
-  };
-
-  const logout = () => {
-    setIsAuthenticated(false);
-    localStorage.removeItem('finsage_auth');
-    sessionStorage.removeItem('finsage_auth');
-  };
-
   const resetAllData = () => {
-    setUser(INITIAL_USER);
     setTransactions(INITIAL_TRANSACTIONS);
     setBudgets(INITIAL_BUDGETS);
     setGoals(INITIAL_GOALS);
@@ -847,17 +1072,28 @@ On your HDFC Home Loan (₹18.5L balance at 8.65%):
     setSecurityAlerts(INITIAL_SECURITY_ALERTS);
     setChatMessages(INITIAL_CHAT);
     setNotifications(INITIAL_NOTIFICATIONS);
-    setIsAuthenticated(false);
-    localStorage.clear();
-    sessionStorage.clear();
+    setCustomProfile({});
+    localStorage.removeItem('finsage_txs');
+    localStorage.removeItem('finsage_budgets');
+    localStorage.removeItem('finsage_goals');
+    localStorage.removeItem('finsage_loans');
+    localStorage.removeItem('finsage_alerts');
+    localStorage.removeItem('finsage_custom_profile');
   };
 
   return (
     <FinanceContext.Provider
       value={{
+        authUser,
         isAuthenticated,
+        authStatus,
+        authError,
         login,
+        register,
         logout,
+        refreshSession,
+        loadCurrentUser,
+        clearAuthError,
         user,
         netWorth,
         monthlyIncome,

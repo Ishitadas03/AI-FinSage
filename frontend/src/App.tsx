@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -8,6 +8,7 @@ import { FinanceProvider } from "@/context/FinanceContext";
 import { AppShell } from "@/components/layout/AppShell";
 import { PublicLayout } from "@/components/layout/PublicLayout";
 import { FinSageLoader } from "@/components/FinSageLoader";
+import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 
 // Landing & App Pages
 import { Landing } from "./pages/Landing";
@@ -62,7 +63,7 @@ const App = () => {
         {isInitialLoading && (
           <FinSageLoader
             isFullScreen={true}
-            duration={2000}
+            duration={1500}
             onFinish={() => setIsInitialLoading(false)}
           />
         )}
@@ -80,256 +81,284 @@ const App = () => {
               {/* Authentication Routes */}
               <Route path="/signin" element={<SignInPage />} />
               <Route path="/login" element={<SignInPage />} />
+              <Route path="/signup" element={<SignInPage />} />
+              <Route path="/register" element={<SignInPage />} />
 
-            {/* Core Public Company Pages */}
-            <Route
-              path="/features"
-              element={
-                <PublicLayout>
-                  <FeaturesPage />
-                </PublicLayout>
-              }
-            />
-            <Route
-              path="/security"
-              element={
-                <PublicLayout>
-                  <SecurityPage />
-                </PublicLayout>
-              }
-            />
-            <Route
-              path="/pricing"
-              element={
-                <PublicLayout>
-                  <PricingPage />
-                </PublicLayout>
-              }
-            />
-            <Route
-              path="/about"
-              element={
-                <PublicLayout>
-                  <AboutPage />
-                </PublicLayout>
-              }
-            />
+              {/* Core Public Company Pages */}
+              <Route
+                path="/features"
+                element={
+                  <PublicLayout>
+                    <FeaturesPage />
+                  </PublicLayout>
+                }
+              />
+              <Route
+                path="/security"
+                element={
+                  <PublicLayout>
+                    <SecurityPage />
+                  </PublicLayout>
+                }
+              />
+              <Route
+                path="/pricing"
+                element={
+                  <PublicLayout>
+                    <PricingPage />
+                  </PublicLayout>
+                }
+              />
+              <Route
+                path="/about"
+                element={
+                  <PublicLayout>
+                    <AboutPage />
+                  </PublicLayout>
+                }
+              />
 
-            {/* Educational Resource Guides */}
-            <Route
-              path="/resources/personal-finance-basics"
-              element={
-                <PublicLayout>
-                  <PersonalFinanceBasicsPage />
-                </PublicLayout>
-              }
-            />
-            <Route
-              path="/resources/budgeting"
-              element={
-                <PublicLayout>
-                  <BudgetingGuidePage />
-                </PublicLayout>
-              }
-            />
-            <Route
-              path="/resources/emi-guide"
-              element={
-                <PublicLayout>
-                  <EmiGuidePage />
-                </PublicLayout>
-              }
-            />
-            <Route
-              path="/resources/emergency-fund"
-              element={
-                <PublicLayout>
-                  <EmergencyFundGuidePage />
-                </PublicLayout>
-              }
-            />
-            <Route
-              path="/resources/financial-health"
-              element={
-                <PublicLayout>
-                  <FinancialHealthGuidePage />
-                </PublicLayout>
-              }
-            />
+              {/* Educational Resource Guides */}
+              <Route
+                path="/resources/personal-finance-basics"
+                element={
+                  <PublicLayout>
+                    <PersonalFinanceBasicsPage />
+                  </PublicLayout>
+                }
+              />
+              <Route
+                path="/resources/budgeting"
+                element={
+                  <PublicLayout>
+                    <BudgetingGuidePage />
+                  </PublicLayout>
+                }
+              />
+              <Route
+                path="/resources/emi-guide"
+                element={
+                  <PublicLayout>
+                    <EmiGuidePage />
+                  </PublicLayout>
+                }
+              />
+              <Route
+                path="/resources/emergency-fund"
+                element={
+                  <PublicLayout>
+                    <EmergencyFundGuidePage />
+                  </PublicLayout>
+                }
+              />
+              <Route
+                path="/resources/financial-health"
+                element={
+                  <PublicLayout>
+                    <FinancialHealthGuidePage />
+                  </PublicLayout>
+                }
+              />
 
-            {/* Financial Planning Calculators */}
-            <Route
-              path="/tools/emi-calculator"
-              element={
-                <PublicLayout>
-                  <EmiCalculatorPage />
-                </PublicLayout>
-              }
-            />
-            <Route
-              path="/tools/savings-calculator"
-              element={
-                <PublicLayout>
-                  <SavingsCalculatorPage />
-                </PublicLayout>
-              }
-            />
-            <Route
-              path="/tools/compound-interest"
-              element={
-                <PublicLayout>
-                  <CompoundInterestPage />
-                </PublicLayout>
-              }
-            />
-            <Route
-              path="/tools/goal-calculator"
-              element={
-                <PublicLayout>
-                  <GoalCalculatorPage />
-                </PublicLayout>
-              }
-            />
+              {/* Financial Planning Calculators */}
+              <Route
+                path="/tools/emi-calculator"
+                element={
+                  <PublicLayout>
+                    <EmiCalculatorPage />
+                  </PublicLayout>
+                }
+              />
+              <Route
+                path="/tools/savings-calculator"
+                element={
+                  <PublicLayout>
+                    <SavingsCalculatorPage />
+                  </PublicLayout>
+                }
+              />
+              <Route
+                path="/tools/compound-interest"
+                element={
+                  <PublicLayout>
+                    <CompoundInterestPage />
+                  </PublicLayout>
+                }
+              />
+              <Route
+                path="/tools/goal-calculator"
+                element={
+                  <PublicLayout>
+                    <GoalCalculatorPage />
+                  </PublicLayout>
+                }
+              />
 
-            {/* Help & Support Public Pages */}
-            <Route
-              path="/help"
-              element={
-                <PublicLayout>
-                  <HelpPage />
-                </PublicLayout>
-              }
-            />
-            <Route
-              path="/faq"
-              element={
-                <PublicLayout>
-                  <FaqPage />
-                </PublicLayout>
-              }
-            />
-            <Route
-              path="/contact"
-              element={
-                <PublicLayout>
-                  <ContactPage />
-                </PublicLayout>
-              }
-            />
+              {/* Help & Support Public Pages */}
+              <Route
+                path="/help"
+                element={
+                  <PublicLayout>
+                    <HelpPage />
+                  </PublicLayout>
+                }
+              />
+              <Route
+                path="/faq"
+                element={
+                  <PublicLayout>
+                    <FaqPage />
+                  </PublicLayout>
+                }
+              />
+              <Route
+                path="/contact"
+                element={
+                  <PublicLayout>
+                    <ContactPage />
+                  </PublicLayout>
+                }
+              />
 
-            {/* Dashboard & FinTech Application Core App Routes */}
-            <Route
-              path="/dashboard"
-              element={
-                <AppShell>
-                  <Dashboard />
-                </AppShell>
-              }
-            />
-            <Route
-              path="/transactions"
-              element={
-                <AppShell>
-                  <Transactions />
-                </AppShell>
-              }
-            />
-            <Route
-              path="/spending"
-              element={
-                <AppShell>
-                  <Spending />
-                </AppShell>
-              }
-            />
-            <Route
-              path="/budgets"
-              element={
-                <AppShell>
-                  <Budgets />
-                </AppShell>
-              }
-            />
-            <Route
-              path="/goals"
-              element={
-                <AppShell>
-                  <Goals />
-                </AppShell>
-              }
-            />
-            <Route
-              path="/future-self"
-              element={
-                <AppShell>
-                  <FutureSelf />
-                </AppShell>
-              }
-            />
-            <Route
-              path="/debt-emi"
-              element={
-                <AppShell>
-                  <DebtEMI />
-                </AppShell>
-              }
-            />
-            <Route
-              path="/scam-shield"
-              element={
-                <AppShell>
-                  <ScamShield />
-                </AppShell>
-              }
-            />
-            <Route
-              path="/financial-health"
-              element={
-                <AppShell>
-                  <FinancialHealth />
-                </AppShell>
-              }
-            />
-            <Route
-              path="/ai-report"
-              element={
-                <AppShell>
-                  <AIReport />
-                </AppShell>
-              }
-            />
-            <Route
-              path="/market-intel"
-              element={
-                <AppShell>
-                  <MarketIntel />
-                </AppShell>
-              }
-            />
-            <Route
-              path="/settings"
-              element={
-                <AppShell>
-                  <Settings />
-                </AppShell>
-              }
-            />
-            <Route
-              path="/help-support"
-              element={
-                <AppShell>
-                  <HelpSupport />
-                </AppShell>
-              }
-            />
+              {/* Dashboard & FinTech Application Core App Protected Routes */}
+              <Route
+                path="/dashboard"
+                element={
+                  <ProtectedRoute>
+                    <AppShell>
+                      <Dashboard />
+                    </AppShell>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/transactions"
+                element={
+                  <ProtectedRoute>
+                    <AppShell>
+                      <Transactions />
+                    </AppShell>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/spending"
+                element={
+                  <ProtectedRoute>
+                    <AppShell>
+                      <Spending />
+                    </AppShell>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/budgets"
+                element={
+                  <ProtectedRoute>
+                    <AppShell>
+                      <Budgets />
+                    </AppShell>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/goals"
+                element={
+                  <ProtectedRoute>
+                    <AppShell>
+                      <Goals />
+                    </AppShell>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/future-self"
+                element={
+                  <ProtectedRoute>
+                    <AppShell>
+                      <FutureSelf />
+                    </AppShell>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/debt-emi"
+                element={
+                  <ProtectedRoute>
+                    <AppShell>
+                      <DebtEMI />
+                    </AppShell>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/scam-shield"
+                element={
+                  <ProtectedRoute>
+                    <AppShell>
+                      <ScamShield />
+                    </AppShell>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/financial-health"
+                element={
+                  <ProtectedRoute>
+                    <AppShell>
+                      <FinancialHealth />
+                    </AppShell>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/ai-report"
+                element={
+                  <ProtectedRoute>
+                    <AppShell>
+                      <AIReport />
+                    </AppShell>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/market-intel"
+                element={
+                  <ProtectedRoute>
+                    <AppShell>
+                      <MarketIntel />
+                    </AppShell>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/settings"
+                element={
+                  <ProtectedRoute>
+                    <AppShell>
+                      <Settings />
+                    </AppShell>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/help-support"
+                element={
+                  <ProtectedRoute>
+                    <AppShell>
+                      <HelpSupport />
+                    </AppShell>
+                  </ProtectedRoute>
+                }
+              />
 
-            {/* Catch-all route */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
-      </FinanceProvider>
-    </TooltipProvider>
-  </QueryClientProvider>
+              {/* Catch-all route */}
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </BrowserRouter>
+        </FinanceProvider>
+      </TooltipProvider>
+    </QueryClientProvider>
   );
 };
 
