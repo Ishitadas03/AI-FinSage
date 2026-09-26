@@ -26,9 +26,15 @@ class User(Base):
         index=True,
         nullable=False,
     )
-    password_hash: Mapped[str] = mapped_column(
+    clerk_user_id: Mapped[str | None] = mapped_column(
         String(255),
-        nullable=False,
+        unique=True,
+        index=True,
+        nullable=True,
+    )
+    password_hash: Mapped[str | None] = mapped_column(
+        String(255),
+        nullable=True,
     )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),

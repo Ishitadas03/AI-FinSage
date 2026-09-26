@@ -27,6 +27,11 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
 
+    # Clerk Authentication
+    CLERK_ISSUER_URL: Union[str, None] = None
+    CLERK_SECRET_KEY: Union[str, None] = None
+    CLERK_WEBHOOK_SECRET: Union[str, None] = None
+
     # CORS
     CORS_ORIGINS: Union[List[str], str] = [
         "http://localhost:5173",
