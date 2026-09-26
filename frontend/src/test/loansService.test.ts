@@ -1,19 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import apiClient from '@/lib/api/client';
+import { apiClient } from '@/lib/api/client';
 import { loansApi } from '@/lib/api/loans';
-
-vi.mock('@/lib/api/client', () => ({
-  default: {
-    get: vi.fn(),
-    post: vi.fn(),
-    patch: vi.fn(),
-    delete: vi.fn(),
-  },
-}));
 
 describe('loansApi Client', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
+    vi.restoreAllMocks();
   });
 
   it('lists user loans', async () => {
@@ -33,11 +24,11 @@ describe('loansApi Client', () => {
       },
     ];
 
-    vi.mocked(apiClient.get).mockResolvedValueOnce({ data: mockLoans });
+    const spy = vi.spyOn(apiClient, 'get').mockResolvedValueOnce({ data: mockLoans });
 
     const result = await loansApi.list();
 
-    expect(apiClient.get).toHaveBeenCalledWith('/loans');
+    expect(spy).toHaveBeenCalledWith('/loans');
     expect(result).toEqual(mockLoans);
   });
 
@@ -60,11 +51,11 @@ describe('loansApi Client', () => {
       updated_at: '2026-01-15T00:00:00Z',
     };
 
-    vi.mocked(apiClient.post).mockResolvedValueOnce({ data: createdLoan });
+    const spy = vi.spyOn(apiClient, 'post').mockResolvedValueOnce({ data: createdLoan });
 
     const result = await loansApi.create(newLoanPayload);
 
-    expect(apiClient.post).toHaveBeenCalledWith('/loans', newLoanPayload);
+    expect(spy).toHaveBeenCalledWith('/loans', newLoanPayload);
     expect(result).toEqual(createdLoan);
   });
 
@@ -73,21 +64,21 @@ describe('loansApi Client', () => {
     const updatePayload = { outstanding_principal: 1700000 };
     const updatedLoan = { id: loanId, ...updatePayload };
 
-    vi.mocked(apiClient.patch).mockResolvedValueOnce({ data: updatedLoan });
+    const spy = vi.spyOn(apiClient, 'patch').mockResolvedValueOnce({ data: updatedLoan });
 
     const result = await loansApi.update(loanId, updatePayload);
 
-    expect(apiClient.patch).toHaveBeenCalledWith(`/loans/${loanId}`, updatePayload);
+    expect(spy).toHaveBeenCalledWith(`/loans/${loanId}`, updatePayload);
     expect(result).toEqual(updatedLoan);
   });
 
   it('deletes a loan', async () => {
     const loanId = '123e4567-e89b-12d3-a456-426614174000';
-    vi.mocked(apiClient.delete).mockResolvedValueOnce({ data: { message: 'Loan deleted' } });
+    const spy = vi.spyOn(apiClient, 'delete').mockResolvedValueOnce({ data: { message: 'Loan deleted' } });
 
     const result = await loansApi.delete(loanId);
 
-    expect(apiClient.delete).toHaveBeenCalledWith(`/loans/${loanId}`);
+    expect(spy).toHaveBeenCalledWith(`/loans/${loanId}`);
     expect(result).toBe(true);
   });
 
@@ -104,11 +95,11 @@ describe('loansApi Client', () => {
       total_payment: 4471281.0,
     };
 
-    vi.mocked(apiClient.post).mockResolvedValueOnce({ data: responseData });
+    const spy = vi.spyOn(apiClient, 'post').mockResolvedValueOnce({ data: responseData });
 
     const result = await loansApi.calculateEmi(payload);
 
-    expect(apiClient.post).toHaveBeenCalledWith('/emi/calculate', payload);
+    expect(spy).toHaveBeenCalledWith('/emi/calculate', payload);
     expect(result).toEqual(responseData);
   });
 
@@ -125,11 +116,11 @@ describe('loansApi Client', () => {
       recommendations: [],
     };
 
-    vi.mocked(apiClient.get).mockResolvedValueOnce({ data: mockOverview });
+    const spy = vi.spyOn(apiClient, 'get').mockResolvedValueOnce({ data: mockOverview });
 
     const result = await loansApi.getDebtStress();
 
-    expect(apiClient.get).toHaveBeenCalledWith('/debt-stress/overview', { params: undefined });
+    expect(spy).toHaveBeenCalledWith('/debt-stress/overview', { params: undefined });
     expect(result).toEqual(mockOverview);
   });
 });
