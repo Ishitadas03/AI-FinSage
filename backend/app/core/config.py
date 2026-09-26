@@ -41,10 +41,11 @@ class Settings(BaseSettings):
         if not isinstance(v, str) or not v.strip():
             return v
 
-        url_str = v.strip()
+        url_str = v.strip().lstrip(">$# ").strip()
 
         # Iteratively clean prefixes and surrounding quotes
         for _ in range(5):
+            url_str = url_str.lstrip(">$# ").strip()
             for prefix in [
                 "export DATABASE_URL=",
                 "export database_url=",
