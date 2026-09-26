@@ -22,13 +22,18 @@ import {
   TransactionUpdate,
 } from '@/types/transaction';
 import {
-  authApi,
-  accountsApi,
-  transactionsApi,
-  tokenStorage,
-  getApiErrorMessage,
-  setOnUnauthorizedCallback,
-} from '@/lib/api';
+  ApiBudget,
+  BudgetCreate,
+  BudgetFilterParams,
+  BudgetUpdate,
+} from '@/types/budget';
+import { authApi } from '@/lib/api/auth';
+import { accountsApi } from '@/lib/api/accounts';
+import { transactionsApi } from '@/lib/api/transactions';
+import { budgetsApi } from '@/lib/api/budgets';
+import { tokenStorage } from '@/lib/api/tokenStorage';
+import { getApiErrorMessage, setOnUnauthorizedCallback } from '@/lib/api/client';
+
 
 export type AuthStatus = 'idle' | 'loading' | 'authenticated' | 'unauthenticated' | 'error';
 
@@ -74,11 +79,16 @@ interface FinanceContextType {
   monthlyExpenses: number;
   savingsRate: number;
 
-  // Budgets
-  budgets: Budget[];
-  addBudget: (budget: Omit<Budget, 'id'>) => void;
-  editBudget: (id: string, budget: Partial<Budget>) => void;
-  deleteBudget: (id: string) => void;
+  // Real Backend Budgets State & Operations
+  budgets: ApiBudget[];
+  isLoadingBudgets: boolean;
+  budgetsError: string | null;
+  loadBudgets: (params?: BudgetFilterParams) => Promise<ApiBudget[]>;
+  createBudget: (payload: BudgetCreate) => Promise<ApiBudget>;
+  updateBudget: (id: string, payload: BudgetUpdate) => Promise<ApiBudget>;
+  deleteBudget: (id: string) => Promise<boolean>;
+  addBudget: (budget: any) => Promise<ApiBudget>;
+  editBudget: (id: string, budget: any) => Promise<ApiBudget>;
 
   // Goals
   goals: Goal[];
@@ -205,14 +215,6 @@ const mapAuthUserToProfile = (
   };
 };
 
-const INITIAL_BUDGETS: Budget[] = [
-  { id: "b-1", category: "Housing", allocated: 20000, spent: 18000, color: "#3B82F6", icon: "Home" },
-  { id: "b-2", category: "Food & Dining", allocated: 12000, spent: 9200, color: "#10B981", icon: "Utensils" },
-  { id: "b-3", category: "Transportation", allocated: 7000, spent: 5400, color: "#06B6D4", icon: "Car" },
-  { id: "b-4", category: "Shopping", allocated: 6000, spent: 4800, color: "#F59E0B", icon: "ShoppingBag" },
-  { id: "b-5", category: "Subscriptions", allocated: 2500, spent: 2100, color: "#8B5CF6", icon: "Tv" },
-  { id: "b-6", category: "Utilities & Others", allocated: 17500, spent: 14700, color: "#0F766E", icon: "Zap" },
-];
 
 const INITIAL_GOALS: Goal[] = [
   {
@@ -608,11 +610,10 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [transactionsError, setTransactionsError] = useState<string | null>(null);
   const [activeTransactionFilters, setActiveTransactionFilters] = useState<TransactionFilterParams>({});
 
-  // Non-integrated modules (Budgets, Goals, Loans, Security) preserved
-  const [budgets, setBudgets] = useState<Budget[]>(() => {
-    const saved = localStorage.getItem('finsage_budgets');
-    return saved ? JSON.parse(saved) : INITIAL_BUDGETS;
-  });
+  // Real Backend Budgets State
+  const [budgets, setBudgets] = useState<ApiBudget[]>([]);
+  const [isLoadingBudgets, setIsLoadingBudgets] = useState<boolean>(false);
+  const [budgetsError, setBudgetsError] = useState<string | null>(null);
 
   const [goals, setGoals] = useState<Goal[]>(() => {
     const saved = localStorage.getItem('finsage_goals');
@@ -649,9 +650,6 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
     localStorage.setItem('finsage_custom_profile', JSON.stringify(customProfile));
   }, [customProfile]);
 
-  useEffect(() => {
-    localStorage.setItem('finsage_budgets', JSON.stringify(budgets));
-  }, [budgets]);
 
   useEffect(() => {
     localStorage.setItem('finsage_goals', JSON.stringify(goals));
@@ -762,6 +760,97 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
   }, []);
 
+  // Real Budgets Operations
+  const loadBudgets = useCallback(
+    async (params?: BudgetFilterParams): Promise<ApiBudget[]> => {
+      setIsLoadingBudgets(true);
+      setBudgetsError(null);
+      try {
+        const data = await budgetsApi.list(params);
+        setBudgets(data);
+        return data;
+      } catch (err) {
+        const msg = getApiErrorMessage(err, 'Failed to load budgets.');
+        setBudgetsError(msg);
+        return [];
+      } finally {
+        setIsLoadingBudgets(false);
+      }
+    },
+    []
+  );
+
+  const createBudget = useCallback(
+    async (payload: BudgetCreate): Promise<ApiBudget> => {
+      setIsLoadingBudgets(true);
+      setBudgetsError(null);
+      try {
+        const newBudget = await budgetsApi.create(payload);
+        setBudgets((prev) => [...prev, newBudget]);
+        return newBudget;
+      } catch (err) {
+        const msg = getApiErrorMessage(err, 'Failed to create budget.');
+        setBudgetsError(msg);
+        throw err;
+      } finally {
+        setIsLoadingBudgets(false);
+      }
+    },
+    []
+  );
+
+  const updateBudget = useCallback(
+    async (id: string, payload: BudgetUpdate): Promise<ApiBudget> => {
+      setIsLoadingBudgets(true);
+      setBudgetsError(null);
+      try {
+        const updated = await budgetsApi.update(id, payload);
+        setBudgets((prev) => prev.map((b) => (b.id === id ? updated : b)));
+        return updated;
+      } catch (err) {
+        const msg = getApiErrorMessage(err, 'Failed to update budget.');
+        setBudgetsError(msg);
+        throw err;
+      } finally {
+        setIsLoadingBudgets(false);
+      }
+    },
+    []
+  );
+
+  const deleteBudget = useCallback(
+    async (id: string): Promise<boolean> => {
+      setIsLoadingBudgets(true);
+      setBudgetsError(null);
+      try {
+        await budgetsApi.delete(id);
+        setBudgets((prev) => prev.filter((b) => b.id !== id));
+        return true;
+      } catch (err) {
+        const msg = getApiErrorMessage(err, 'Failed to delete budget.');
+        setBudgetsError(msg);
+        return false;
+      } finally {
+        setIsLoadingBudgets(false);
+      }
+    },
+    []
+  );
+
+  const addBudget = useCallback(
+    async (budget: any): Promise<ApiBudget> => {
+      return await createBudget(budget);
+    },
+    [createBudget]
+  );
+
+  const editBudget = useCallback(
+    async (id: string, budget: any): Promise<ApiBudget> => {
+      return await updateBudget(id, budget);
+    },
+    [updateBudget]
+  );
+
   // Real Transactions Operations
   const loadTransactions = useCallback(
     async (filters?: TransactionFilterParams): Promise<TransactionPaginatedResponse> => {
@@ -801,9 +890,10 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
       setTransactionsError(null);
       try {
         const created = await transactionsApi.create(payload);
-        // Refresh transaction list and accounts to update authoritative balances
+        // Refresh transaction list, accounts, and budgets to update authoritative metrics
         await loadTransactions();
         await loadAccounts();
+        await loadBudgets();
         return created;
       } catch (err) {
         const msg = getApiErrorMessage(err, 'Failed to create transaction.');
@@ -824,6 +914,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
         const updated = await transactionsApi.update(id, payload);
         await loadTransactions();
         await loadAccounts();
+        await loadBudgets();
         return updated;
       } catch (err) {
         const msg = getApiErrorMessage(err, 'Failed to update transaction.');
@@ -844,6 +935,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
         await transactionsApi.delete(id);
         await loadTransactions();
         await loadAccounts();
+        await loadBudgets();
         return true;
       } catch (err) {
         const msg = getApiErrorMessage(err, 'Failed to delete transaction.');
@@ -977,13 +1069,14 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
     };
   }, []);
 
-  // Auto-fetch accounts & transactions upon authentication
+  // Auto-fetch accounts, transactions & budgets upon authentication
   useEffect(() => {
     if (isAuthenticated) {
       loadAccounts();
       loadTransactions();
+      loadBudgets();
     }
-  }, [isAuthenticated, loadAccounts, loadTransactions]);
+  }, [isAuthenticated, loadAccounts, loadTransactions, loadBudgets]);
 
   // Real Login Method
   const login = async (email: string, password?: string, _rememberMe = true): Promise<boolean> => {
@@ -1094,22 +1187,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
     setCustomProfile((prev) => ({ ...prev, ...updated }));
   };
 
-  // Budgets, Goals, Loans Helpers
-  const addBudget = (b: Omit<Budget, 'id'>) => {
-    const newB: Budget = {
-      ...b,
-      id: `b-${Date.now()}`,
-    };
-    setBudgets((prev) => [...prev, newB]);
-  };
-
-  const editBudget = (id: string, updated: Partial<Budget>) => {
-    setBudgets((prev) => prev.map((b) => (b.id === id ? { ...b, ...updated } : b)));
-  };
-
-  const deleteBudget = (id: string) => {
-    setBudgets((prev) => prev.filter((b) => b.id !== id));
-  };
+  // Goals, Loans Helpers
 
   const addGoal = (g: Omit<Goal, 'id'>) => {
     const newG: Goal = {
@@ -1318,9 +1396,14 @@ On your HDFC Home Loan (₹18.5L balance at 8.65%):
         selectedPeriod,
         setSelectedPeriod,
         budgets,
+        isLoadingBudgets,
+        budgetsError,
+        loadBudgets,
+        createBudget,
+        updateBudget,
+        deleteBudget,
         addBudget,
         editBudget,
-        deleteBudget,
         goals,
         addGoal,
         editGoal,

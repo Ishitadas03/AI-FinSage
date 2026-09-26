@@ -27,7 +27,7 @@ from app.services.bank_statement_parser_service import (
 router = APIRouter(prefix="/imports/bank-statement", tags=["Bank Statement Import"])
 
 ALLOWED_CSV_EXTENSIONS = (".csv",)
-MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024  # 10 MB limit
+MAX_FILE_SIZE_BYTES = 4 * 1024 * 1024  # 4 MiB limit (Vercel Serverless Function payload compliant)
 
 
 @router.post(

@@ -16,15 +16,10 @@ export interface Transaction {
   riskReason?: string;
 }
 
-export interface Budget {
-  id: string;
-  category: string;
-  allocated: number;
-  spent: number;
-  color: string;
-  icon: string;
-  rollover?: boolean;
-}
+export * from './budget';
+
+export type Budget = import('./budget').ApiBudget;
+
 
 export interface Goal {
   id: string;

@@ -2,7 +2,6 @@ from logging.config import fileConfig
 import sys
 from pathlib import Path
 from sqlalchemy import create_engine, pool
-from sqlalchemy.engine import make_url
 from alembic import context
 
 # Ensure backend root directory is on Python path
@@ -36,24 +35,8 @@ def run_migrations_offline() -> None:
 
 def run_migrations_online() -> None:
     """Run migrations in 'online' mode."""
-    raw_url = str(settings.DATABASE_URL)
-    print(f"[Alembic Diagnostics] String length: {len(raw_url)}")
-    if "://" in raw_url:
-        scheme, remainder = raw_url.split("://", 1)
-        target = remainder.split("@")[-1] if "@" in remainder else remainder[:15]
-        print(f"[Alembic Diagnostics] Scheme: {scheme}, Host/DB: {target}")
-    else:
-        print(f"[Alembic Diagnostics] No '://' found. Starts with: {raw_url[:10]!r}")
-
-    try:
-        url_obj = make_url(raw_url)
-    except Exception as e:
-        print(f"[Alembic Diagnostics] make_url failed: {e}")
-        # Build direct engine fallback
-        raise
-
     connectable = create_engine(
-        url_obj,
+        settings.DATABASE_URL,
         poolclass=pool.NullPool,
     )
 

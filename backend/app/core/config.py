@@ -33,7 +33,9 @@ class Settings(BaseSettings):
         "http://localhost:8080",
         "http://localhost:3000",
         "https://ai-finsage.vercel.app",
+        "https://frontend-omega-lake-79.vercel.app",
     ]
+
 
     @field_validator("DATABASE_URL", mode="before")
     @classmethod

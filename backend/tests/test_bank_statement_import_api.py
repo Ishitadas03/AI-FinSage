@@ -327,3 +327,18 @@ def test_sanitized_filename_no_path_leak():
     )
     assert res.status_code == 200
     assert res.json()["filename"] == "my_statement.csv"
+
+
+def test_oversized_file_rejected():
+    user = register_and_login_user("oversize_check")
+    # Generate content larger than 4 MiB (4 * 1024 * 1024 + 1 bytes)
+    oversized_bytes = b"Date,Description,Amount\n" + (b"2024-01-01,Test,10.00\n" * 200000)
+    assert len(oversized_bytes) > 4 * 1024 * 1024
+
+    res = client.post(
+        "/api/v1/imports/bank-statement/preview",
+        headers=user["headers"],
+        files={"file": ("oversized_statement.csv", io.BytesIO(oversized_bytes), "text/csv")},
+    )
+    assert res.status_code == 413
+    assert "exceeds maximum limit of 4MB" in res.json()["detail"]
