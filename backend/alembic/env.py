@@ -37,16 +37,25 @@ def run_migrations_offline() -> None:
 def run_migrations_online() -> None:
     """Run migrations in 'online' mode."""
     raw_url = str(settings.DATABASE_URL)
+    print(f"[Alembic Diagnostics] String length: {len(raw_url)}")
+    if "://" in raw_url:
+        scheme, remainder = raw_url.split("://", 1)
+        target = remainder.split("@")[-1] if "@" in remainder else remainder[:15]
+        print(f"[Alembic Diagnostics] Scheme: {scheme}, Host/DB: {target}")
+    else:
+        print(f"[Alembic Diagnostics] No '://' found. Starts with: {raw_url[:10]!r}")
+
     try:
         url_obj = make_url(raw_url)
-        print(f"[Alembic] Connecting to database: {url_obj.render_as_string(hide_password=True)}")
-        connectable = create_engine(
-            url_obj,
-            poolclass=pool.NullPool,
-        )
-    except Exception as exc:
-        print(f"[Alembic ERROR] Failed parsing database URL: {exc}. URL length: {len(raw_url)}, starts with: {raw_url[:15]!r}")
+    except Exception as e:
+        print(f"[Alembic Diagnostics] make_url failed: {e}")
+        # Build direct engine fallback
         raise
+
+    connectable = create_engine(
+        url_obj,
+        poolclass=pool.NullPool,
+    )
 
     with connectable.connect() as connection:
         context.configure(
