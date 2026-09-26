@@ -35,6 +35,7 @@ import { goalsApi } from '@/lib/api/goals';
 import { loansApi } from '@/lib/api/loans';
 import { tokenStorage } from '@/lib/api/tokenStorage';
 import { getApiErrorMessage, setOnUnauthorizedCallback } from '@/lib/api/client';
+import { useAuth, useUser, useClerk } from '@clerk/react';
 import {
   ApiGoal,
   GoalContribution,
@@ -518,6 +519,10 @@ const INITIAL_CHAT: ChatMessage[] = [
 ];
 
 export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const clerkAuth = useAuth();
+  const clerkUser = useUser();
+  const clerk = useClerk();
+
   // Real Backend Auth State
   const [authUser, setAuthUser] = useState<AuthUser | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => tokenStorage.hasSession());
@@ -1247,6 +1252,60 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
     };
   }, []);
 
+  // Synchronize Clerk Auth Session
+  useEffect(() => {
+    let mounted = true;
+
+    if (clerkAuth && clerkAuth.isLoaded) {
+      if (clerkAuth.isSignedIn && clerkUser?.user) {
+        const u = clerkUser.user;
+        const email = u.primaryEmailAddress?.emailAddress || '';
+        const name = u.fullName || `${u.firstName || ''} ${u.lastName || ''}`.trim() || 'FinSage User';
+
+        const profileUser: AuthUser = {
+          id: u.id,
+          email,
+          full_name: name,
+          is_active: true,
+          created_at: u.createdAt ? new Date(u.createdAt).toISOString() : new Date().toISOString(),
+          updated_at: u.updatedAt ? new Date(u.updatedAt).toISOString() : null,
+        };
+
+        if (mounted) {
+          setAuthUser(profileUser);
+          setIsAuthenticated(true);
+          setAuthStatus('authenticated');
+          setAuthError(null);
+        }
+
+        // Attempt to fetch PostgreSQL backend user for canonical DB UUID
+        authApi.getCurrentUser().then((backendUser) => {
+          if (mounted && backendUser) {
+            setAuthUser(backendUser);
+          }
+        }).catch(() => {
+          // Backend will auto-provision on first request
+        });
+      } else if (!clerkAuth.isSignedIn && !tokenStorage.hasSession()) {
+        if (mounted) {
+          setAuthUser(null);
+          setIsAuthenticated(false);
+          setAuthStatus('unauthenticated');
+          setAccounts([]);
+          setTransactions([]);
+          setBudgets([]);
+          setGoals([]);
+          setLoans([]);
+          setDebtStress(null);
+        }
+      }
+    }
+
+    return () => {
+      mounted = false;
+    };
+  }, [clerkAuth?.isLoaded, clerkAuth?.isSignedIn, clerkUser?.user]);
+
   // Auto-fetch accounts, transactions, budgets, goals, loans & debt stress upon authentication
   useEffect(() => {
     if (isAuthenticated) {
@@ -1350,6 +1409,14 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
   // Real Logout Method
   const logout = async (): Promise<void> => {
     try {
+      if (clerk?.signOut) {
+        await clerk.signOut();
+      }
+    } catch {
+      // Local cleanup occurs regardless
+    }
+
+    try {
       await authApi.logout();
     } catch {
       // Local cleanup occurs regardless
@@ -1361,6 +1428,10 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
       setAuthError(null);
       setAccounts([]);
       setTransactions([]);
+      setBudgets([]);
+      setGoals([]);
+      setLoans([]);
+      setDebtStress(null);
     }
   };
 
@@ -1625,7 +1696,22 @@ On your HDFC Home Loan (₹18.5L balance at 8.65%):
 export const useFinance = () => {
   const context = useContext(FinanceContext);
   if (!context) {
-    throw new Error('useFinance must be used within a FinanceProvider');
+    return {
+      isAuthenticated: false,
+      authStatus: 'unauthenticated',
+      authUser: null,
+      authError: null,
+      user: GUEST_USER,
+      accounts: [],
+      transactions: [],
+      budgets: [],
+      goals: [],
+      loans: [],
+      debtStress: null,
+      securityAlerts: [],
+      notifications: [],
+      chatMessages: [],
+    } as unknown as FinanceContextType;
   }
   return context;
 };

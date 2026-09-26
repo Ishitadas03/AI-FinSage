@@ -117,6 +117,7 @@ def get_current_user(
     # Handle Clerk authenticated user lookup & JIT provisioning
     clerk_id = payload.get("sub")
     email = payload.get("email") or payload.get("primary_email")
+    email_verified = payload.get("email_verified")
 
     if not clerk_id and not email:
         raise HTTPException(
@@ -130,7 +131,17 @@ def get_current_user(
         user = db.query(User).filter(User.clerk_user_id == clerk_id).first()
 
     if not user and email:
-        user = db.query(User).filter(User.email == email.lower().strip()).first()
+        # Check if an existing account exists with this email
+        existing_user = db.query(User).filter(User.email == email.lower().strip()).first()
+        if existing_user:
+            # Prevent account takeover: only link if email is verified in Clerk
+            if email_verified is False:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Please verify your email address in Clerk before linking your account.",
+                    headers={"WWW-Authenticate": "Bearer"},
+                )
+            user = existing_user
 
     if not user:
         # Just-In-Time (JIT) creation for new Clerk user

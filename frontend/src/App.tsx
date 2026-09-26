@@ -36,6 +36,10 @@ import { HelpPage } from "./pages/public/HelpPage";
 import { FaqPage } from "./pages/public/FaqPage";
 import { ContactPage } from "./pages/public/ContactPage";
 import { SignInPage } from "./pages/public/auth/SignInPage";
+import { SignUpPage } from "./pages/public/auth/SignUpPage";
+import { ClerkProvider } from "@clerk/react";
+import { ClerkAuthBridge } from "@/components/auth/ClerkAuthBridge";
+import { ClerkMissingKeyScreen } from "@/components/auth/ClerkMissingKeyScreen";
 
 // Resource Guides
 import { PersonalFinanceBasicsPage } from "./pages/public/resources/PersonalFinanceBasicsPage";
@@ -54,39 +58,49 @@ import { PWAInstallBanner } from "@/components/pwa/PWAInstallBanner";
 
 const queryClient = new QueryClient();
 
+const CLERK_PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
+
 const App = () => {
   const [isInitialLoading, setIsInitialLoading] = useState(true);
 
+  if (!CLERK_PUBLISHABLE_KEY || CLERK_PUBLISHABLE_KEY.trim() === '' || CLERK_PUBLISHABLE_KEY.includes('YOUR_CLERK_KEY')) {
+    return <ClerkMissingKeyScreen />;
+  }
+
   return (
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner position="top-right" richColors />
-        <PWAInstallProvider>
-          {isInitialLoading && (
-            <FinSageLoader
-              isFullScreen={true}
-              duration={1500}
-              onFinish={() => setIsInitialLoading(false)}
-            />
-          )}
-          <PWAInstallBanner />
-          <FinanceProvider>
-          <BrowserRouter>
-            <Routes>
-              {/* Standalone Loader Preview Routes */}
-              <Route path="/loader" element={<FinSageLoader isFullScreen={true} duration={3000} />} />
-              <Route path="/splash" element={<FinSageLoader isFullScreen={true} duration={3000} />} />
+    <ClerkProvider publishableKey={CLERK_PUBLISHABLE_KEY}>
+      <ClerkAuthBridge>
+        <QueryClientProvider client={queryClient}>
+          <TooltipProvider>
+            <Toaster />
+            <Sonner position="top-right" richColors />
+            <PWAInstallProvider>
+              {isInitialLoading && (
+                <FinSageLoader
+                  isFullScreen={true}
+                  duration={1500}
+                  onFinish={() => setIsInitialLoading(false)}
+                />
+              )}
+              <PWAInstallBanner />
+              <FinanceProvider>
+              <BrowserRouter>
+                <Routes>
+                  {/* Standalone Loader Preview Routes */}
+                  <Route path="/loader" element={<FinSageLoader isFullScreen={true} duration={3000} />} />
+                  <Route path="/splash" element={<FinSageLoader isFullScreen={true} duration={3000} />} />
 
-              {/* Landing Page */}
-              <Route path="/" element={<Landing />} />
-              <Route path="/landing" element={<Landing />} />
+                  {/* Landing Page */}
+                  <Route path="/" element={<Landing />} />
+                  <Route path="/landing" element={<Landing />} />
 
-              {/* Authentication Routes */}
-              <Route path="/signin" element={<SignInPage />} />
-              <Route path="/login" element={<SignInPage />} />
-              <Route path="/signup" element={<SignInPage />} />
-              <Route path="/register" element={<SignInPage />} />
+                  {/* Authentication Routes */}
+                  <Route path="/signin/*" element={<SignInPage />} />
+                  <Route path="/signin" element={<SignInPage />} />
+                  <Route path="/login" element={<SignInPage />} />
+                  <Route path="/signup/*" element={<SignUpPage />} />
+                  <Route path="/signup" element={<SignUpPage />} />
+                  <Route path="/register" element={<SignUpPage />} />
 
               {/* Core Public Company Pages */}
               <Route
@@ -364,6 +378,8 @@ const App = () => {
         </PWAInstallProvider>
       </TooltipProvider>
     </QueryClientProvider>
+    </ClerkAuthBridge>
+    </ClerkProvider>
   );
 };
 

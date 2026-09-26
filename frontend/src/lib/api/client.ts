@@ -27,6 +27,14 @@ export const apiClient: AxiosInstance = axios.create({
   },
 });
 
+// Dynamic token getter registered by Clerk Auth Provider
+export type TokenGetter = () => Promise<string | null>;
+let dynamicTokenGetter: TokenGetter | null = null;
+
+export const setAuthTokenGetter = (getter: TokenGetter | null) => {
+  dynamicTokenGetter = getter;
+};
+
 // Event listener callback for session expiration
 let onUnauthorizedCallback: (() => void) | null = null;
 
@@ -52,10 +60,37 @@ const processQueue = (error: unknown, token: string | null = null) => {
   failedQueue = [];
 };
 
-// Request Interceptor: Attach Access Token
+// Request Interceptor: Dynamically attach Clerk Token or Fallback Access Token
 apiClient.interceptors.request.use(
-  (config: InternalAxiosRequestConfig) => {
-    const token = tokenStorage.getAccessToken();
+  async (config: InternalAxiosRequestConfig) => {
+    let token: string | null = null;
+
+    // 1. Prioritize dynamic token getter from Clerk Auth Bridge (useAuth.getToken)
+    if (dynamicTokenGetter) {
+      try {
+        token = await dynamicTokenGetter();
+      } catch (err) {
+        console.warn('Failed to retrieve token from dynamic auth getter:', err);
+      }
+    }
+
+    // 2. Direct Clerk window instance if available
+    if (!token && typeof window !== 'undefined') {
+      const clerk = (window as unknown as { Clerk?: { session?: { getToken: () => Promise<string | null> } } }).Clerk;
+      if (clerk?.session?.getToken) {
+        try {
+          token = await clerk.session.getToken();
+        } catch {
+          // Ignore
+        }
+      }
+    }
+
+    // 3. Fallback to legacy tokenStorage (for tests and offline mocks)
+    if (!token) {
+      token = tokenStorage.getAccessToken();
+    }
+
     if (token && config.headers) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -64,7 +99,7 @@ apiClient.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// Response Interceptor: Handle 401 & Token Refresh
+// Response Interceptor: Handle 401 & Token Expiry
 apiClient.interceptors.response.use(
   (response) => response,
   async (error: AxiosError<ApiErrorResponse>) => {
@@ -75,9 +110,9 @@ apiClient.interceptors.response.use(
       return Promise.reject(error);
     }
 
-    // If the failed request was the refresh endpoint itself or logout, don't loop
+    // If the failed request was the auth endpoint or already retried, prevent loops
     const url = originalRequest.url || '';
-    if (url.includes('/auth/refresh') || url.includes('/auth/login') || url.includes('/auth/register')) {
+    if (url.includes('/auth/refresh') || url.includes('/auth/login') || url.includes('/auth/register') || originalRequest._retry) {
       tokenStorage.clearTokens();
       if (onUnauthorizedCallback) {
         onUnauthorizedCallback();
@@ -85,14 +120,36 @@ apiClient.interceptors.response.use(
       return Promise.reject(error);
     }
 
-    if (originalRequest._retry) {
-      tokenStorage.clearTokens();
+    // If Clerk dynamic token getter is active, attempt a single refresh with skipCache
+    const globalClerk = typeof window !== 'undefined'
+      ? (window as unknown as { Clerk?: { session?: { getToken: (opts?: { skipCache?: boolean }) => Promise<string | null> } } }).Clerk
+      : undefined;
+
+    if (dynamicTokenGetter || globalClerk?.session) {
+      originalRequest._retry = true;
+      try {
+        let freshToken: string | null = null;
+        if (dynamicTokenGetter) {
+          freshToken = await dynamicTokenGetter();
+        } else if (globalClerk?.session) {
+          freshToken = await globalClerk.session.getToken({ skipCache: true });
+        }
+
+        if (freshToken && originalRequest.headers) {
+          originalRequest.headers.Authorization = `Bearer ${freshToken}`;
+          return apiClient(originalRequest);
+        }
+      } catch {
+        // Token retrieval failed
+      }
+
       if (onUnauthorizedCallback) {
         onUnauthorizedCallback();
       }
       return Promise.reject(error);
     }
 
+    // Fallback refresh flow for test mock legacy sessions
     const refreshToken = tokenStorage.getRefreshToken();
     if (!refreshToken) {
       tokenStorage.clearTokens();

@@ -1,32 +1,29 @@
 import React from 'react';
 import { FinSageAuthLayout } from '@/components/auth/FinSageAuthLayout';
-import { Navigate, useLocation, useNavigate } from 'react-router-dom';
-import { SignIn, useAuth } from '@clerk/react';
+import { Navigate, useNavigate } from 'react-router-dom';
+import { SignUp, useAuth } from '@clerk/react';
 import { useFinance } from '@/context/FinanceContext';
 
-export const SignInPage: React.FC = () => {
+export const SignUpPage: React.FC = () => {
   const navigate = useNavigate();
-  const location = useLocation();
   const { isSignedIn, isLoaded } = useAuth();
   const { isAuthenticated } = useFinance();
 
   if ((isLoaded && isSignedIn) || isAuthenticated) {
-    const state = location.state as { from?: { pathname?: string } } | null;
-    const from = state?.from?.pathname || '/dashboard';
-    return <Navigate to={from} replace />;
+    return <Navigate to="/dashboard" replace />;
   }
 
   return (
     <FinSageAuthLayout
-      headerActionText="Don't have an account?"
-      headerButtonText="Create Account"
-      onHeaderActionClick={() => navigate('/signup')}
+      headerActionText="Already have an account?"
+      headerButtonText="Sign In"
+      onHeaderActionClick={() => navigate('/signin')}
     >
       <div className="w-full max-w-md mx-auto flex justify-center">
-        <SignIn
+        <SignUp
           routing="path"
-          path="/signin"
-          signUpUrl="/signup"
+          path="/signup"
+          signInUrl="/signin"
           fallbackRedirectUrl="/dashboard"
           appearance={{
             elements: {

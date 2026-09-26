@@ -21,6 +21,7 @@ export default defineConfig(() => ({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
+      "@clerk/react": "@clerk/clerk-react",
     },
   },
 }));
