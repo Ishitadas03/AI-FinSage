@@ -1,6 +1,8 @@
 from typing import List, Union
+from urllib.parse import quote_plus, unquote_plus
 from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from sqlalchemy.engine import make_url
 
 
 class Settings(BaseSettings):
@@ -36,23 +38,45 @@ class Settings(BaseSettings):
     @field_validator("DATABASE_URL", mode="before")
     @classmethod
     def assemble_database_url(cls, v: str) -> str:
-        if isinstance(v, str):
-            v = v.strip()
-            # Strip quotes if present
-            if (v.startswith("'") and v.endswith("'")) or (v.startswith('"') and v.endswith('"')):
-                v = v[1:-1].strip()
-            # Strip psql CLI wrapper if copied from Neon/PostgreSQL dashboard
-            if v.startswith("psql "):
-                v = v[5:].strip()
-                if (v.startswith("'") and v.endswith("'")) or (v.startswith('"') and v.endswith('"')):
-                    v = v[1:-1].strip()
+        if not isinstance(v, str) or not v.strip():
+            return v
 
-            # Normalizes postgres:// and postgresql:// prefixes to postgresql+psycopg://
-            if v.startswith("postgres://"):
-                v = v.replace("postgres://", "postgresql+psycopg://", 1)
-            elif v.startswith("postgresql://") and not v.startswith("postgresql+psycopg://"):
-                v = v.replace("postgresql://", "postgresql+psycopg://", 1)
-        return v
+        url_str = v.strip()
+
+        # Strip surrounding quotes if present
+        while (url_str.startswith("'") and url_str.endswith("'")) or (url_str.startswith('"') and url_str.endswith('"')):
+            url_str = url_str[1:-1].strip()
+
+        # Strip psql prefix if copied from Neon/PostgreSQL dashboard
+        if url_str.startswith("psql "):
+            url_str = url_str[5:].strip()
+            while (url_str.startswith("'") and url_str.endswith("'")) or (url_str.startswith('"') and url_str.endswith('"')):
+                url_str = url_str[1:-1].strip()
+
+        # Normalize scheme
+        if url_str.startswith("postgres://"):
+            url_str = "postgresql+psycopg://" + url_str[11:]
+        elif url_str.startswith("postgresql://") and not url_str.startswith("postgresql+psycopg://"):
+            url_str = "postgresql+psycopg://" + url_str[13:]
+
+        # Attempt to validate or repair password encoding
+        try:
+            make_url(url_str)
+            return url_str
+        except Exception:
+            if "://" in url_str:
+                scheme, rest = url_str.split("://", 1)
+                if "@" in rest:
+                    userinfo, hostinfo = rest.rsplit("@", 1)
+                    if ":" in userinfo:
+                        username, password = userinfo.split(":", 1)
+                        enc_user = quote_plus(unquote_plus(username))
+                        enc_pass = quote_plus(unquote_plus(password))
+                        url_str = f"{scheme}://{enc_user}:{enc_pass}@{hostinfo}"
+                    else:
+                        enc_user = quote_plus(unquote_plus(userinfo))
+                        url_str = f"{scheme}://{enc_user}@{hostinfo}"
+            return url_str
 
     @field_validator("CORS_ORIGINS", mode="before")
     @classmethod
