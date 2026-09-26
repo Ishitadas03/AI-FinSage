@@ -26,19 +26,10 @@ export * from './goal';
 export type Goal = import('./goal').ApiGoal;
 
 
-export interface Loan {
-  id: string;
-  name: string;
-  lender: string;
-  originalAmount: number;
-  principalRemaining: number;
-  interestRate: number; // in percentage e.g. 8.65
-  monthlyEmi: number;
-  remainingTenureMonths: number;
-  startDate: string;
-  loanType: 'Home Loan' | 'Car Loan' | 'Personal Loan' | 'Education Loan';
-  accountNumber: string;
-}
+export * from './loan';
+
+export type Loan = import('./loan').ApiLoan;
+
 
 export interface SecurityAlert {
   id: string;

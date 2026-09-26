@@ -32,6 +32,7 @@ import { accountsApi } from '@/lib/api/accounts';
 import { transactionsApi } from '@/lib/api/transactions';
 import { budgetsApi } from '@/lib/api/budgets';
 import { goalsApi } from '@/lib/api/goals';
+import { loansApi } from '@/lib/api/loans';
 import { tokenStorage } from '@/lib/api/tokenStorage';
 import { getApiErrorMessage, setOnUnauthorizedCallback } from '@/lib/api/client';
 import {
@@ -41,6 +42,13 @@ import {
   GoalFilterParams,
   GoalUpdate,
 } from '@/types/goal';
+import {
+  ApiLoan,
+  LoanCreate,
+  LoanUpdate,
+  DebtStressAnalysisResponse,
+} from '@/types/loan';
+
 
 
 export type AuthStatus = 'idle' | 'loading' | 'authenticated' | 'unauthenticated' | 'error';
@@ -110,17 +118,29 @@ interface FinanceContextType {
   addGoal: (goal: any) => Promise<ApiGoal>;
   editGoal: (id: string, goal: any) => Promise<ApiGoal>;
 
-  // Loans & Debt
-  loans: Loan[];
+  // Real Backend Loans & Debt State & Operations
+  loans: ApiLoan[];
+  isLoadingLoans: boolean;
+  loansError: string | null;
+  debtStress: DebtStressAnalysisResponse | null;
+  isLoadingDebtStress: boolean;
+  debtStressError: string | null;
   totalDebt: number;
   totalMonthlyEmi: number;
   emiToIncomeRatio: number;
-  addLoan: (loan: Omit<Loan, 'id'>) => void;
+  loadLoans: () => Promise<ApiLoan[]>;
+  createLoan: (payload: LoanCreate) => Promise<ApiLoan>;
+  updateLoan: (id: string, payload: LoanUpdate) => Promise<ApiLoan>;
+  deleteLoan: (id: string) => Promise<boolean>;
+  addLoan: (loan: any) => Promise<ApiLoan>;
+  editLoan: (id: string, loan: any) => Promise<ApiLoan>;
+  loadDebtStress: () => Promise<DebtStressAnalysisResponse | null>;
   simulatePrepayment: (loanId: string, extraMonthly: number) => {
     interestSaved: number;
     monthsSaved: number;
     newTenureMonths: number;
   };
+
 
   // Scam Shield & Security
   securityAlerts: SecurityAlert[];
@@ -230,34 +250,8 @@ const mapAuthUserToProfile = (
 
 
 
-const INITIAL_LOANS: Loan[] = [
-  {
-    id: "l-1",
-    name: "Green Valley Home Loan",
-    lender: "HDFC Bank",
-    originalAmount: 2500000,
-    principalRemaining: 1850000,
-    interestRate: 8.65,
-    monthlyEmi: 18200,
-    remainingTenureMonths: 142,
-    startDate: "2023-01-10",
-    loanType: "Home Loan",
-    accountNumber: "HDFC-HL-883921",
-  },
-  {
-    id: "l-2",
-    name: "Hyundai Creta Auto Loan",
-    lender: "ICICI Bank",
-    originalAmount: 600000,
-    principalRemaining: 330000,
-    interestRate: 9.2,
-    monthlyEmi: 5600,
-    remainingTenureMonths: 28,
-    startDate: "2024-04-15",
-    loanType: "Car Loan",
-    accountNumber: "ICICI-AL-449102",
-  },
-];
+
+
 
 const INITIAL_SECURITY_ALERTS: SecurityAlert[] = [
   {
@@ -571,10 +565,13 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [isLoadingGoals, setIsLoadingGoals] = useState<boolean>(false);
   const [goalsError, setGoalsError] = useState<string | null>(null);
 
-  const [loans, setLoans] = useState<Loan[]>(() => {
-    const saved = localStorage.getItem('finsage_loans');
-    return saved ? JSON.parse(saved) : INITIAL_LOANS;
-  });
+  // Real Backend Loans & Debt Stress State
+  const [loans, setLoans] = useState<ApiLoan[]>([]);
+  const [isLoadingLoans, setIsLoadingLoans] = useState<boolean>(false);
+  const [loansError, setLoansError] = useState<string | null>(null);
+  const [debtStress, setDebtStress] = useState<DebtStressAnalysisResponse | null>(null);
+  const [isLoadingDebtStress, setIsLoadingDebtStress] = useState<boolean>(false);
+  const [debtStressError, setDebtStressError] = useState<string | null>(null);
 
   const [securityAlerts, setSecurityAlerts] = useState<SecurityAlert[]>(() => {
     const saved = localStorage.getItem('finsage_alerts');
@@ -601,12 +598,6 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
     localStorage.setItem('finsage_custom_profile', JSON.stringify(customProfile));
   }, [customProfile]);
 
-
-
-  useEffect(() => {
-    localStorage.setItem('finsage_loans', JSON.stringify(loans));
-  }, [loans]);
-
   useEffect(() => {
     localStorage.setItem('finsage_alerts', JSON.stringify(securityAlerts));
   }, [securityAlerts]);
@@ -621,9 +612,18 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const monthlyExpenses = 54200;
   const savingsRate = 28;
 
-  const totalDebt = loans.reduce((acc, l) => acc + l.principalRemaining, 0);
-  const totalMonthlyEmi = loans.reduce((acc, l) => acc + l.monthlyEmi, 0);
-  const emiToIncomeRatio = Math.round((totalMonthlyEmi / monthlyIncome) * 100);
+  const totalDebt = debtStress
+    ? Number(debtStress.total_outstanding_debt)
+    : loans.reduce((acc, l) => acc + Number(l.outstanding_principal || 0), 0);
+  const totalMonthlyEmi = debtStress
+    ? Number(debtStress.total_monthly_emi)
+    : loans.reduce((acc, l) => acc + Number(l.monthly_emi || 0), 0);
+  const emiToIncomeRatio = debtStress
+    ? Number(debtStress.dti_ratio)
+    : monthlyIncome > 0
+    ? Math.round((totalMonthlyEmi / monthlyIncome) * 100)
+    : 0;
+
 
   const securityScore = Math.max(
     10,
@@ -914,6 +914,115 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
     [updateGoal]
   );
 
+  // Real Backend Loans & Debt Stress Operations
+  const loadLoans = useCallback(async (): Promise<ApiLoan[]> => {
+    setIsLoadingLoans(true);
+    setLoansError(null);
+    try {
+      const data = await loansApi.list();
+      setLoans(data);
+      return data;
+    } catch (err) {
+      const msg = getApiErrorMessage(err, 'Failed to load loans.');
+      setLoansError(msg);
+      setLoans([]);
+      return [];
+    } finally {
+      setIsLoadingLoans(false);
+    }
+  }, []);
+
+  const loadDebtStress = useCallback(async (): Promise<DebtStressAnalysisResponse | null> => {
+    setIsLoadingDebtStress(true);
+    setDebtStressError(null);
+    try {
+      const data = await loansApi.getDebtStress();
+      setDebtStress(data);
+      return data;
+    } catch (err) {
+      const msg = getApiErrorMessage(err, 'Failed to load debt stress overview.');
+      setDebtStressError(msg);
+      return null;
+    } finally {
+      setIsLoadingDebtStress(false);
+    }
+  }, []);
+
+  const createLoan = useCallback(
+    async (payload: LoanCreate): Promise<ApiLoan> => {
+      setIsLoadingLoans(true);
+      setLoansError(null);
+      try {
+        const created = await loansApi.create(payload);
+        await loadLoans();
+        await loadDebtStress();
+        return created;
+      } catch (err) {
+        const msg = getApiErrorMessage(err, 'Failed to create loan record.');
+        setLoansError(msg);
+        throw err;
+      } finally {
+        setIsLoadingLoans(false);
+      }
+    },
+    [loadLoans, loadDebtStress]
+  );
+
+  const updateLoan = useCallback(
+    async (id: string, payload: LoanUpdate): Promise<ApiLoan> => {
+      setIsLoadingLoans(true);
+      setLoansError(null);
+      try {
+        const updated = await loansApi.update(id, payload);
+        await loadLoans();
+        await loadDebtStress();
+        return updated;
+      } catch (err) {
+        const msg = getApiErrorMessage(err, 'Failed to update loan record.');
+        setLoansError(msg);
+        throw err;
+      } finally {
+        setIsLoadingLoans(false);
+      }
+    },
+    [loadLoans, loadDebtStress]
+  );
+
+  const deleteLoan = useCallback(
+    async (id: string): Promise<boolean> => {
+      setIsLoadingLoans(true);
+      setLoansError(null);
+      try {
+        await loansApi.delete(id);
+        await loadLoans();
+        await loadDebtStress();
+        return true;
+      } catch (err) {
+        const msg = getApiErrorMessage(err, 'Failed to delete loan record.');
+        setLoansError(msg);
+        return false;
+      } finally {
+        setIsLoadingLoans(false);
+      }
+    },
+    [loadLoans, loadDebtStress]
+  );
+
+  const addLoan = useCallback(
+    async (payload: any): Promise<ApiLoan> => {
+      return await createLoan(payload);
+    },
+    [createLoan]
+  );
+
+  const editLoan = useCallback(
+    async (id: string, payload: any): Promise<ApiLoan> => {
+      return await updateLoan(id, payload);
+    },
+    [updateLoan]
+  );
+
+
 
   // Real Transactions Operations
   const loadTransactions = useCallback(
@@ -1133,15 +1242,18 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
     };
   }, []);
 
-  // Auto-fetch accounts, transactions, budgets & goals upon authentication
+  // Auto-fetch accounts, transactions, budgets, goals, loans & debt stress upon authentication
   useEffect(() => {
     if (isAuthenticated) {
       loadAccounts();
       loadTransactions();
       loadBudgets();
       loadGoals();
+      loadLoans();
+      loadDebtStress();
     }
-  }, [isAuthenticated, loadAccounts, loadTransactions, loadBudgets, loadGoals]);
+  }, [isAuthenticated, loadAccounts, loadTransactions, loadBudgets, loadGoals, loadLoans, loadDebtStress]);
+
 
   // Real Login Method
   const login = async (email: string, password?: string, _rememberMe = true): Promise<boolean> => {
@@ -1254,39 +1366,36 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   // Loans Helpers
 
-  const addLoan = (l: Omit<Loan, 'id'>) => {
-    const newL: Loan = {
-      ...l,
-      id: `l-${Date.now()}`,
-    };
-    setLoans((prev) => [...prev, newL]);
-  };
+  const simulatePrepayment = useCallback(
+    (loanId: string, extraMonthly: number) => {
+      const targetLoan = loans.find((l) => l.id === loanId) || loans[0];
+      if (!targetLoan) return { interestSaved: 0, monthsSaved: 0, newTenureMonths: 0 };
 
-  const simulatePrepayment = (loanId: string, extraMonthly: number) => {
-    const targetLoan = loans.find((l) => l.id === loanId) || loans[0];
-    if (!targetLoan) return { interestSaved: 0, monthsSaved: 0, newTenureMonths: 0 };
+      const P = Number(targetLoan.outstanding_principal || 0);
+      const r = Number(targetLoan.interest_rate || 0) / 12 / 100;
+      const baseEmi = Number(targetLoan.monthly_emi || 0);
+      const newEmi = baseEmi + extraMonthly;
+      const remainingTenureMonths = Number(targetLoan.tenure_months || 0);
 
-    const P = targetLoan.principalRemaining;
-    const r = targetLoan.interestRate / 12 / 100;
-    const baseEmi = targetLoan.monthlyEmi;
-    const newEmi = baseEmi + extraMonthly;
+      if (newEmi <= P * r || remainingTenureMonths <= 0 || r <= 0) {
+        return { interestSaved: 0, monthsSaved: 0, newTenureMonths: remainingTenureMonths };
+      }
 
-    if (newEmi <= P * r) {
-      return { interestSaved: 0, monthsSaved: 0, newTenureMonths: targetLoan.remainingTenureMonths };
-    }
+      const nNew = Math.ceil(-Math.log(1 - (P * r) / newEmi) / Math.log(1 + r));
+      const totalOriginalPayment = baseEmi * remainingTenureMonths;
+      const totalNewPayment = newEmi * nNew;
+      const interestSaved = Math.max(0, Math.round(totalOriginalPayment - totalNewPayment));
+      const monthsSaved = Math.max(0, remainingTenureMonths - nNew);
 
-    const nNew = Math.ceil(-Math.log(1 - (P * r) / newEmi) / Math.log(1 + r));
-    const totalOriginalPayment = baseEmi * targetLoan.remainingTenureMonths;
-    const totalNewPayment = newEmi * nNew;
-    const interestSaved = Math.max(0, Math.round(totalOriginalPayment - totalNewPayment));
-    const monthsSaved = Math.max(0, targetLoan.remainingTenureMonths - nNew);
+      return {
+        interestSaved,
+        monthsSaved,
+        newTenureMonths: Math.max(1, nNew),
+      };
+    },
+    [loans]
+  );
 
-    return {
-      interestSaved,
-      monthsSaved,
-      newTenureMonths: Math.max(1, nNew),
-    };
-  };
 
   const markAlertSafe = (id: string) => {
     setSecurityAlerts((prev) =>
@@ -1374,9 +1483,10 @@ On your HDFC Home Loan (₹18.5L balance at 8.65%):
   };
 
   const resetAllData = () => {
-    setBudgets(INITIAL_BUDGETS);
-    setGoals(INITIAL_GOALS);
-    setLoans(INITIAL_LOANS);
+    setBudgets([]);
+    setGoals([]);
+    setLoans([]);
+    setDebtStress(null);
     setSecurityAlerts(INITIAL_SECURITY_ALERTS);
     setChatMessages(INITIAL_CHAT);
     setNotifications(INITIAL_NOTIFICATIONS);
@@ -1450,11 +1560,23 @@ On your HDFC Home Loan (₹18.5L balance at 8.65%):
         addGoal,
         editGoal,
         loans,
+        isLoadingLoans,
+        loansError,
+        debtStress,
+        isLoadingDebtStress,
+        debtStressError,
         totalDebt,
         totalMonthlyEmi,
         emiToIncomeRatio,
+        loadLoans,
+        createLoan,
+        updateLoan,
+        deleteLoan,
         addLoan,
+        editLoan,
+        loadDebtStress,
         simulatePrepayment,
+
         securityAlerts,
         securityScore,
         markAlertSafe,
