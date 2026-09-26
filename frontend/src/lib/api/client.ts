@@ -9,7 +9,11 @@ import { ApiErrorResponse, TokenResponse } from '@/types/auth';
 export const getApiBaseUrl = (): string => {
   const envUrl = import.meta.env.VITE_API_BASE_URL;
   if (envUrl && typeof envUrl === 'string' && envUrl.trim().length > 0) {
-    return envUrl.trim().replace(/\/+$/, '');
+    const trimmed = envUrl.trim().replace(/\/+$/, '');
+    if (!trimmed.endsWith('/api/v1')) {
+      return `${trimmed}/api/v1`;
+    }
+    return trimmed;
   }
   return '/api/v1';
 };
