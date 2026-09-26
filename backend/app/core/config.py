@@ -37,11 +37,21 @@ class Settings(BaseSettings):
     @classmethod
     def assemble_database_url(cls, v: str) -> str:
         if isinstance(v, str):
+            v = v.strip()
+            # Strip quotes if present
+            if (v.startswith("'") and v.endswith("'")) or (v.startswith('"') and v.endswith('"')):
+                v = v[1:-1].strip()
+            # Strip psql CLI wrapper if copied from Neon/PostgreSQL dashboard
+            if v.startswith("psql "):
+                v = v[5:].strip()
+                if (v.startswith("'") and v.endswith("'")) or (v.startswith('"') and v.endswith('"')):
+                    v = v[1:-1].strip()
+
             # Normalizes postgres:// and postgresql:// prefixes to postgresql+psycopg://
             if v.startswith("postgres://"):
-                return v.replace("postgres://", "postgresql+psycopg://", 1)
+                v = v.replace("postgres://", "postgresql+psycopg://", 1)
             elif v.startswith("postgresql://") and not v.startswith("postgresql+psycopg://"):
-                return v.replace("postgresql://", "postgresql+psycopg://", 1)
+                v = v.replace("postgresql://", "postgresql+psycopg://", 1)
         return v
 
     @field_validator("CORS_ORIGINS", mode="before")
