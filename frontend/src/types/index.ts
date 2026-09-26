@@ -21,19 +21,10 @@ export * from './budget';
 export type Budget = import('./budget').ApiBudget;
 
 
-export interface Goal {
-  id: string;
-  name: string;
-  category: string;
-  targetAmount: number;
-  currentAmount: number;
-  deadline: string;
-  monthlyContribution: number;
-  icon: string;
-  color: string;
-  status: 'active' | 'completed';
-  createdAt?: string;
-}
+export * from './goal';
+
+export type Goal = import('./goal').ApiGoal;
+
 
 export interface Loan {
   id: string;

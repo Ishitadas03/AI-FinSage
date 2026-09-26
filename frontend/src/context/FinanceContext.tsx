@@ -31,8 +31,16 @@ import { authApi } from '@/lib/api/auth';
 import { accountsApi } from '@/lib/api/accounts';
 import { transactionsApi } from '@/lib/api/transactions';
 import { budgetsApi } from '@/lib/api/budgets';
+import { goalsApi } from '@/lib/api/goals';
 import { tokenStorage } from '@/lib/api/tokenStorage';
 import { getApiErrorMessage, setOnUnauthorizedCallback } from '@/lib/api/client';
+import {
+  ApiGoal,
+  GoalContribution,
+  GoalCreate,
+  GoalFilterParams,
+  GoalUpdate,
+} from '@/types/goal';
 
 
 export type AuthStatus = 'idle' | 'loading' | 'authenticated' | 'unauthenticated' | 'error';
@@ -90,12 +98,17 @@ interface FinanceContextType {
   addBudget: (budget: any) => Promise<ApiBudget>;
   editBudget: (id: string, budget: any) => Promise<ApiBudget>;
 
-  // Goals
-  goals: Goal[];
-  addGoal: (goal: Omit<Goal, 'id'>) => void;
-  editGoal: (id: string, goal: Partial<Goal>) => void;
-  deleteGoal: (id: string) => void;
-  addFundsToGoal: (id: string, amount: number) => void;
+  // Real Backend Goals State & Operations
+  goals: ApiGoal[];
+  isLoadingGoals: boolean;
+  goalsError: string | null;
+  loadGoals: (params?: GoalFilterParams) => Promise<ApiGoal[]>;
+  createGoal: (payload: GoalCreate) => Promise<ApiGoal>;
+  updateGoal: (id: string, payload: GoalUpdate) => Promise<ApiGoal>;
+  deleteGoal: (id: string) => Promise<boolean>;
+  addFundsToGoal: (goalId: string, amount: number, note?: string) => Promise<GoalContribution>;
+  addGoal: (goal: any) => Promise<ApiGoal>;
+  editGoal: (id: string, goal: any) => Promise<ApiGoal>;
 
   // Loans & Debt
   loans: Loan[];
@@ -216,68 +229,6 @@ const mapAuthUserToProfile = (
 };
 
 
-const INITIAL_GOALS: Goal[] = [
-  {
-    id: "g-1",
-    name: "Emergency Fund",
-    category: "Safety",
-    targetAmount: 300000,
-    currentAmount: 180000,
-    deadline: "Dec 2027",
-    monthlyContribution: 8000,
-    icon: "ShieldCheck",
-    color: "#0F766E",
-    status: "active",
-  },
-  {
-    id: "g-2",
-    name: "Buy a Car",
-    category: "Vehicle",
-    targetAmount: 800000,
-    currentAmount: 240000,
-    deadline: "Dec 2028",
-    monthlyContribution: 15000,
-    icon: "Car",
-    color: "#3B82F6",
-    status: "active",
-  },
-  {
-    id: "g-3",
-    name: "Europe Vacation",
-    category: "Travel",
-    targetAmount: 250000,
-    currentAmount: 110000,
-    deadline: "Oct 2027",
-    monthlyContribution: 7500,
-    icon: "Plane",
-    color: "#EC4899",
-    status: "active",
-  },
-  {
-    id: "g-4",
-    name: "Retirement Boost",
-    category: "Long Term",
-    targetAmount: 5000000,
-    currentAmount: 215000,
-    deadline: "Dec 2045",
-    monthlyContribution: 12000,
-    icon: "TrendingUp",
-    color: "#10B981",
-    status: "active",
-  },
-  {
-    id: "g-5",
-    name: "MacBook Pro Setup",
-    category: "Tech",
-    targetAmount: 180000,
-    currentAmount: 180000,
-    deadline: "Completed Jul 2026",
-    monthlyContribution: 0,
-    icon: "Laptop",
-    color: "#64748B",
-    status: "completed",
-  },
-];
 
 const INITIAL_LOANS: Loan[] = [
   {
@@ -615,10 +566,10 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [isLoadingBudgets, setIsLoadingBudgets] = useState<boolean>(false);
   const [budgetsError, setBudgetsError] = useState<string | null>(null);
 
-  const [goals, setGoals] = useState<Goal[]>(() => {
-    const saved = localStorage.getItem('finsage_goals');
-    return saved ? JSON.parse(saved) : INITIAL_GOALS;
-  });
+  // Real Backend Goals State
+  const [goals, setGoals] = useState<ApiGoal[]>([]);
+  const [isLoadingGoals, setIsLoadingGoals] = useState<boolean>(false);
+  const [goalsError, setGoalsError] = useState<string | null>(null);
 
   const [loans, setLoans] = useState<Loan[]>(() => {
     const saved = localStorage.getItem('finsage_loans');
@@ -651,9 +602,6 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
   }, [customProfile]);
 
 
-  useEffect(() => {
-    localStorage.setItem('finsage_goals', JSON.stringify(goals));
-  }, [goals]);
 
   useEffect(() => {
     localStorage.setItem('finsage_loans', JSON.stringify(loans));
@@ -850,6 +798,122 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
     },
     [updateBudget]
   );
+
+  // Real Goals Operations
+  const loadGoals = useCallback(
+    async (params?: GoalFilterParams): Promise<ApiGoal[]> => {
+      setIsLoadingGoals(true);
+      setGoalsError(null);
+      try {
+        const data = await goalsApi.list(params);
+        setGoals(data);
+        return data;
+      } catch (err) {
+        const msg = getApiErrorMessage(err, 'Failed to load goals.');
+        setGoalsError(msg);
+        return [];
+      } finally {
+        setIsLoadingGoals(false);
+      }
+    },
+    []
+  );
+
+  const createGoal = useCallback(
+    async (payload: GoalCreate): Promise<ApiGoal> => {
+      setIsLoadingGoals(true);
+      setGoalsError(null);
+      try {
+        const newGoal = await goalsApi.create(payload);
+        setGoals((prev) => [...prev, newGoal]);
+        return newGoal;
+      } catch (err) {
+        const msg = getApiErrorMessage(err, 'Failed to create goal.');
+        setGoalsError(msg);
+        throw err;
+      } finally {
+        setIsLoadingGoals(false);
+      }
+    },
+    []
+  );
+
+  const updateGoal = useCallback(
+    async (id: string, payload: GoalUpdate): Promise<ApiGoal> => {
+      setIsLoadingGoals(true);
+      setGoalsError(null);
+      try {
+        const updated = await goalsApi.update(id, payload);
+        setGoals((prev) => prev.map((g) => (g.id === id ? updated : g)));
+        return updated;
+      } catch (err) {
+        const msg = getApiErrorMessage(err, 'Failed to update goal.');
+        setGoalsError(msg);
+        throw err;
+      } finally {
+        setIsLoadingGoals(false);
+      }
+    },
+    []
+  );
+
+  const deleteGoal = useCallback(
+    async (id: string): Promise<boolean> => {
+      setIsLoadingGoals(true);
+      setGoalsError(null);
+      try {
+        await goalsApi.delete(id);
+        setGoals((prev) => prev.filter((g) => g.id !== id));
+        return true;
+      } catch (err) {
+        const msg = getApiErrorMessage(err, 'Failed to delete goal.');
+        setGoalsError(msg);
+        return false;
+      } finally {
+        setIsLoadingGoals(false);
+      }
+    },
+    []
+  );
+
+  const addFundsToGoal = useCallback(
+    async (goalId: string, amount: number, note?: string): Promise<GoalContribution> => {
+      setIsLoadingGoals(true);
+      setGoalsError(null);
+      try {
+        const today = new Date().toISOString().split('T')[0];
+        const contribution = await goalsApi.createContribution(goalId, {
+          amount,
+          contribution_date: today,
+          note: note || 'Deposit',
+        });
+        await loadGoals();
+        return contribution;
+      } catch (err) {
+        const msg = getApiErrorMessage(err, 'Failed to add funds to goal.');
+        setGoalsError(msg);
+        throw err;
+      } finally {
+        setIsLoadingGoals(false);
+      }
+    },
+    [loadGoals]
+  );
+
+  const addGoal = useCallback(
+    async (g: any): Promise<ApiGoal> => {
+      return await createGoal(g);
+    },
+    [createGoal]
+  );
+
+  const editGoal = useCallback(
+    async (id: string, g: any): Promise<ApiGoal> => {
+      return await updateGoal(id, g);
+    },
+    [updateGoal]
+  );
+
 
   // Real Transactions Operations
   const loadTransactions = useCallback(
@@ -1069,14 +1133,15 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
     };
   }, []);
 
-  // Auto-fetch accounts, transactions & budgets upon authentication
+  // Auto-fetch accounts, transactions, budgets & goals upon authentication
   useEffect(() => {
     if (isAuthenticated) {
       loadAccounts();
       loadTransactions();
       loadBudgets();
+      loadGoals();
     }
-  }, [isAuthenticated, loadAccounts, loadTransactions, loadBudgets]);
+  }, [isAuthenticated, loadAccounts, loadTransactions, loadBudgets, loadGoals]);
 
   // Real Login Method
   const login = async (email: string, password?: string, _rememberMe = true): Promise<boolean> => {
@@ -1187,37 +1252,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
     setCustomProfile((prev) => ({ ...prev, ...updated }));
   };
 
-  // Goals, Loans Helpers
-
-  const addGoal = (g: Omit<Goal, 'id'>) => {
-    const newG: Goal = {
-      ...g,
-      id: `g-${Date.now()}`,
-    };
-    setGoals((prev) => [...prev, newG]);
-  };
-
-  const editGoal = (id: string, updated: Partial<Goal>) => {
-    setGoals((prev) => prev.map((g) => (g.id === id ? { ...g, ...updated } : g)));
-  };
-
-  const deleteGoal = (id: string) => {
-    setGoals((prev) => prev.filter((g) => g.id !== id));
-  };
-
-  const addFundsToGoal = (id: string, amount: number) => {
-    setGoals((prev) =>
-      prev.map((g) => {
-        if (g.id !== id) return g;
-        const newAmt = g.currentAmount + amount;
-        return {
-          ...g,
-          currentAmount: newAmt,
-          status: newAmt >= g.targetAmount ? 'completed' : g.status,
-        };
-      })
-    );
-  };
+  // Loans Helpers
 
   const addLoan = (l: Omit<Loan, 'id'>) => {
     const newL: Loan = {
@@ -1405,10 +1440,15 @@ On your HDFC Home Loan (₹18.5L balance at 8.65%):
         addBudget,
         editBudget,
         goals,
-        addGoal,
-        editGoal,
+        isLoadingGoals,
+        goalsError,
+        loadGoals,
+        createGoal,
+        updateGoal,
         deleteGoal,
         addFundsToGoal,
+        addGoal,
+        editGoal,
         loans,
         totalDebt,
         totalMonthlyEmi,

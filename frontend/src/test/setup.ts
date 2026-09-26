@@ -56,3 +56,20 @@ Object.defineProperty(globalThis, "sessionStorage", {
   value: sessionStorageMock,
   writable: true,
 });
+
+class ResizeObserverMock {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+}
+
+Object.defineProperty(window, "ResizeObserver", {
+  value: ResizeObserverMock,
+  writable: true,
+});
+
+Object.defineProperty(globalThis, "ResizeObserver", {
+  value: ResizeObserverMock,
+  writable: true,
+});
+
