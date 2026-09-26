@@ -43,14 +43,20 @@ class Settings(BaseSettings):
 
         url_str = v.strip()
 
-        # Strip surrounding quotes if present
-        while (url_str.startswith("'") and url_str.endswith("'")) or (url_str.startswith('"') and url_str.endswith('"')):
-            url_str = url_str[1:-1].strip()
+        # Iteratively clean prefixes and surrounding quotes
+        for _ in range(5):
+            for prefix in [
+                "export DATABASE_URL=",
+                "export database_url=",
+                "DATABASE_URL=",
+                "database_url=",
+                "psql ",
+                "psql:",
+            ]:
+                if url_str.lower().startswith(prefix.lower()):
+                    url_str = url_str[len(prefix):].strip()
 
-        # Strip psql prefix if copied from Neon/PostgreSQL dashboard
-        if url_str.startswith("psql "):
-            url_str = url_str[5:].strip()
-            while (url_str.startswith("'") and url_str.endswith("'")) or (url_str.startswith('"') and url_str.endswith('"')):
+            if (url_str.startswith("'") and url_str.endswith("'")) or (url_str.startswith('"') and url_str.endswith('"')):
                 url_str = url_str[1:-1].strip()
 
         # Normalize scheme
@@ -58,6 +64,8 @@ class Settings(BaseSettings):
             url_str = "postgresql+psycopg://" + url_str[11:]
         elif url_str.startswith("postgresql://") and not url_str.startswith("postgresql+psycopg://"):
             url_str = "postgresql+psycopg://" + url_str[13:]
+        elif not url_str.startswith("postgresql+psycopg://") and "://" not in url_str:
+            url_str = "postgresql+psycopg://" + url_str
 
         # Attempt to validate or repair password encoding
         try:
