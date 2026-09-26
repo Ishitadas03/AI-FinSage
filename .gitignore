@@ -36,5 +36,9 @@ venv/
 *.sln
 *.sw?
 
+# Databases & Cache
+*.db
+*.sqlite3
+
 # Vercel deployment
 .vercel

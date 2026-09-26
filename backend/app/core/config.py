@@ -37,6 +37,24 @@ class Settings(BaseSettings):
     ]
 
 
+    @field_validator("JWT_SECRET_KEY")
+    @classmethod
+    def validate_jwt_secret(cls, v: str, info) -> str:
+        if not v or not isinstance(v, str):
+            raise ValueError("JWT_SECRET_KEY must be a valid non-empty string.")
+
+        env = info.data.get("ENVIRONMENT", "development")
+        debug = info.data.get("DEBUG", True)
+        is_prod = str(env).lower() == "production" or not debug
+
+        if is_prod:
+            insecure_patterns = ["change_in_production", "secret", "default", "12345"]
+            if any(pat in v.lower() for pat in insecure_patterns) or len(v) < 32:
+                raise ValueError(
+                    "Production configuration rejected: JWT_SECRET_KEY must not use default/insecure values and must be at least 32 characters long."
+                )
+        return v
+
     @field_validator("DATABASE_URL", mode="before")
     @classmethod
     def assemble_database_url(cls, v: str) -> str:

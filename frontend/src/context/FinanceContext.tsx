@@ -1189,11 +1189,16 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
         setAuthStatus('loading');
         try {
           let userProfile: AuthUser;
-          try {
-            userProfile = await authApi.getCurrentUser();
-          } catch {
+          if (!tokenStorage.getAccessToken()) {
             const tokenRes = await authApi.refresh();
             userProfile = tokenRes.user;
+          } else {
+            try {
+              userProfile = await authApi.getCurrentUser();
+            } catch {
+              const tokenRes = await authApi.refresh();
+              userProfile = tokenRes.user;
+            }
           }
 
           if (mounted) {

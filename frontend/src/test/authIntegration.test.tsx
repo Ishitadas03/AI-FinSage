@@ -335,4 +335,26 @@ describe('Finance Context & Route Protection Authentication Integration', () => 
 
     expect(screen.queryByTestId('signin-page')).not.toBeInTheDocument();
   });
+
+  it('SignInPage redirects authenticated users to /dashboard', async () => {
+    tokenStorage.setTokens('access', 'refresh');
+    vi.spyOn(authApi, 'getCurrentUser').mockResolvedValueOnce(mockUser);
+
+    const { SignInPage } = await import('@/pages/public/auth/SignInPage');
+
+    render(
+      <FinanceProvider>
+        <MemoryRouter initialEntries={['/signin']}>
+          <Routes>
+            <Route path="/signin" element={<SignInPage />} />
+            <Route path="/dashboard" element={<ProtectedTarget />} />
+          </Routes>
+        </MemoryRouter>
+      </FinanceProvider>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId('protected-content')).toBeInTheDocument();
+    });
+  });
 });

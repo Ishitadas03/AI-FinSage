@@ -168,9 +168,29 @@ export const SignInCard: React.FC<SignInCardProps> = ({ initialMode = 'signin', 
 
         {/* Server Error Banner if any */}
         {authError && (
-          <div className="flex items-center gap-2 rounded-xl bg-rose-50 border border-rose-200 p-3 text-xs text-rose-700 animate-in fade-in-0">
-            <AlertCircle className="h-4 w-4 shrink-0 text-rose-600" />
-            <span>{authError}</span>
+          <div className="flex flex-col gap-1.5 rounded-2xl bg-rose-50 border border-rose-200 p-3.5 text-xs text-rose-700 animate-in fade-in-0">
+            <div className="flex items-start gap-2">
+              <AlertCircle className="h-4 w-4 shrink-0 text-rose-600 mt-0.5" />
+              <div className="flex-1 space-y-1">
+                <span className="block font-medium leading-normal">{authError}</span>
+                {mode === 'signup' &&
+                  (authError.toLowerCase().includes('already exist') ||
+                    authError.toLowerCase().includes('email')) && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        switchMode('signin');
+                        if (email) {
+                          toast.info(`Switched to Sign In mode for ${email}`);
+                        }
+                      }}
+                      className="inline-flex items-center gap-1 font-bold text-teal-700 hover:text-teal-900 underline cursor-pointer mt-1"
+                    >
+                      <span>Sign in to your account with this email →</span>
+                    </button>
+                  )}
+              </div>
+            </div>
           </div>
         )}
 

@@ -1,10 +1,11 @@
 from datetime import datetime, timedelta, timezone
 import uuid
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 import jwt
 from sqlalchemy.orm import Session
 from app.core.config import settings
 from app.core.database import get_db
+from app.core.rate_limiter import auth_rate_limiter
 from app.core.security import (
     get_password_hash,
     verify_password,
@@ -37,6 +38,7 @@ router = APIRouter(prefix="/auth", tags=["Authentication"])
 )
 def register(
     payload: RegisterRequest,
+    request: Request,
     db: Session = Depends(get_db),
 ):
     """
@@ -44,6 +46,7 @@ def register(
     Normalizes the email address and checks for uniqueness.
     Never returns or exposes the password hash.
     """
+    auth_rate_limiter.check_rate_limit(request)
     normalized_email = payload.email.lower().strip()
 
     # Check for existing user by email
@@ -79,6 +82,7 @@ def register(
 )
 def login(
     payload: LoginRequest,
+    request: Request,
     db: Session = Depends(get_db),
 ):
     """
@@ -86,6 +90,7 @@ def login(
     Issues a short-lived JWT access token and a long-lived JWT refresh token.
     Records the refresh token session in PostgreSQL for revocation management.
     """
+    auth_rate_limiter.check_rate_limit(request)
     normalized_email = payload.email.lower().strip()
 
     user = db.query(User).filter(User.email == normalized_email).first()
