@@ -2,6 +2,7 @@ from logging.config import fileConfig
 import sys
 from pathlib import Path
 from sqlalchemy import create_engine, pool
+from sqlalchemy.engine import make_url
 from alembic import context
 
 # Ensure backend root directory is on Python path
@@ -35,10 +36,17 @@ def run_migrations_offline() -> None:
 
 def run_migrations_online() -> None:
     """Run migrations in 'online' mode."""
-    connectable = create_engine(
-        settings.DATABASE_URL,
-        poolclass=pool.NullPool,
-    )
+    raw_url = str(settings.DATABASE_URL)
+    try:
+        url_obj = make_url(raw_url)
+        print(f"[Alembic] Connecting to database: {url_obj.render_as_string(hide_password=True)}")
+        connectable = create_engine(
+            url_obj,
+            poolclass=pool.NullPool,
+        )
+    except Exception as exc:
+        print(f"[Alembic ERROR] Failed parsing database URL: {exc}. URL length: {len(raw_url)}, starts with: {raw_url[:15]!r}")
+        raise
 
     with connectable.connect() as connection:
         context.configure(
@@ -54,4 +62,3 @@ if context.is_offline_mode():
     run_migrations_offline()
 else:
     run_migrations_online()
-
