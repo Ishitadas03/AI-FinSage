@@ -7,4 +7,6 @@ export * from './budgets';
 export * from './goals';
 export * from './loans';
 export * from './bankImport';
-
+export * from './analytics';
+export * from './financialHealth';
+export * from './emi';

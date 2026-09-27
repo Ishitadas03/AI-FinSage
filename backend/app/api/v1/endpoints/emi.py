@@ -34,6 +34,13 @@ def calculate_emi(payload: EmiCalculationRequest):
     status_code=status.HTTP_200_OK,
     summary="Generate Amortization Schedule",
 )
+@router.post(
+    "/amortization-schedule",
+    response_model=AmortizationScheduleResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Generate Amortization Schedule (Alias)",
+    include_in_schema=True,
+)
 def generate_amortization_schedule(payload: AmortizationRequest):
     """
     Deterministic amortization schedule generator.
@@ -48,4 +55,5 @@ def generate_amortization_schedule(payload: AmortizationRequest):
         annual_interest_rate=payload.annual_interest_rate,
         tenure_months=payload.tenure_months,
     )
+
 

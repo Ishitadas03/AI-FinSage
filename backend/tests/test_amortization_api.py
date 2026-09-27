@@ -221,3 +221,19 @@ class TestAmortizationApiValidation:
             "tenure_months": 12,
         })
         assert response.status_code == 422
+
+    def test_amortization_schedule_alias_endpoint(self):
+        """Verify that /api/v1/emi/amortization-schedule alias responds identically."""
+        alias_url = "/api/v1/emi/amortization-schedule"
+        payload = {
+            "principal_amount": "300000",
+            "annual_interest_rate": "9.5",
+            "tenure_months": 24,
+        }
+        res_alias = client.post(alias_url, json=payload)
+        res_main = client.post(AMORT_URL, json=payload)
+
+        assert res_alias.status_code == 200
+        assert res_main.status_code == 200
+        assert res_alias.json() == res_main.json()
+

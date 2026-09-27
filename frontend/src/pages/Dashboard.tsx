@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   TrendingUp,
@@ -32,6 +32,8 @@ import { useFinance } from '@/context/FinanceContext';
 import { formatCurrency } from '@/lib/formatters';
 import { cn } from '@/lib/utils';
 
+const DONUT_COLORS = ['#3B82F6', '#10B981', '#06B6D4', '#F59E0B', '#8B5CF6', '#1E293B', '#EC4899', '#64748B'];
+
 export const Dashboard: React.FC = () => {
   const navigate = useNavigate();
   const {
@@ -41,6 +43,8 @@ export const Dashboard: React.FC = () => {
     monthlyExpenses,
     savingsRate,
     financialHealth,
+    analyticsOverview,
+    financialHealthOverview,
     goals,
     insights,
     setIsAddTransactionOpen,
@@ -49,25 +53,56 @@ export const Dashboard: React.FC = () => {
     setIsChatOpen,
   } = useFinance();
 
-  // Cash flow mock data for chart
-  const cashFlowData = [
-    { month: 'Apr', income: 82000, expenses: 51000 },
-    { month: 'May', income: 82000, expenses: 53500 },
-    { month: 'Jun', income: 85000, expenses: 58000 },
-    { month: 'Jul', income: 85000, expenses: 52000 },
-    { month: 'Aug', income: 98000, expenses: 56000 },
-    { month: 'Sep', income: 85000, expenses: 54200 },
-  ];
+  // Dynamic Cash flow data from live analytics
+  const cashFlowData = useMemo(() => {
+    if (analyticsOverview?.trend && analyticsOverview.trend.length > 0) {
+      return analyticsOverview.trend.map((t) => {
+        const monthLabel = t.period.length === 10
+          ? new Date(t.period).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+          : t.period.length === 7
+          ? new Date(`${t.period}-01`).toLocaleDateString('en-US', { month: 'short' })
+          : t.period;
+        return {
+          month: monthLabel,
+          income: Number(t.income || 0),
+          expenses: Number(t.expenses || 0),
+        };
+      });
+    }
+    return [
+      { month: 'Apr', income: 82000, expenses: 51000 },
+      { month: 'May', income: 82000, expenses: 53500 },
+      { month: 'Jun', income: 85000, expenses: 58000 },
+      { month: 'Jul', income: 85000, expenses: 52000 },
+      { month: 'Aug', income: 98000, expenses: 56000 },
+      { month: 'Sep', income: 85000, expenses: 54200 },
+    ];
+  }, [analyticsOverview]);
 
-  // Where Your Money Goes donut data
-  const spendingData = [
-    { name: 'Housing', value: 18000, percentage: '33%', color: '#3B82F6' },
-    { name: 'Food', value: 9200, percentage: '17%', color: '#10B981' },
-    { name: 'Transport', value: 5400, percentage: '10%', color: '#06B6D4' },
-    { name: 'Shopping', value: 4800, percentage: '9%', color: '#F59E0B' },
-    { name: 'Subscriptions', value: 2100, percentage: '4%', color: '#8B5CF6' },
-    { name: 'Others', value: 14700, percentage: '27%', color: '#1E293B' },
-  ];
+  // Dynamic Where Your Money Goes donut data from live analytics
+  const spendingData = useMemo(() => {
+    if (analyticsOverview?.spending_by_category && analyticsOverview.spending_by_category.length > 0) {
+      return analyticsOverview.spending_by_category.map((cat, idx) => ({
+        name: cat.category,
+        value: Number(cat.amount),
+        percentage: `${Number(cat.percentage).toFixed(0)}%`,
+        color: DONUT_COLORS[idx % DONUT_COLORS.length],
+      }));
+    }
+    return [
+      { name: 'Housing', value: 18000, percentage: '33%', color: '#3B82F6' },
+      { name: 'Food', value: 9200, percentage: '17%', color: '#10B981' },
+      { name: 'Transport', value: 5400, percentage: '10%', color: '#06B6D4' },
+      { name: 'Shopping', value: 4800, percentage: '9%', color: '#F59E0B' },
+      { name: 'Subscriptions', value: 2100, percentage: '4%', color: '#8B5CF6' },
+      { name: 'Others', value: 14700, percentage: '27%', color: '#1E293B' },
+    ];
+  }, [analyticsOverview]);
+
+  const liveTotalExpenses = analyticsOverview?.summary?.total_expenses != null
+    ? Number(analyticsOverview.summary.total_expenses)
+    : monthlyExpenses;
+
 
   // SVG Sparkline helper
   const Sparkline = ({ points, color }: { points: number[]; color: string }) => {
@@ -365,9 +400,10 @@ export const Dashboard: React.FC = () => {
                     </PieChart>
                   </ResponsiveContainer>
                   <div className="absolute text-center">
-                    <span className="text-xs sm:text-sm font-bold text-slate-900 font-numeric">₹54,200</span>
+                    <span className="text-xs sm:text-sm font-bold text-slate-900 font-numeric">{formatCurrency(liveTotalExpenses)}</span>
                     <span className="block text-[9px] text-slate-400 font-medium">Total Spent</span>
                   </div>
+
                 </div>
 
                 {/* Legend list */}

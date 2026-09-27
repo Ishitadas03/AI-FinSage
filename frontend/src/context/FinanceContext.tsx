@@ -55,6 +55,22 @@ import {
   LoanUpdate,
   DebtStressAnalysisResponse,
 } from '@/types/loan';
+import {
+  AnalyticsOverviewResponse,
+  AnalyticsQueryParams,
+} from '@/types/analytics';
+import {
+  FinancialHealthOverviewResponse,
+  FinancialHealthQueryParams,
+} from '@/types/financialHealth';
+import {
+  AmortizationRequest,
+  AmortizationScheduleResponse,
+} from '@/types/amortization';
+import { analyticsApi } from '@/lib/api/analytics';
+import { financialHealthApi } from '@/lib/api/financialHealth';
+import { emiApi, EmiCalculationRequest, EmiCalculationResponse } from '@/lib/api/emi';
+
 
 
 
@@ -157,7 +173,23 @@ interface FinanceContextType {
   markAlertSafe: (id: string) => void;
   reportAlert: (id: string, reason?: string) => void;
 
-  // Financial Health
+  // Real Backend Analytics State & Operations
+  analyticsOverview: AnalyticsOverviewResponse | null;
+  isLoadingAnalytics: boolean;
+  analyticsError: string | null;
+  loadAnalytics: (params?: AnalyticsQueryParams) => Promise<AnalyticsOverviewResponse | null>;
+
+  // Real Backend Financial Health State & Operations
+  financialHealthOverview: FinancialHealthOverviewResponse | null;
+  isLoadingFinancialHealth: boolean;
+  financialHealthError: string | null;
+  loadFinancialHealth: (params?: FinancialHealthQueryParams) => Promise<FinancialHealthOverviewResponse | null>;
+
+  // Real Backend EMI & Amortization Operations
+  getAmortizationSchedule: (params: AmortizationRequest) => Promise<AmortizationScheduleResponse>;
+  calculateEmi: (params: EmiCalculationRequest) => Promise<EmiCalculationResponse>;
+
+  // Financial Health (legacy view-model fallback if needed)
   financialHealth: FinancialHealth;
 
   // Market Intel
@@ -586,6 +618,16 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [isLoadingDebtStress, setIsLoadingDebtStress] = useState<boolean>(false);
   const [debtStressError, setDebtStressError] = useState<string | null>(null);
 
+  // Real Backend Analytics State
+  const [analyticsOverview, setAnalyticsOverview] = useState<AnalyticsOverviewResponse | null>(null);
+  const [isLoadingAnalytics, setIsLoadingAnalytics] = useState<boolean>(false);
+  const [analyticsError, setAnalyticsError] = useState<string | null>(null);
+
+  // Real Backend Financial Health State
+  const [financialHealthOverview, setFinancialHealthOverview] = useState<FinancialHealthOverviewResponse | null>(null);
+  const [isLoadingFinancialHealth, setIsLoadingFinancialHealth] = useState<boolean>(false);
+  const [financialHealthError, setFinancialHealthError] = useState<string | null>(null);
+
   const [securityAlerts, setSecurityAlerts] = useState<SecurityAlert[]>(() => {
     const saved = localStorage.getItem('finsage_alerts');
     return saved ? JSON.parse(saved) : INITIAL_SECURITY_ALERTS;
@@ -656,8 +698,64 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
   }, [authStatus, isAuthenticated]);
 
+  // Real Backend Analytics Operations
+  const loadAnalytics = useCallback(
+    async (params?: AnalyticsQueryParams): Promise<AnalyticsOverviewResponse | null> => {
+      setIsLoadingAnalytics(true);
+      setAnalyticsError(null);
+      try {
+        const data = await analyticsApi.getOverview(params);
+        setAnalyticsOverview(data);
+        return data;
+      } catch (err) {
+        const msg = getApiErrorMessage(err, 'Failed to load spending analytics.');
+        setAnalyticsError(msg);
+        return null;
+      } finally {
+        setIsLoadingAnalytics(false);
+      }
+    },
+    []
+  );
+
+  // Real Backend Financial Health Operations
+  const loadFinancialHealth = useCallback(
+    async (params?: FinancialHealthQueryParams): Promise<FinancialHealthOverviewResponse | null> => {
+      setIsLoadingFinancialHealth(true);
+      setFinancialHealthError(null);
+      try {
+        const data = await financialHealthApi.getOverview(params);
+        setFinancialHealthOverview(data);
+        return data;
+      } catch (err) {
+        const msg = getApiErrorMessage(err, 'Failed to load financial health overview.');
+        setFinancialHealthError(msg);
+        return null;
+      } finally {
+        setIsLoadingFinancialHealth(false);
+      }
+    },
+    []
+  );
+
+  // Real Backend EMI & Amortization Operations
+  const getAmortizationSchedule = useCallback(
+    async (params: AmortizationRequest): Promise<AmortizationScheduleResponse> => {
+      return await emiApi.getAmortizationSchedule(params);
+    },
+    []
+  );
+
+  const calculateEmi = useCallback(
+    async (params: EmiCalculationRequest): Promise<EmiCalculationResponse> => {
+      return await emiApi.calculate(params);
+    },
+    []
+  );
+
   // Real Accounts Operations
   const loadAccounts = useCallback(async (): Promise<Account[]> => {
+
     setIsLoadingAccounts(true);
     setAccountsError(null);
     try {
@@ -1076,10 +1174,12 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
       setTransactionsError(null);
       try {
         const created = await transactionsApi.create(payload);
-        // Refresh transaction list, accounts, and budgets to update authoritative metrics
+        // Refresh transaction list, accounts, budgets, analytics, and health to update authoritative metrics
         await loadTransactions();
         await loadAccounts();
         await loadBudgets();
+        await loadAnalytics();
+        await loadFinancialHealth();
         return created;
       } catch (err) {
         const msg = getApiErrorMessage(err, 'Failed to create transaction.');
@@ -1089,7 +1189,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
         setIsLoadingTransactions(false);
       }
     },
-    [loadTransactions, loadAccounts]
+    [loadTransactions, loadAccounts, loadBudgets, loadAnalytics, loadFinancialHealth]
   );
 
   const updateTransaction = useCallback(
@@ -1101,6 +1201,8 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
         await loadTransactions();
         await loadAccounts();
         await loadBudgets();
+        await loadAnalytics();
+        await loadFinancialHealth();
         return updated;
       } catch (err) {
         const msg = getApiErrorMessage(err, 'Failed to update transaction.');
@@ -1110,7 +1212,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
         setIsLoadingTransactions(false);
       }
     },
-    [loadTransactions, loadAccounts]
+    [loadTransactions, loadAccounts, loadBudgets, loadAnalytics, loadFinancialHealth]
   );
 
   const deleteTransaction = useCallback(
@@ -1122,6 +1224,8 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
         await loadTransactions();
         await loadAccounts();
         await loadBudgets();
+        await loadAnalytics();
+        await loadFinancialHealth();
         return true;
       } catch (err) {
         const msg = getApiErrorMessage(err, 'Failed to delete transaction.');
@@ -1131,7 +1235,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
         setIsLoadingTransactions(false);
       }
     },
-    [loadTransactions, loadAccounts]
+    [loadTransactions, loadAccounts, loadBudgets, loadAnalytics, loadFinancialHealth]
   );
 
   const addTransaction = useCallback(
@@ -1155,9 +1259,13 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
       }
       await loadTransactions();
       await loadAccounts();
+      await loadBudgets();
+      await loadAnalytics();
+      await loadFinancialHealth();
     },
-    [loadTransactions, loadAccounts]
+    [loadTransactions, loadAccounts, loadBudgets, loadAnalytics, loadFinancialHealth]
   );
+
 
   const previewBankStatement = useCallback(
     async (file: File, previewLimit = 100, maxRows = 5000): Promise<BankStatementPreviewResponse> => {
@@ -1167,6 +1275,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
   );
 
   const commitBankStatement = useCallback(
+
     async (params: BankStatementCommitParams): Promise<BankStatementImportCommitResponse> => {
       const res = await bankImportApi.commit(params);
       await loadTransactions();
@@ -1175,10 +1284,13 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
       await loadGoals();
       await loadLoans();
       await loadDebtStress();
+      await loadAnalytics();
+      await loadFinancialHealth();
       return res;
     },
-    [loadTransactions, loadAccounts, loadBudgets, loadGoals, loadLoans, loadDebtStress]
+    [loadTransactions, loadAccounts, loadBudgets, loadGoals, loadLoans, loadDebtStress, loadAnalytics, loadFinancialHealth]
   );
+
 
   // Load Current User from Backend
   const loadCurrentUser = useCallback(async (): Promise<boolean> => {
@@ -1326,6 +1438,8 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
           setGoals([]);
           setLoans([]);
           setDebtStress(null);
+          setAnalyticsOverview(null);
+          setFinancialHealthOverview(null);
         }
       }
     }
@@ -1335,7 +1449,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
     };
   }, [clerkAuth?.isLoaded, clerkAuth?.isSignedIn, clerkUser?.user]);
 
-  // Auto-fetch accounts, transactions, budgets, goals, loans & debt stress upon authentication
+  // Auto-fetch accounts, transactions, budgets, goals, loans, debt stress, analytics & health upon authentication
   useEffect(() => {
     if (isAuthenticated) {
       loadAccounts();
@@ -1344,8 +1458,11 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
       loadGoals();
       loadLoans();
       loadDebtStress();
+      loadAnalytics();
+      loadFinancialHealth();
     }
-  }, [isAuthenticated, loadAccounts, loadTransactions, loadBudgets, loadGoals, loadLoans, loadDebtStress]);
+  }, [isAuthenticated, loadAccounts, loadTransactions, loadBudgets, loadGoals, loadLoans, loadDebtStress, loadAnalytics, loadFinancialHealth]);
+
 
 
   // Real Login Method
@@ -1461,6 +1578,8 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
       setGoals([]);
       setLoans([]);
       setDebtStress(null);
+      setAnalyticsOverview(null);
+      setFinancialHealthOverview(null);
     }
   };
 
@@ -1592,6 +1711,8 @@ On your HDFC Home Loan (₹18.5L balance at 8.65%):
     setGoals([]);
     setLoans([]);
     setDebtStress(null);
+    setAnalyticsOverview(null);
+    setFinancialHealthOverview(null);
     setSecurityAlerts(INITIAL_SECURITY_ALERTS);
     setChatMessages(INITIAL_CHAT);
     setNotifications(INITIAL_NOTIFICATIONS);
@@ -1684,6 +1805,19 @@ On your HDFC Home Loan (₹18.5L balance at 8.65%):
         loadDebtStress,
         simulatePrepayment,
 
+        analyticsOverview,
+        isLoadingAnalytics,
+        analyticsError,
+        loadAnalytics,
+
+        financialHealthOverview,
+        isLoadingFinancialHealth,
+        financialHealthError,
+        loadFinancialHealth,
+
+        getAmortizationSchedule,
+        calculateEmi,
+
         securityAlerts,
         securityScore,
         markAlertSafe,
@@ -1739,6 +1873,12 @@ export const useFinance = () => {
       goals: [],
       loans: [],
       debtStress: null,
+      analyticsOverview: null,
+      isLoadingAnalytics: false,
+      analyticsError: null,
+      financialHealthOverview: null,
+      isLoadingFinancialHealth: false,
+      financialHealthError: null,
       securityAlerts: [],
       notifications: [],
       chatMessages: [],
