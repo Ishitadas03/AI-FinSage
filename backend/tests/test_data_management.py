@@ -138,6 +138,10 @@ def test_export_data_populated_json_and_user_isolation(
     db.add(other_acc)
     db.commit()
 
+    # Set pan_number on test_user to verify masking in export
+    test_user.pan_number = "ABCDE1234F"
+    db.commit()
+
     res = client.get("/api/v1/data-management/export?format=json", headers=auth_headers)
     assert res.status_code == 200
     data = res.json()
@@ -145,6 +149,7 @@ def test_export_data_populated_json_and_user_isolation(
     assert len(data["accounts"]) == 1
     assert data["accounts"][0]["name"] == "Salary Checking"
     assert not any(a["name"] == "Other's Secret Account" for a in data["accounts"])  # Isolated
+    assert data["profile"]["pan_number"] == "XXXXXX234F"  # PAN is masked in export
 
 
 def test_export_data_csv_zip(client: TestClient, auth_headers, populated_user_data):
@@ -180,6 +185,25 @@ def test_list_audit_logs_endpoint(client: TestClient, auth_headers):
     assert any(log["action"] == "DATA_EXPORTED" for log in data["logs"])
 
 
+def test_audit_log_immutability_enforced(db: Session, test_user: User):
+    """Verify that AuditLog records are strictly immutable and cannot be updated."""
+    audit_log = AuditLog(
+        id=uuid.uuid4(),
+        user_id=test_user.id,
+        action="TEST_ACTION",
+        category="security",
+        details={"test": "data"},
+    )
+    db.add(audit_log)
+    db.commit()
+
+    # Attempt to update the audit log record
+    audit_log.action = "TAMPERED_ACTION"
+    with pytest.raises(ValueError, match="AuditLog records are strictly immutable and cannot be updated"):
+        db.commit()
+    db.rollback()
+
+
 def test_delete_account_invalid_confirmation(client: TestClient, test_user: User, auth_headers):
     """Verify delete account rejects mismatched email or incorrect confirmation text."""
     # Wrong email
@@ -199,10 +223,54 @@ def test_delete_account_invalid_confirmation(client: TestClient, test_user: User
     assert res2.status_code == 422  # Pydantic validation
 
 
-def test_delete_account_success_and_cascade(
-    client: TestClient, db: Session, test_user: User, auth_headers, populated_user_data
+def test_delete_account_clerk_failure_aborts_local_deletion(
+    client: TestClient, db: Session, test_user: User, auth_headers, monkeypatch
 ):
-    """Verify successful account deletion cascades and deletes all related ledger records."""
+    """Verify that if Clerk API fails, local DB is not deleted and a 502 Bad Gateway is returned."""
+    from app.services.clerk_service import ClerkService
+
+    def mock_failing_clerk_delete(clerk_user_id: str) -> bool:
+        raise RuntimeError("Clerk API connection timed out")
+
+    monkeypatch.setattr(ClerkService, "delete_clerk_user_sync", staticmethod(mock_failing_clerk_delete))
+
+    # Set clerk_user_id on test_user
+    test_user.clerk_user_id = f"user_clerk_{uuid.uuid4().hex[:8]}"
+    db.commit()
+
+    res = client.post(
+        "/api/v1/data-management/delete-account",
+        headers=auth_headers,
+        json={
+            "confirm_email": test_user.email,
+            "confirmation_text": "DELETE MY ACCOUNT",
+        },
+    )
+    assert res.status_code == 502
+    assert "Clerk" in res.json()["detail"]
+
+    # Verify user record is still preserved in DB
+    user_still_exists = db.query(User).filter(User.id == test_user.id).first()
+    assert user_still_exists is not None
+
+
+def test_delete_account_success_and_cascade(
+    client: TestClient, db: Session, test_user: User, auth_headers, populated_user_data, monkeypatch
+):
+    """Verify successful account deletion revokes Clerk identity, cascades, and deletes all related ledger records."""
+    from app.services.clerk_service import ClerkService
+
+    clerk_deleted = []
+
+    def mock_successful_clerk_delete(clerk_user_id: str) -> bool:
+        clerk_deleted.append(clerk_user_id)
+        return True
+
+    monkeypatch.setattr(ClerkService, "delete_clerk_user_sync", staticmethod(mock_successful_clerk_delete))
+
+    test_user.clerk_user_id = f"user_clerk_{uuid.uuid4().hex[:8]}"
+    db.commit()
+
     res = client.post(
         "/api/v1/data-management/delete-account",
         headers=auth_headers,
@@ -215,6 +283,7 @@ def test_delete_account_success_and_cascade(
     assert res.status_code == 200
     data = res.json()
     assert data["status"] == "deleted"
+    assert len(clerk_deleted) == 1
 
     # Verify user record is gone from DB
     deleted_user = db.query(User).filter(User.id == test_user.id).first()

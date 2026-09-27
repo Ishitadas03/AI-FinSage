@@ -49,19 +49,29 @@ def test_update_user_profile_success(client: TestClient, db: Session, test_user:
     data = res.json()
     assert data["full_name"] == "Dr. Alex Mercer"
     assert data["phone"] == "+91 9876543210"
-    assert data["pan_number"] == "ABCDE1234F"  # Auto-uppercased
+    assert data["pan_number"] == "XXXXXX234F"  # Masked in response
     assert data["currency"] == "USD"  # Auto-uppercased
     assert float(data["monthly_income"]) == 125000.50
     assert data["risk_appetite"] == "Aggressive"
     assert data["preferences"]["theme"] == "dark"
 
-    # Verify audit log was created
+    # Verify audit log was created and did not expose full PAN
     audit_entry = db.query(AuditLog).filter(
         AuditLog.user_id == test_user.id,
         AuditLog.action == "PROFILE_UPDATED",
     ).first()
     assert audit_entry is not None
     assert "updated_fields" in audit_entry.details
+    assert "pan_number" not in str(audit_entry.details) or audit_entry.details.get("pan_number") != "ABCDE1234F"
+
+
+def test_update_user_profile_invalid_pan_format(client: TestClient, auth_headers):
+    """Verify PAN with invalid syntax is rejected by validation."""
+    payload = {
+        "pan_number": "INVALID123",
+    }
+    res = client.patch("/api/v1/users/me", headers=auth_headers, json=payload)
+    assert res.status_code == 422
 
 
 def test_update_user_profile_protected_identity_fields(client: TestClient, test_user: User, auth_headers):

@@ -31,8 +31,9 @@ from app.schemas.data_management import (
     UserDataExportResponse,
     AccountDeletionResponse,
 )
-from app.schemas.user import UserDeleteRequest
+from app.schemas.user import UserDeleteRequest, mask_pan
 from app.services.audit_log_service import audit_log_service
+from app.services.clerk_service import clerk_service
 
 logger = logging.getLogger(__name__)
 
@@ -199,7 +200,7 @@ class DataManagementService:
             "full_name": user.full_name,
             "email": user.email,
             "phone": user.phone,
-            "pan_number": user.pan_number,
+            "pan_number": mask_pan(user.pan_number),
             "currency": user.currency,
             "monthly_income": float(user.monthly_income) if user.monthly_income is not None else None,
             "risk_appetite": user.risk_appetite,
@@ -329,8 +330,19 @@ class DataManagementService:
             f"Executing permanent account deletion for user {user_id} ({email}). Reason: {payload.reason}"
         )
 
+        # 1. If user has a linked Clerk identity, revoke and delete it on Clerk first
+        if user.clerk_user_id:
+            try:
+                clerk_service.delete_clerk_user_sync(user.clerk_user_id)
+            except Exception as ce:
+                logger.error(f"Failed to delete Clerk user {user.clerk_user_id}: {ce}", exc_info=True)
+                raise HTTPException(
+                    status_code=status.HTTP_502_BAD_GATEWAY,
+                    detail="Failed to revoke external authentication credentials on Clerk. Account deletion aborted to prevent inconsistent identity state.",
+                )
+
         try:
-            # Explicitly delete child records in reverse dependency order to ensure uniform cascading across PostgreSQL and SQLite
+            # 2. Explicitly delete child records in reverse dependency order to ensure uniform cascading across PostgreSQL and SQLite
             db.query(Transaction).filter(Transaction.user_id == user_id).delete(synchronize_session=False)
             db.query(RecurringBill).filter(RecurringBill.user_id == user_id).delete(synchronize_session=False)
             db.query(Budget).filter(Budget.user_id == user_id).delete(synchronize_session=False)

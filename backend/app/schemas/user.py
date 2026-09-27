@@ -1,8 +1,21 @@
+import re
 import uuid
 from datetime import datetime
 from decimal import Decimal
 from typing import Optional, Dict, Any
 from pydantic import BaseModel, EmailStr, ConfigDict, Field, field_validator
+
+
+def mask_pan(pan: Optional[str]) -> Optional[str]:
+    """Masks PAN number to protect sensitive tax identification data (e.g., XXXXXX1234F)."""
+    if not pan:
+        return None
+    cleaned = pan.strip().upper()
+    if len(cleaned) == 10:
+        return f"XXXXXX{cleaned[-4:]}"
+    elif len(cleaned) > 4:
+        return f"{'X' * (len(cleaned) - 4)}{cleaned[-4:]}"
+    return "XXXX"
 
 
 class UserBase(BaseModel):
@@ -29,7 +42,11 @@ class UserProfileUpdate(BaseModel):
     def validate_pan(cls, v: Optional[str]) -> Optional[str]:
         if v is not None:
             cleaned = v.strip().upper()
-            return cleaned if cleaned else None
+            if not cleaned:
+                return None
+            if not re.match(r"^[A-Z]{5}[0-9]{4}[A-Z]{1}$", cleaned):
+                raise ValueError("Invalid PAN format. Must match standard 10-character format (e.g. ABCDE1234F).")
+            return cleaned
         return None
 
     @field_validator("currency")
@@ -68,3 +85,8 @@ class UserRead(UserBase):
     preferences: Optional[Dict[str, Any]] = None
     created_at: datetime
     updated_at: datetime
+
+    @field_validator("pan_number", mode="before")
+    @classmethod
+    def mask_pan_field(cls, v: Optional[str]) -> Optional[str]:
+        return mask_pan(v)

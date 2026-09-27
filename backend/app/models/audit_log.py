@@ -66,3 +66,13 @@ class AuditLog(Base):
 
     def __repr__(self) -> str:
         return f"<AuditLog id={self.id} user_id={self.user_id} action={self.action} created_at={self.created_at}>"
+
+
+from sqlalchemy import event
+
+
+@event.listens_for(AuditLog, "before_update")
+def prevent_audit_log_modification(mapper, connection, target):
+    """Enforces absolute immutability on audit log records."""
+    raise ValueError("AuditLog records are strictly immutable and cannot be updated.")
+

@@ -34,11 +34,12 @@ class AuditLogService:
         while ensuring errors are logged.
         """
         try:
-            # Ensure details contains no passwords or secret tokens
+            # Ensure details contains no passwords, secret tokens, or sensitive PAN/card numbers
             sanitized_details = {}
             if details:
+                scrub_keywords = ("password", "token", "secret", "key", "auth", "pan", "cvv", "card_number", "pin", "ssn", "tax_id")
                 for k, v in details.items():
-                    if any(secret_kw in k.lower() for secret_kw in ("password", "token", "secret", "key", "auth")):
+                    if any(kw in k.lower() for kw in scrub_keywords):
                         continue
                     sanitized_details[k] = v
 
