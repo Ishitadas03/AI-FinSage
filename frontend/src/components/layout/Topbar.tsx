@@ -17,6 +17,10 @@ import {
   FileText,
   CreditCard,
   LogOut,
+  AlertTriangle,
+  AlertCircle,
+  Clock,
+  Trash2,
 } from 'lucide-react';
 import { useFinance } from '@/context/FinanceContext';
 import {
@@ -40,6 +44,41 @@ interface TopbarProps {
   onOpenMobileMenu: () => void;
 }
 
+const formatRelativeTime = (isoString?: string) => {
+  if (!isoString) return 'Just now';
+  try {
+    const diff = (Date.now() - new Date(isoString).getTime()) / 1000;
+    if (diff < 60) return 'Just now';
+    if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+    if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+    if (diff < 604800) return `${Math.floor(diff / 86400)}d ago`;
+    return new Date(isoString).toLocaleDateString([], { month: 'short', day: 'numeric' });
+  } catch {
+    return 'Recently';
+  }
+};
+
+const getNotificationIcon = (type: string) => {
+  switch (type) {
+    case 'bill_overdue':
+      return <AlertTriangle className="h-4 w-4 text-rose-600" />;
+    case 'bill_upcoming':
+      return <Clock className="h-4 w-4 text-amber-500" />;
+    case 'bill_paid':
+      return <CheckCircle2 className="h-4 w-4 text-emerald-600" />;
+    case 'security':
+      return <ShieldAlert className="h-4 w-4 text-rose-500" />;
+    case 'goal':
+      return <Target className="h-4 w-4 text-teal-600" />;
+    case 'budget_alert':
+      return <AlertCircle className="h-4 w-4 text-amber-600" />;
+    case 'insight':
+      return <Sparkles className="h-4 w-4 text-blue-500" />;
+    default:
+      return <Bell className="h-4 w-4 text-slate-500" />;
+  }
+};
+
 export const Topbar: React.FC<TopbarProps> = ({ onOpenMobileMenu }) => {
   const navigate = useNavigate();
   const {
@@ -47,8 +86,10 @@ export const Topbar: React.FC<TopbarProps> = ({ onOpenMobileMenu }) => {
     selectedPeriod,
     setSelectedPeriod,
     notifications,
+    unreadNotificationsCount,
     markNotificationRead,
     markAllNotificationsRead,
+    deleteNotification,
     setIsSearchOpen,
     setIsChatOpen,
     setIsOnboardingOpen,
@@ -57,7 +98,7 @@ export const Topbar: React.FC<TopbarProps> = ({ onOpenMobileMenu }) => {
   } = useFinance();
 
   const [isNotifOpen, setIsNotifOpen] = useState(false);
-  const unreadNotifications = notifications.filter((n) => !n.read);
+  const unreadCount = unreadNotificationsCount ?? notifications.filter((n) => !n.is_read).length;
 
   const months = [
     'September 2026',
@@ -161,9 +202,9 @@ export const Topbar: React.FC<TopbarProps> = ({ onOpenMobileMenu }) => {
               className="relative flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-colors shadow-xs"
             >
               <Bell className="h-4 w-4" />
-              {unreadNotifications.length > 0 && (
+              {unreadCount > 0 && (
                 <span className="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-rose-500 text-[9px] font-bold text-white shadow-sm ring-2 ring-white animate-pulse">
-                  {unreadNotifications.length}
+                  {unreadCount > 9 ? '9+' : unreadCount}
                 </span>
               )}
             </button>
@@ -172,15 +213,19 @@ export const Topbar: React.FC<TopbarProps> = ({ onOpenMobileMenu }) => {
             <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3 bg-slate-50/80">
               <div className="flex items-center gap-2">
                 <h4 className="text-xs sm:text-sm font-bold text-slate-900">Notifications</h4>
-                {unreadNotifications.length > 0 && (
+                {unreadCount > 0 && (
                   <span className="rounded-full bg-teal-100 px-2 py-0.5 text-[10px] font-bold text-teal-800">
-                    {unreadNotifications.length} new
+                    {unreadCount} new
                   </span>
                 )}
               </div>
-              {unreadNotifications.length > 0 && (
+              {unreadCount > 0 && (
                 <button
-                  onClick={markAllNotificationsRead}
+                  onClick={async (e) => {
+                    e.stopPropagation();
+                    await markAllNotificationsRead();
+                    toast.success("All notifications marked as read");
+                  }}
                   className="text-[11px] font-semibold text-teal-700 hover:text-teal-900 hover:underline"
                 >
                   Mark all as read
@@ -191,35 +236,43 @@ export const Topbar: React.FC<TopbarProps> = ({ onOpenMobileMenu }) => {
             <div className="max-h-80 overflow-y-auto divide-y divide-slate-100 text-xs">
               {notifications.length === 0 ? (
                 <div className="py-8 text-center text-slate-400">
-                  <p className="font-semibold text-slate-700">No new alerts</p>
+                  <p className="font-semibold text-slate-700">No alerts</p>
                   <p className="text-[11px] mt-0.5">You're all caught up!</p>
                 </div>
               ) : (
                 notifications.map((n) => (
                   <div
                     key={n.id}
-                    onClick={() => markNotificationRead(n.id)}
+                    onClick={() => {
+                      if (!n.is_read) {
+                        markNotificationRead(n.id);
+                      }
+                    }}
                     className={cn(
-                      "flex items-start gap-3 p-3 transition-colors cursor-pointer",
-                      n.read ? "bg-white opacity-75 hover:bg-slate-50" : "bg-teal-50/30 hover:bg-teal-50/50"
+                      "flex items-start gap-3 p-3 transition-colors group relative",
+                      n.is_read ? "bg-white opacity-75 hover:bg-slate-50" : "bg-teal-50/40 hover:bg-teal-50/60 font-medium"
                     )}
                   >
                     <div className="mt-0.5 shrink-0">
-                      {n.type === 'security' ? (
-                        <ShieldAlert className="h-4 w-4 text-rose-500" />
-                      ) : n.type === 'goal' ? (
-                        <Target className="h-4 w-4 text-teal-600" />
-                      ) : (
-                        <FileText className="h-4 w-4 text-blue-500" />
-                      )}
+                      {getNotificationIcon(n.type)}
                     </div>
-                    <div className="flex-1 min-w-0">
+                    <div className="flex-1 min-w-0 pr-6">
                       <div className="flex items-center justify-between">
                         <h5 className="font-bold text-slate-900 text-xs truncate">{n.title}</h5>
-                        <span className="text-[10px] text-slate-400 shrink-0 ml-2">{n.timestamp}</span>
+                        <span className="text-[10px] text-slate-400 shrink-0 ml-2">{formatRelativeTime(n.created_at)}</span>
                       </div>
                       <p className="text-[11px] text-slate-600 mt-0.5 leading-relaxed">{n.message}</p>
                     </div>
+                    <button
+                      onClick={async (e) => {
+                        e.stopPropagation();
+                        await deleteNotification(n.id);
+                      }}
+                      title="Delete notification"
+                      className="absolute right-2 top-2.5 opacity-0 group-hover:opacity-100 text-slate-400 hover:text-rose-500 p-1 rounded-md hover:bg-slate-100 transition-all"
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </button>
                   </div>
                 ))
               )}

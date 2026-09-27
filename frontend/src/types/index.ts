@@ -30,6 +30,8 @@ export * from './loan';
 
 export type Loan = import('./loan').ApiLoan;
 
+export * from './recurringBill';
+export * from './notification';
 
 export interface SecurityAlert {
   id: string;
@@ -111,15 +113,6 @@ export interface UserProfile {
   joinedDate: string;
 }
 
-export interface NotificationItem {
-  id: string;
-  title: string;
-  message: string;
-  timestamp: string;
-  read: boolean;
-  type: 'alert' | 'insight' | 'goal' | 'security';
-  link?: string;
-}
 
 export interface ChatMessage {
   id: string;

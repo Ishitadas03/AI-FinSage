@@ -13,6 +13,8 @@ from app.api.v1.endpoints import (
     goals,
     budgets,
     bank_statement_import,
+    recurring_bills,
+    notifications,
 )
 
 api_v1_router = APIRouter()
@@ -29,5 +31,7 @@ api_v1_router.include_router(debt_stress.router)
 api_v1_router.include_router(goals.router)
 api_v1_router.include_router(budgets.router)
 api_v1_router.include_router(bank_statement_import.router)
+api_v1_router.include_router(recurring_bills.router)
+api_v1_router.include_router(notifications.router)
 
 

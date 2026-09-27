@@ -10,3 +10,5 @@ export * from './bankImport';
 export * from './analytics';
 export * from './financialHealth';
 export * from './emi';
+export * from './recurringBills';
+export * from './notifications';

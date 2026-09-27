@@ -8,6 +8,7 @@ import { OnboardingWizard } from '../modals/OnboardingWizard';
 import { AddTransactionModal } from '../modals/AddTransactionModal';
 import { AddGoalModal } from '../modals/AddGoalModal';
 import { ImportStatementModal } from '../modals/ImportStatementModal';
+import { AddRecurringBillModal } from '../modals/AddRecurringBillModal';
 
 interface AppShellProps {
   children: React.ReactNode;
@@ -43,6 +44,7 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
       <AddTransactionModal />
       <AddGoalModal />
       <ImportStatementModal />
+      <AddRecurringBillModal />
     </div>
   );
 };

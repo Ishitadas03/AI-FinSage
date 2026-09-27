@@ -97,6 +97,21 @@ from app.schemas.bank_statement_import import (
     BankStatementPreviewResponse,
     BankStatementImportCommitResponse,
 )
+from app.schemas.recurring_bill import (
+    RecurringBillBase,
+    RecurringBillCreate,
+    RecurringBillUpdate,
+    RecurringBillPostPaymentRequest,
+    RecurringBillResponse,
+    RecurringBillListResponse,
+)
+from app.schemas.notification import (
+    NotificationCreate,
+    NotificationResponse,
+    NotificationListResponse,
+    NotificationBatchMarkReadRequest,
+    NotificationGenerateResponse,
+)
 
 __all__ = [
     "UserBase",
@@ -172,6 +187,17 @@ __all__ = [
     "BankStatementParseResult",
     "BankStatementPreviewResponse",
     "BankStatementImportCommitResponse",
+    "RecurringBillBase",
+    "RecurringBillCreate",
+    "RecurringBillUpdate",
+    "RecurringBillPostPaymentRequest",
+    "RecurringBillResponse",
+    "RecurringBillListResponse",
+    "NotificationCreate",
+    "NotificationResponse",
+    "NotificationListResponse",
+    "NotificationBatchMarkReadRequest",
+    "NotificationGenerateResponse",
 ]
 
 

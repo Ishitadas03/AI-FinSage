@@ -7,6 +7,8 @@ from app.models.loan import Loan
 from app.models.financial_goal import FinancialGoal
 from app.models.financial_goal_contribution import FinancialGoalContribution
 from app.models.budget import Budget
+from app.models.recurring_bill import RecurringBill
+from app.models.notification import Notification
 
 __all__ = [
     "Base",
@@ -18,6 +20,9 @@ __all__ = [
     "FinancialGoal",
     "FinancialGoalContribution",
     "Budget",
+    "RecurringBill",
+    "Notification",
 ]
+
 
 

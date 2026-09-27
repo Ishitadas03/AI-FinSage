@@ -67,9 +67,23 @@ import {
   AmortizationRequest,
   AmortizationScheduleResponse,
 } from '@/types/amortization';
+import {
+  RecurringBill,
+  RecurringBillCreateRequest,
+  RecurringBillListResponse,
+  RecurringBillPaymentResult,
+  RecurringBillPostPaymentRequest,
+  RecurringBillUpdateRequest,
+} from '@/types/recurringBill';
+import {
+  NotificationItem as ApiNotificationItem,
+  NotificationListResponse,
+} from '@/types/notification';
 import { analyticsApi } from '@/lib/api/analytics';
 import { financialHealthApi } from '@/lib/api/financialHealth';
 import { emiApi, EmiCalculationRequest, EmiCalculationResponse } from '@/lib/api/emi';
+import { recurringBillsApi } from '@/lib/api/recurringBills';
+import { notificationsApi } from '@/lib/api/notifications';
 
 
 
@@ -204,10 +218,35 @@ interface FinanceContextType {
   insights: AIInsight[];
   dismissInsight: (id: string) => void;
 
-  // Notifications
-  notifications: NotificationItem[];
-  markNotificationRead: (id: string) => void;
-  markAllNotificationsRead: () => void;
+  // Real Backend Recurring Bills State & Operations
+  recurringBills: RecurringBill[];
+  recurringBillsTotal: number;
+  recurringBillsActiveCount: number;
+  monthlyCommittedTotal: number;
+  isLoadingRecurringBills: boolean;
+  recurringBillsError: string | null;
+  loadRecurringBills: (status?: string) => Promise<RecurringBillListResponse>;
+  createRecurringBill: (payload: RecurringBillCreateRequest) => Promise<RecurringBill>;
+  updateRecurringBill: (id: string, payload: RecurringBillUpdateRequest) => Promise<RecurringBill>;
+  deleteRecurringBill: (id: string) => Promise<boolean>;
+  pauseRecurringBill: (id: string) => Promise<RecurringBill>;
+  resumeRecurringBill: (id: string) => Promise<RecurringBill>;
+  postRecurringBillPayment: (id: string, payload?: RecurringBillPostPaymentRequest) => Promise<RecurringBillPaymentResult>;
+  isAddRecurringBillOpen: boolean;
+  setIsAddRecurringBillOpen: (open: boolean) => void;
+  editingRecurringBill: RecurringBill | null;
+  setEditingRecurringBill: (bill: RecurringBill | null) => void;
+
+  // Real Backend Notifications State & Operations
+  notifications: ApiNotificationItem[];
+  notificationsTotal: number;
+  unreadNotificationsCount: number;
+  isLoadingNotifications: boolean;
+  notificationsError: string | null;
+  loadNotifications: (autoGenerate?: boolean) => Promise<NotificationListResponse>;
+  markNotificationRead: (id: string) => Promise<void>;
+  markAllNotificationsRead: () => Promise<void>;
+  deleteNotification: (id: string) => Promise<boolean>;
 
   // AI Financial Copilot Chat
   chatMessages: ChatMessage[];
@@ -628,6 +667,23 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [isLoadingFinancialHealth, setIsLoadingFinancialHealth] = useState<boolean>(false);
   const [financialHealthError, setFinancialHealthError] = useState<string | null>(null);
 
+  // Real Backend Recurring Bills State
+  const [recurringBills, setRecurringBills] = useState<RecurringBill[]>([]);
+  const [recurringBillsTotal, setRecurringBillsTotal] = useState<number>(0);
+  const [recurringBillsActiveCount, setRecurringBillsActiveCount] = useState<number>(0);
+  const [monthlyCommittedTotal, setMonthlyCommittedTotal] = useState<number>(0);
+  const [isLoadingRecurringBills, setIsLoadingRecurringBills] = useState<boolean>(false);
+  const [recurringBillsError, setRecurringBillsError] = useState<string | null>(null);
+  const [isAddRecurringBillOpen, setIsAddRecurringBillOpen] = useState<boolean>(false);
+  const [editingRecurringBill, setEditingRecurringBill] = useState<RecurringBill | null>(null);
+
+  // Real Backend Notifications State
+  const [notifications, setNotifications] = useState<ApiNotificationItem[]>([]);
+  const [notificationsTotal, setNotificationsTotal] = useState<number>(0);
+  const [unreadNotificationsCount, setUnreadNotificationsCount] = useState<number>(0);
+  const [isLoadingNotifications, setIsLoadingNotifications] = useState<boolean>(false);
+  const [notificationsError, setNotificationsError] = useState<string | null>(null);
+
   const [securityAlerts, setSecurityAlerts] = useState<SecurityAlert[]>(() => {
     const saved = localStorage.getItem('finsage_alerts');
     return saved ? JSON.parse(saved) : INITIAL_SECURITY_ALERTS;
@@ -637,7 +693,6 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [marketIndices] = useState<MarketIndex[]>(INITIAL_INDICES);
   const [insights, setInsights] = useState<AIInsight[]>(INITIAL_INSIGHTS);
   const [financialHealth] = useState<FinancialHealth>(INITIAL_HEALTH);
-  const [notifications, setNotifications] = useState<NotificationItem[]>(INITIAL_NOTIFICATIONS);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>(INITIAL_CHAT);
 
   // Modals state
@@ -752,6 +807,163 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
     },
     []
   );
+
+  // Real Backend Notifications Operations
+  const loadNotifications = useCallback(async (autoGenerate = true): Promise<NotificationListResponse> => {
+    setIsLoadingNotifications(true);
+    setNotificationsError(null);
+    try {
+      const res = await notificationsApi.list({ auto_generate: autoGenerate });
+      setNotifications(res?.items || []);
+      setNotificationsTotal(res?.total || 0);
+      setUnreadNotificationsCount(res?.unread_count || 0);
+      return res || { items: [], total: 0, unread_count: 0 };
+    } catch (err) {
+      const msg = getApiErrorMessage(err, 'Failed to load notifications.');
+      setNotificationsError(msg);
+      return { items: [], total: 0, unread_count: 0 };
+    } finally {
+      setIsLoadingNotifications(false);
+    }
+  }, []);
+
+  const markNotificationRead = useCallback(async (id: string): Promise<void> => {
+    try {
+      await notificationsApi.markRead(id);
+      setNotifications((prev) =>
+        prev.map((n) => (n.id === id ? { ...n, is_read: true, read_at: new Date().toISOString() } : n))
+      );
+      setUnreadNotificationsCount((prev) => Math.max(0, prev - 1));
+    } catch (err) {
+      console.error('Failed to mark notification read:', err);
+    }
+  }, []);
+
+  const markAllNotificationsRead = useCallback(async (): Promise<void> => {
+    try {
+      await notificationsApi.markAllRead();
+      setNotifications((prev) =>
+        prev.map((n) => ({ ...n, is_read: true, read_at: new Date().toISOString() }))
+      );
+      setUnreadNotificationsCount(0);
+    } catch (err) {
+      console.error('Failed to mark all notifications read:', err);
+    }
+  }, []);
+
+  const deleteNotification = useCallback(async (id: string): Promise<boolean> => {
+    try {
+      await notificationsApi.delete(id);
+      setNotifications((prev) => prev.filter((n) => n.id !== id));
+      return true;
+    } catch (err) {
+      console.error('Failed to delete notification:', err);
+      return false;
+    }
+  }, []);
+
+  // Real Backend Recurring Bills Operations
+  const loadRecurringBills = useCallback(async (status?: string): Promise<RecurringBillListResponse> => {
+    setIsLoadingRecurringBills(true);
+    setRecurringBillsError(null);
+    try {
+      const res = await recurringBillsApi.list(status);
+      setRecurringBills(res?.items || []);
+      setRecurringBillsTotal(res?.total || 0);
+      setRecurringBillsActiveCount(res?.active_count || 0);
+      setMonthlyCommittedTotal(Number(res?.monthly_committed_total || 0));
+      return res || { items: [], total: 0, active_count: 0, monthly_committed_total: 0 };
+    } catch (err) {
+      const msg = getApiErrorMessage(err, 'Failed to load recurring bills.');
+      setRecurringBillsError(msg);
+      return { items: [], total: 0, active_count: 0, monthly_committed_total: 0 };
+    } finally {
+      setIsLoadingRecurringBills(false);
+    }
+  }, []);
+
+  const createRecurringBill = useCallback(async (payload: RecurringBillCreateRequest): Promise<RecurringBill> => {
+    setIsLoadingRecurringBills(true);
+    setRecurringBillsError(null);
+    try {
+      const created = await recurringBillsApi.create(payload);
+      await loadRecurringBills();
+      await loadNotifications();
+      return created;
+    } catch (err) {
+      const msg = getApiErrorMessage(err, 'Failed to create recurring bill.');
+      setRecurringBillsError(msg);
+      throw err;
+    } finally {
+      setIsLoadingRecurringBills(false);
+    }
+  }, [loadRecurringBills, loadNotifications]);
+
+  const updateRecurringBill = useCallback(async (id: string, payload: RecurringBillUpdateRequest): Promise<RecurringBill> => {
+    setIsLoadingRecurringBills(true);
+    setRecurringBillsError(null);
+    try {
+      const updated = await recurringBillsApi.update(id, payload);
+      await loadRecurringBills();
+      await loadNotifications();
+      return updated;
+    } catch (err) {
+      const msg = getApiErrorMessage(err, 'Failed to update recurring bill.');
+      setRecurringBillsError(msg);
+      throw err;
+    } finally {
+      setIsLoadingRecurringBills(false);
+    }
+  }, [loadRecurringBills, loadNotifications]);
+
+  const deleteRecurringBill = useCallback(async (id: string): Promise<boolean> => {
+    setIsLoadingRecurringBills(true);
+    setRecurringBillsError(null);
+    try {
+      await recurringBillsApi.delete(id);
+      await loadRecurringBills();
+      return true;
+    } catch (err) {
+      const msg = getApiErrorMessage(err, 'Failed to delete recurring bill.');
+      setRecurringBillsError(msg);
+      return false;
+    } finally {
+      setIsLoadingRecurringBills(false);
+    }
+  }, [loadRecurringBills]);
+
+  const pauseRecurringBill = useCallback(async (id: string): Promise<RecurringBill> => {
+    setIsLoadingRecurringBills(true);
+    setRecurringBillsError(null);
+    try {
+      const paused = await recurringBillsApi.pause(id);
+      await loadRecurringBills();
+      return paused;
+    } catch (err) {
+      const msg = getApiErrorMessage(err, 'Failed to pause recurring bill.');
+      setRecurringBillsError(msg);
+      throw err;
+    } finally {
+      setIsLoadingRecurringBills(false);
+    }
+  }, [loadRecurringBills]);
+
+  const resumeRecurringBill = useCallback(async (id: string): Promise<RecurringBill> => {
+    setIsLoadingRecurringBills(true);
+    setRecurringBillsError(null);
+    try {
+      const resumed = await recurringBillsApi.resume(id);
+      await loadRecurringBills();
+      await loadNotifications();
+      return resumed;
+    } catch (err) {
+      const msg = getApiErrorMessage(err, 'Failed to resume recurring bill.');
+      setRecurringBillsError(msg);
+      throw err;
+    } finally {
+      setIsLoadingRecurringBills(false);
+    }
+  }, [loadRecurringBills, loadNotifications]);
 
   // Real Accounts Operations
   const loadAccounts = useCallback(async (): Promise<Account[]> => {
@@ -1291,6 +1503,34 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
     [loadTransactions, loadAccounts, loadBudgets, loadGoals, loadLoans, loadDebtStress, loadAnalytics, loadFinancialHealth]
   );
 
+  const postRecurringBillPayment = useCallback(
+    async (
+      id: string,
+      payload?: RecurringBillPostPaymentRequest
+    ): Promise<RecurringBillPaymentResult> => {
+      setIsLoadingRecurringBills(true);
+      setRecurringBillsError(null);
+      try {
+        const res = await recurringBillsApi.postPayment(id, payload);
+        await loadRecurringBills();
+        await loadTransactions();
+        await loadAccounts();
+        await loadBudgets();
+        await loadAnalytics();
+        await loadFinancialHealth();
+        await loadNotifications();
+        return res;
+      } catch (err) {
+        const msg = getApiErrorMessage(err, 'Failed to post recurring bill payment.');
+        setRecurringBillsError(msg);
+        throw err;
+      } finally {
+        setIsLoadingRecurringBills(false);
+      }
+    },
+    [loadRecurringBills, loadTransactions, loadAccounts, loadBudgets, loadAnalytics, loadFinancialHealth, loadNotifications]
+  );
+
 
   // Load Current User from Backend
   const loadCurrentUser = useCallback(async (): Promise<boolean> => {
@@ -1440,6 +1680,8 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
           setDebtStress(null);
           setAnalyticsOverview(null);
           setFinancialHealthOverview(null);
+          setRecurringBills([]);
+          setNotifications([]);
         }
       }
     }
@@ -1449,7 +1691,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
     };
   }, [clerkAuth?.isLoaded, clerkAuth?.isSignedIn, clerkUser?.user]);
 
-  // Auto-fetch accounts, transactions, budgets, goals, loans, debt stress, analytics & health upon authentication
+  // Auto-fetch all data upon authentication
   useEffect(() => {
     if (isAuthenticated) {
       loadAccounts();
@@ -1460,8 +1702,22 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
       loadDebtStress();
       loadAnalytics();
       loadFinancialHealth();
+      loadRecurringBills();
+      loadNotifications();
     }
-  }, [isAuthenticated, loadAccounts, loadTransactions, loadBudgets, loadGoals, loadLoans, loadDebtStress, loadAnalytics, loadFinancialHealth]);
+  }, [
+    isAuthenticated,
+    loadAccounts,
+    loadTransactions,
+    loadBudgets,
+    loadGoals,
+    loadLoans,
+    loadDebtStress,
+    loadAnalytics,
+    loadFinancialHealth,
+    loadRecurringBills,
+    loadNotifications,
+  ]);
 
 
 
@@ -1637,16 +1893,6 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
     setInsights((prev) => prev.filter((i) => i.id !== id));
   };
 
-  const markNotificationRead = (id: string) => {
-    setNotifications((prev) =>
-      prev.map((n) => (n.id === id ? { ...n, read: true } : n))
-    );
-  };
-
-  const markAllNotificationsRead = () => {
-    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
-  };
-
   const sendChatMessage = (text: string) => {
     const userMsg: ChatMessage = {
       id: `msg-${Date.now()}`,
@@ -1713,9 +1959,10 @@ On your HDFC Home Loan (₹18.5L balance at 8.65%):
     setDebtStress(null);
     setAnalyticsOverview(null);
     setFinancialHealthOverview(null);
+    setRecurringBills([]);
+    setNotifications([]);
     setSecurityAlerts(INITIAL_SECURITY_ALERTS);
     setChatMessages(INITIAL_CHAT);
-    setNotifications(INITIAL_NOTIFICATIONS);
     setCustomProfile({});
     localStorage.removeItem('finsage_budgets');
     localStorage.removeItem('finsage_goals');
@@ -1805,6 +2052,34 @@ On your HDFC Home Loan (₹18.5L balance at 8.65%):
         loadDebtStress,
         simulatePrepayment,
 
+        recurringBills,
+        recurringBillsTotal,
+        recurringBillsActiveCount,
+        monthlyCommittedTotal,
+        isLoadingRecurringBills,
+        recurringBillsError,
+        loadRecurringBills,
+        createRecurringBill,
+        updateRecurringBill,
+        deleteRecurringBill,
+        pauseRecurringBill,
+        resumeRecurringBill,
+        postRecurringBillPayment,
+        isAddRecurringBillOpen,
+        setIsAddRecurringBillOpen,
+        editingRecurringBill,
+        setEditingRecurringBill,
+
+        notifications,
+        notificationsTotal,
+        unreadNotificationsCount,
+        isLoadingNotifications,
+        notificationsError,
+        loadNotifications,
+        markNotificationRead,
+        markAllNotificationsRead,
+        deleteNotification,
+
         analyticsOverview,
         isLoadingAnalytics,
         analyticsError,
@@ -1831,9 +2106,6 @@ On your HDFC Home Loan (₹18.5L balance at 8.65%):
         totalPortfolioPnlPercent,
         insights,
         dismissInsight,
-        notifications,
-        markNotificationRead,
-        markAllNotificationsRead,
         chatMessages,
         isChatOpen,
         setIsChatOpen,
@@ -1872,6 +2144,12 @@ export const useFinance = () => {
       budgets: [],
       goals: [],
       loans: [],
+      recurringBills: [],
+      recurringBillsTotal: 0,
+      recurringBillsActiveCount: 0,
+      monthlyCommittedTotal: 0,
+      isLoadingRecurringBills: false,
+      recurringBillsError: null,
       debtStress: null,
       analyticsOverview: null,
       isLoadingAnalytics: false,
@@ -1881,6 +2159,10 @@ export const useFinance = () => {
       financialHealthError: null,
       securityAlerts: [],
       notifications: [],
+      notificationsTotal: 0,
+      unreadNotificationsCount: 0,
+      isLoadingNotifications: false,
+      notificationsError: null,
       chatMessages: [],
     } as unknown as FinanceContextType;
   }
