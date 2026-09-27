@@ -32,6 +32,8 @@ export type Loan = import('./loan').ApiLoan;
 
 export * from './recurringBill';
 export * from './notification';
+export * from './copilot';
+export * from './monthlyReport';
 
 export interface SecurityAlert {
   id: string;

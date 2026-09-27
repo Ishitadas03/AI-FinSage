@@ -32,6 +32,11 @@ class Settings(BaseSettings):
     CLERK_SECRET_KEY: Union[str, None] = None
     CLERK_WEBHOOK_SECRET: Union[str, None] = None
 
+    # LLM & AI Copilot Settings
+    GEMINI_API_KEY: Union[str, None] = None
+    OPENAI_API_KEY: Union[str, None] = None
+    LLM_MODEL: str = "gemini-1.5-flash"
+
     # CORS
     CORS_ORIGINS: Union[List[str], str] = [
         "http://localhost:5173",

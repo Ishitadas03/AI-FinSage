@@ -84,6 +84,10 @@ import { financialHealthApi } from '@/lib/api/financialHealth';
 import { emiApi, EmiCalculationRequest, EmiCalculationResponse } from '@/lib/api/emi';
 import { recurringBillsApi } from '@/lib/api/recurringBills';
 import { notificationsApi } from '@/lib/api/notifications';
+import { copilotApi } from '@/lib/api/copilot';
+import { reportsApi } from '@/lib/api/reports';
+import { MonthlyFinancialReportResponse } from '@/types/monthlyReport';
+import { ChatMessageResponse } from '@/types/copilot';
 
 
 
@@ -248,12 +252,21 @@ interface FinanceContextType {
   markAllNotificationsRead: () => Promise<void>;
   deleteNotification: (id: string) => Promise<boolean>;
 
-  // AI Financial Copilot Chat
+  // AI Financial Copilot Chat (Phase 4 Grounded)
   chatMessages: ChatMessage[];
   isChatOpen: boolean;
   setIsChatOpen: (open: boolean) => void;
-  sendChatMessage: (text: string) => void;
-  clearChat: () => void;
+  isLoadingChat: boolean;
+  chatError: string | null;
+  loadChatHistory: () => Promise<ChatMessage[]>;
+  sendChatMessage: (text: string) => Promise<ChatMessage | null>;
+  clearChat: () => Promise<void>;
+
+  // Dynamic Monthly Financial Reports (Phase 4 Grounded)
+  monthlyReport: MonthlyFinancialReportResponse | null;
+  isLoadingMonthlyReport: boolean;
+  monthlyReportError: string | null;
+  loadMonthlyReport: (month?: string) => Promise<MonthlyFinancialReportResponse | null>;
 
   // Global Modals & Utilities
   isOnboardingOpen: boolean;
@@ -694,6 +707,13 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [insights, setInsights] = useState<AIInsight[]>(INITIAL_INSIGHTS);
   const [financialHealth] = useState<FinancialHealth>(INITIAL_HEALTH);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>(INITIAL_CHAT);
+  const [isLoadingChat, setIsLoadingChat] = useState<boolean>(false);
+  const [chatError, setChatError] = useState<string | null>(null);
+
+  // Dynamic Monthly Financial Report State (Phase 4)
+  const [monthlyReport, setMonthlyReport] = useState<MonthlyFinancialReportResponse | null>(null);
+  const [isLoadingMonthlyReport, setIsLoadingMonthlyReport] = useState<boolean>(false);
+  const [monthlyReportError, setMonthlyReportError] = useState<string | null>(null);
 
   // Modals state
   const [isChatOpen, setIsChatOpen] = useState(false);
@@ -1836,6 +1856,8 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
       setDebtStress(null);
       setAnalyticsOverview(null);
       setFinancialHealthOverview(null);
+      setMonthlyReport(null);
+      setChatMessages(INITIAL_CHAT);
     }
   };
 
@@ -1893,64 +1915,111 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
     setInsights((prev) => prev.filter((i) => i.id !== id));
   };
 
-  const sendChatMessage = (text: string) => {
-    const userMsg: ChatMessage = {
-      id: `msg-${Date.now()}`,
-      sender: 'user',
-      text,
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-    };
-
-    setChatMessages((prev) => [...prev, userMsg]);
-
-    setTimeout(() => {
-      let replyText = "";
-      const lower = text.toLowerCase();
-
-      if (lower.includes("save") || lower.includes("saving") || lower.includes("10,000")) {
-        replyText = `Based on your current cash flow, you have ₹85,000 monthly income and ₹54,200 in expenses (a 28% savings rate = ₹23,800 saved). To save an extra ₹10,000/month:
-1. 🍽️ **Dining & Food Delivery**: Reduce Swiggy/Zomato orders from ₹9,200 to ₹6,000 (Saves ₹3,200).
-2. 🛍️ **Discretionary Shopping**: Cap e-commerce purchases at ₹2,500 instead of ₹4,800 (Saves ₹2,300).
-3. 🔄 **Subscriptions Audit**: Cancel unused streaming passes (Saves ₹800).
-4. 🚗 **Cab usage**: Switch 2 weekly Uber rides to metro (Saves ₹1,200).
-5. 💼 **Freelance Inflows**: Automate 50% of consulting earnings into liquid funds (Adds ~₹2,500).`;
-      } else if (lower.includes("car") || lower.includes("afford") || lower.includes("8l")) {
-        replyText = `🚗 **Car Purchase Assessment**:
-Your target is ₹8,00,000 with ₹2,40,000 currently saved (30% progress).
-- At your current contribution rate of ₹15,000/month, you will reach ₹8L by **December 2028** (27 months).
-- If you wish to purchase earlier (in 18 months), increase your monthly goal allocation to **₹31,100/month**.
-- Your debt-to-income is currently 28%, which is safe, so taking an auto loan top-up is also feasible if your down payment reaches ₹4L.`;
-      } else if (lower.includes("scam") || lower.includes("alert") || lower.includes("flagged") || lower.includes("security")) {
-        replyText = `🛡️ **Scam Shield Audit**:
-You have 2 pending security alerts:
-1. **Unknown Intl Gateway (London)**: ₹18,450. Flagged due to foreign IP and off-hours execution.
-2. **Crypto-Fast Trade**: ₹5,000. Flagged because the merchant is listed on the cybercrime watch registry.
-I strongly recommend blocking foreign merchant transactions on your primary credit card via your banking app settings.`;
-      } else if (lower.includes("loan") || lower.includes("home loan") || lower.includes("prepay") || lower.includes("emi")) {
-        const prepay = simulatePrepayment("l-1", 5000);
-        replyText = `🏡 **Home Loan Prepayment Analysis**:
-On your HDFC Home Loan (₹18.5L balance at 8.65%):
-- Regular EMI: ₹18,200/mo over 142 months.
-- **Adding ₹5,000 extra per month** (Total ₹23,200/mo) will:
-  ✨ Save **₹4,82,000 in total interest**!
-  ⚡ Knock **38 months (3.2 years)** off your loan repayment schedule!`;
-      } else {
-        replyText = `I've analyzed your financial parameters. With a net worth of ₹12.40 Lakhs and a healthy 72/100 Financial Health score, your baseline is strong. You have ₹10,800 remaining in this month's budget. What specific scenario or calculation would you like to explore?`;
+  // Real Grounded AI Copilot Operations (Phase 4)
+  const loadChatHistory = useCallback(async (): Promise<ChatMessage[]> => {
+    if (!tokenStorage.hasSession()) return [];
+    try {
+      const res = await copilotApi.getHistory(50);
+      if (res.messages && res.messages.length > 0) {
+        const formatted: ChatMessage[] = res.messages.map((m) => ({
+          id: m.id,
+          sender: m.role,
+          text: m.content,
+          timestamp: new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          suggestions: m.suggested_queries,
+          intent: m.intent,
+          metrics_snapshot: m.metrics_snapshot,
+        }));
+        setChatMessages(formatted);
+        return formatted;
       }
+      return [];
+    } catch (err) {
+      console.warn("Could not load backend chat history:", err);
+      return [];
+    }
+  }, []);
 
-      const botMsg: ChatMessage = {
-        id: `msg-bot-${Date.now()}`,
-        sender: 'assistant',
-        text: replyText,
+  const sendChatMessage = useCallback(
+    async (text: string): Promise<ChatMessage | null> => {
+      const trimmed = text.trim();
+      if (!trimmed) return null;
+
+      const userMsg: ChatMessage = {
+        id: `user-${Date.now()}`,
+        sender: 'user',
+        text: trimmed,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       };
-      setChatMessages((prev) => [...prev, botMsg]);
-    }, 600);
-  };
 
-  const clearChat = () => {
-    setChatMessages(INITIAL_CHAT);
-  };
+      setChatMessages((prev) => [...prev, userMsg]);
+      setIsLoadingChat(true);
+      setChatError(null);
+
+      try {
+        const res = await copilotApi.chat({ message: trimmed });
+        const botMsg: ChatMessage = {
+          id: res.id,
+          sender: 'assistant',
+          text: res.content,
+          timestamp: new Date(res.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          suggestions: res.suggested_queries,
+          intent: res.intent,
+          metrics_snapshot: res.metrics_snapshot,
+        };
+
+        setChatMessages((prev) => [...prev, botMsg]);
+        return botMsg;
+      } catch (err) {
+        const msg = getApiErrorMessage(err, 'Could not retrieve AI response. Please check your connection.');
+        setChatError(msg);
+        const errorMsg: ChatMessage = {
+          id: `err-${Date.now()}`,
+          sender: 'assistant',
+          text: `⚠️ **Service Notice**: ${msg}`,
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        };
+        setChatMessages((prev) => [...prev, errorMsg]);
+        return null;
+      } finally {
+        setIsLoadingChat(false);
+      }
+    },
+    []
+  );
+
+  const clearChat = useCallback(async (): Promise<void> => {
+    try {
+      if (tokenStorage.hasSession()) {
+        await copilotApi.clearHistory();
+      }
+    } catch (err) {
+      console.warn("Failed to clear backend chat history:", err);
+    } finally {
+      setChatMessages(INITIAL_CHAT);
+      setChatError(null);
+    }
+  }, []);
+
+  // Real Dynamic Monthly Financial Report Operations (Phase 4)
+  const loadMonthlyReport = useCallback(
+    async (month?: string): Promise<MonthlyFinancialReportResponse | null> => {
+      setIsLoadingMonthlyReport(true);
+      setMonthlyReportError(null);
+      try {
+        const data = await reportsApi.getMonthlyReport(month);
+        setMonthlyReport(data);
+        return data;
+      } catch (err) {
+        const msg = getApiErrorMessage(err, 'Unable to generate monthly financial report.');
+        setMonthlyReportError(msg);
+        return null;
+      } finally {
+        setIsLoadingMonthlyReport(false);
+      }
+    },
+    []
+  );
 
   const resetAllData = () => {
     setBudgets([]);
@@ -2109,8 +2178,15 @@ On your HDFC Home Loan (₹18.5L balance at 8.65%):
         chatMessages,
         isChatOpen,
         setIsChatOpen,
+        isLoadingChat,
+        chatError,
+        loadChatHistory,
         sendChatMessage,
         clearChat,
+        monthlyReport,
+        isLoadingMonthlyReport,
+        monthlyReportError,
+        loadMonthlyReport,
         isOnboardingOpen,
         setIsOnboardingOpen,
         isAddTransactionOpen,
@@ -2164,6 +2240,11 @@ export const useFinance = () => {
       isLoadingNotifications: false,
       notificationsError: null,
       chatMessages: [],
+      isLoadingChat: false,
+      chatError: null,
+      monthlyReport: null,
+      isLoadingMonthlyReport: false,
+      monthlyReportError: null,
     } as unknown as FinanceContextType;
   }
   return context;

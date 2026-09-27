@@ -112,6 +112,23 @@ from app.schemas.notification import (
     NotificationBatchMarkReadRequest,
     NotificationGenerateResponse,
 )
+from app.schemas.copilot import (
+    ChatMessageRequest,
+    ChatMessageResponse,
+    ChatHistoryResponse,
+)
+from app.schemas.monthly_report import (
+    ReportPeriod,
+    ReportFinancialSummary,
+    ReportPeriodComparison,
+    ReportCategoryBreakdown,
+    ReportTopExpense,
+    ReportBudgetAuditItem,
+    ReportUpcomingObligation,
+    ReportFinancialHealth,
+    ReportActionChecklistItem,
+    MonthlyFinancialReportResponse,
+)
 
 __all__ = [
     "UserBase",
@@ -198,6 +215,19 @@ __all__ = [
     "NotificationListResponse",
     "NotificationBatchMarkReadRequest",
     "NotificationGenerateResponse",
+    "ChatMessageRequest",
+    "ChatMessageResponse",
+    "ChatHistoryResponse",
+    "ReportPeriod",
+    "ReportFinancialSummary",
+    "ReportPeriodComparison",
+    "ReportCategoryBreakdown",
+    "ReportTopExpense",
+    "ReportBudgetAuditItem",
+    "ReportUpcomingObligation",
+    "ReportFinancialHealth",
+    "ReportActionChecklistItem",
+    "MonthlyFinancialReportResponse",
 ]
 
 

@@ -15,6 +15,8 @@ from app.api.v1.endpoints import (
     bank_statement_import,
     recurring_bills,
     notifications,
+    copilot,
+    reports,
 )
 
 api_v1_router = APIRouter()
@@ -33,5 +35,7 @@ api_v1_router.include_router(budgets.router)
 api_v1_router.include_router(bank_statement_import.router)
 api_v1_router.include_router(recurring_bills.router)
 api_v1_router.include_router(notifications.router)
+api_v1_router.include_router(copilot.router, prefix="/copilot", tags=["copilot"])
+api_v1_router.include_router(reports.router, prefix="/reports", tags=["reports"])
 
 

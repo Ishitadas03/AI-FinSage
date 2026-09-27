@@ -9,6 +9,7 @@ from app.models.financial_goal_contribution import FinancialGoalContribution
 from app.models.budget import Budget
 from app.models.recurring_bill import RecurringBill
 from app.models.notification import Notification
+from app.models.chat_message import ChatMessage
 
 __all__ = [
     "Base",
@@ -22,6 +23,7 @@ __all__ = [
     "Budget",
     "RecurringBill",
     "Notification",
+    "ChatMessage",
 ]
 
 

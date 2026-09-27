@@ -12,3 +12,5 @@ export * from './financialHealth';
 export * from './emi';
 export * from './recurringBills';
 export * from './notifications';
+export * from './copilot';
+export * from './reports';
