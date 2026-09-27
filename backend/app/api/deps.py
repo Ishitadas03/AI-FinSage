@@ -112,6 +112,12 @@ def get_current_user(
                 detail="User associated with this token no longer exists.",
                 headers={"WWW-Authenticate": "Bearer"},
             )
+        if getattr(user, "status", "active") != "active":
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Account is currently suspended or scheduled for permanent deletion.",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
         return user
 
     # Handle Clerk authenticated user lookup & JIT provisioning
@@ -159,5 +165,12 @@ def get_current_user(
         # Link Clerk ID to existing local user account
         user.clerk_user_id = clerk_id
         db.commit()
+
+    if getattr(user, "status", "active") != "active":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Account is currently suspended or scheduled for permanent deletion.",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
 
     return user

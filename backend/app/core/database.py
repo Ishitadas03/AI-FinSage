@@ -1,4 +1,5 @@
 import os
+import sys
 import sqlite3
 from datetime import datetime
 from typing import Generator
@@ -68,7 +69,7 @@ def create_db_engine():
 
     try:
         eng = create_engine(target_url, **kwargs)
-        if target_url.startswith("postgresql") and "pytest" not in sys.modules:
+        if target_url.startswith("postgresql") and "pytest" not in sys.modules and not IS_SERVERLESS:
             with eng.connect() as conn:
                 pass
         return eng

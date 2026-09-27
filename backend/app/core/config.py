@@ -32,6 +32,9 @@ class Settings(BaseSettings):
     CLERK_SECRET_KEY: Union[str, None] = None
     CLERK_WEBHOOK_SECRET: Union[str, None] = None
 
+    # Maintenance & Cron Security (Phase 6)
+    CRON_SECRET: Union[str, None] = None
+
     # LLM & AI Copilot Settings
     GEMINI_API_KEY: Union[str, None] = None
     OPENAI_API_KEY: Union[str, None] = None

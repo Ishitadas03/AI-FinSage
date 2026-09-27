@@ -5,7 +5,7 @@ Provides user-initiated financial data exports (JSON, CSV Zip), audit trail insp
 and explicit, confirmed account deletion with cascading ledger cleanup.
 """
 from typing import Optional
-from fastapi import APIRouter, Depends, Query, Request, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response, status
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 
@@ -118,3 +118,52 @@ def delete_account(
         user_agent=user_agent,
     )
     return result
+
+
+@router.post(
+    "/maintenance/reconcile-deletions",
+    summary="Reconcile and finalize accounts pending deletion (Cron/Maintenance)",
+    status_code=status.HTTP_200_OK,
+)
+def trigger_reconciliation(
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    """
+    Protected maintenance cron endpoint to reconcile accounts stuck in 'pending_deletion'.
+    Requires valid 'Authorization: Bearer <CRON_SECRET>' or 'X-Cron-Secret: <CRON_SECRET>'.
+    Never exposed to frontend clients.
+    """
+    from app.core.config import settings
+    import secrets
+
+    auth_header = request.headers.get("Authorization", "")
+    cron_header = request.headers.get("X-Cron-Secret", "")
+
+    provided_secret = None
+    if auth_header.startswith("Bearer "):
+        provided_secret = auth_header[7:].strip()
+    elif cron_header:
+        provided_secret = cron_header.strip()
+
+    expected_secret = settings.CRON_SECRET
+
+    if not expected_secret:
+        if settings.ENVIRONMENT == "production":
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Maintenance cron endpoint is disabled because CRON_SECRET is not configured.",
+            )
+    else:
+        if not provided_secret or not secrets.compare_digest(provided_secret, expected_secret):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Unauthorized: invalid or missing cron maintenance secret.",
+            )
+
+    reconciled_count = data_management_service.reconcile_pending_deletions(db)
+    return {
+        "status": "success",
+        "reconciled_accounts": reconciled_count,
+        "message": f"Successfully finalized {reconciled_count} pending deletion(s).",
+    }

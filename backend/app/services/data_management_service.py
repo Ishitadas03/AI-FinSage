@@ -309,7 +309,10 @@ class DataManagementService:
     ) -> AccountDeletionResponse:
         """
         Executes permanent account deletion with strict confirmation.
-        Cascades deletion to all financial ledger records.
+        Implements a resilient 3-phase workflow:
+        Phase 1: Transition user status to 'pending_deletion' and lock local account.
+        Phase 2: Revoke and delete Clerk IdP identity (idempotent; 404 is treated as success).
+        Phase 3: Permanently purge all child financial ledger entities and the user record.
         """
         if payload.confirm_email.lower().strip() != user.email.lower().strip():
             raise HTTPException(
@@ -325,40 +328,52 @@ class DataManagementService:
 
         user_id = user.id
         email = user.email
+        clerk_id = user.clerk_user_id
 
         logger.warning(
             f"Executing permanent account deletion for user {user_id} ({email}). Reason: {payload.reason}"
         )
 
-        # 1. If user has a linked Clerk identity, revoke and delete it on Clerk first
-        if user.clerk_user_id:
+        # Phase 1: Lock account locally into durable pending_deletion state
+        try:
+            user.status = "pending_deletion"
+            db.commit()
+        except Exception as e:
+            db.rollback()
+            logger.error(f"Failed to set user {user_id} status to pending_deletion: {e}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Unable to lock account for deletion. Please try again.",
+            )
+
+        # Phase 2: If user has a linked Clerk identity, revoke and delete it on Clerk
+        if clerk_id:
             try:
-                clerk_service.delete_clerk_user_sync(user.clerk_user_id)
+                clerk_service.delete_clerk_user_sync(clerk_id)
             except Exception as ce:
-                logger.error(f"Failed to delete Clerk user {user.clerk_user_id}: {ce}", exc_info=True)
+                # Revert local locking if IdP revocation explicitly fails before IdP is touched
+                logger.error(f"Failed to delete Clerk user {clerk_id}: {ce}", exc_info=True)
+                try:
+                    user.status = "active"
+                    db.commit()
+                except Exception:
+                    db.rollback()
                 raise HTTPException(
                     status_code=status.HTTP_502_BAD_GATEWAY,
                     detail="Failed to revoke external authentication credentials on Clerk. Account deletion aborted to prevent inconsistent identity state.",
                 )
 
+        # Phase 3: Explicitly purge child records and user record
         try:
-            # 2. Explicitly delete child records in reverse dependency order to ensure uniform cascading across PostgreSQL and SQLite
-            db.query(Transaction).filter(Transaction.user_id == user_id).delete(synchronize_session=False)
-            db.query(RecurringBill).filter(RecurringBill.user_id == user_id).delete(synchronize_session=False)
-            db.query(Budget).filter(Budget.user_id == user_id).delete(synchronize_session=False)
-            db.query(FinancialGoal).filter(FinancialGoal.user_id == user_id).delete(synchronize_session=False)
-            db.query(Loan).filter(Loan.user_id == user_id).delete(synchronize_session=False)
-            db.query(Notification).filter(Notification.user_id == user_id).delete(synchronize_session=False)
-            db.query(Account).filter(Account.user_id == user_id).delete(synchronize_session=False)
-
-            db.delete(user)
-            db.commit()
+            DataManagementService._purge_user_and_child_records(db, user_id)
         except Exception as e:
             db.rollback()
-            logger.error(f"Failed to delete account for user {user_id}: {e}", exc_info=True)
+            logger.error(f"Failed during Phase 3 database purge for user {user_id}: {e}", exc_info=True)
+            # The account remains locked in pending_deletion so it cannot be accessed,
+            # and can be safely resolved via reconcile_pending_deletions
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="An error occurred while deleting your account. Please try again or contact support.",
+                detail="Account identity revoked, but database cleanup encountered an error. A reconciliation task will complete the deletion.",
             )
 
         return AccountDeletionResponse(
@@ -367,6 +382,42 @@ class DataManagementService:
             deleted_at=datetime.now(timezone.utc),
             deleted_user_id=user_id,
         )
+
+    @staticmethod
+    def _purge_user_and_child_records(db: Session, user_id: uuid.UUID) -> None:
+        """Helper to purge child records in reverse dependency order and delete the user."""
+        db.query(Transaction).filter(Transaction.user_id == user_id).delete(synchronize_session=False)
+        db.query(RecurringBill).filter(RecurringBill.user_id == user_id).delete(synchronize_session=False)
+        db.query(Budget).filter(Budget.user_id == user_id).delete(synchronize_session=False)
+        db.query(FinancialGoal).filter(FinancialGoal.user_id == user_id).delete(synchronize_session=False)
+        db.query(Loan).filter(Loan.user_id == user_id).delete(synchronize_session=False)
+        db.query(Notification).filter(Notification.user_id == user_id).delete(synchronize_session=False)
+        db.query(Account).filter(Account.user_id == user_id).delete(synchronize_session=False)
+
+        user = db.query(User).filter(User.id == user_id).first()
+        if user:
+            db.delete(user)
+        db.commit()
+
+    @staticmethod
+    def reconcile_pending_deletions(db: Session) -> int:
+        """
+        Background/maintenance task that reconciles and finalizes any accounts stuck in 'pending_deletion'.
+        Returns the number of reconciled accounts.
+        """
+        pending_users = db.query(User).filter(User.status == "pending_deletion").all()
+        reconciled_count = 0
+        for u in pending_users:
+            try:
+                if u.clerk_user_id:
+                    # Attempt Clerk deletion (404 is treated as already deleted)
+                    clerk_service.delete_clerk_user_sync(u.clerk_user_id)
+                DataManagementService._purge_user_and_child_records(db, u.id)
+                reconciled_count += 1
+                logger.info(f"Reconciled and purged pending deletion for user {u.id}")
+            except Exception as ex:
+                logger.error(f"Failed to reconcile pending deletion for user {u.id}: {ex}")
+        return reconciled_count
 
 
 data_management_service = DataManagementService()

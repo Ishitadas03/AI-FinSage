@@ -296,3 +296,73 @@ def test_delete_account_success_and_cascade(
     assert db.query(FinancialGoal).filter(FinancialGoal.user_id == test_user.id).count() == 0
     assert db.query(Loan).filter(Loan.user_id == test_user.id).count() == 0
     assert db.query(RecurringBill).filter(RecurringBill.user_id == test_user.id).count() == 0
+
+
+def test_pending_deletion_account_access_blocked(client: TestClient, db: Session, test_user: User, auth_headers):
+    """Verify that any user account marked as 'pending_deletion' is immediately blocked from all authenticated endpoints."""
+    test_user.status = "pending_deletion"
+    db.commit()
+
+    res = client.get("/api/v1/users/me", headers=auth_headers)
+    assert res.status_code == 403
+    assert "suspended or scheduled for permanent deletion" in res.json()["detail"]
+
+
+def test_reconcile_pending_deletions_cleans_stuck_accounts(
+    db: Session, test_user: User, populated_user_data, monkeypatch
+):
+    """Verify that background reconciliation identifies and purges accounts in 'pending_deletion'."""
+    from app.services.data_management_service import DataManagementService
+    from app.services.clerk_service import ClerkService
+
+    monkeypatch.setattr(ClerkService, "delete_clerk_user_sync", staticmethod(lambda uid: True))
+
+    test_user.status = "pending_deletion"
+    test_user.clerk_user_id = f"user_clerk_{uuid.uuid4().hex[:8]}"
+    db.commit()
+
+    reconciled = DataManagementService.reconcile_pending_deletions(db)
+    assert reconciled >= 1
+
+    # Verify user and related records are gone
+    deleted_user = db.query(User).filter(User.id == test_user.id).first()
+    assert deleted_user is None
+    assert db.query(Account).filter(Account.user_id == test_user.id).count() == 0
+
+
+def test_maintenance_cron_endpoint_auth_and_execution(
+    client: TestClient, db: Session, test_user: User, monkeypatch
+):
+    """Verify that maintenance cron endpoint verifies CRON_SECRET and executes reconciliation."""
+    from app.core.config import settings
+    from app.services.clerk_service import ClerkService
+
+    monkeypatch.setattr(settings, "CRON_SECRET", "super_secret_cron_key_12345")
+    monkeypatch.setattr(ClerkService, "delete_clerk_user_sync", staticmethod(lambda uid: True))
+
+    test_user.status = "pending_deletion"
+    test_user.clerk_user_id = f"user_clerk_{uuid.uuid4().hex[:8]}"
+    db.commit()
+
+    # 1. Unauthorized request (wrong secret)
+    res_unauth = client.post(
+        "/api/v1/data-management/maintenance/reconcile-deletions",
+        headers={"Authorization": "Bearer wrong_secret"},
+    )
+    assert res_unauth.status_code == 401
+
+    # 2. Authorized request (correct Bearer token)
+    res_auth = client.post(
+        "/api/v1/data-management/maintenance/reconcile-deletions",
+        headers={"Authorization": "Bearer super_secret_cron_key_12345"},
+    )
+    assert res_auth.status_code == 200
+    assert res_auth.json()["status"] == "success"
+    assert res_auth.json()["reconciled_accounts"] >= 1
+
+    # 3. Authorized request using X-Cron-Secret header
+    res_header = client.post(
+        "/api/v1/data-management/maintenance/reconcile-deletions",
+        headers={"X-Cron-Secret": "super_secret_cron_key_12345"},
+    )
+    assert res_header.status_code == 200

@@ -39,6 +39,15 @@ class User(Base):
         nullable=True,
     )
 
+    # Account State (Phase 6 Production Readiness)
+    status: Mapped[str] = mapped_column(
+        String(50),
+        default="active",
+        server_default="active",
+        index=True,
+        nullable=False,
+    )
+
     # Persistent Application Profile Fields (Phase 5)
     phone: Mapped[Optional[str]] = mapped_column(
         String(50),
