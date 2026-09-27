@@ -1,4 +1,19 @@
-from app.schemas.user import UserBase, UserCreate, UserRead
+from app.schemas.user import (
+    UserBase,
+    UserCreate,
+    UserRead,
+    UserProfileUpdate,
+    UserDeleteRequest,
+)
+from app.schemas.audit_log import (
+    AuditLogRead,
+    AuditLogListResponse,
+)
+from app.schemas.data_management import (
+    DataExportMetadata,
+    UserDataExportResponse,
+    AccountDeletionResponse,
+)
 from app.schemas.auth import (
     RegisterRequest,
     LoginRequest,
@@ -134,6 +149,13 @@ __all__ = [
     "UserBase",
     "UserCreate",
     "UserRead",
+    "UserProfileUpdate",
+    "UserDeleteRequest",
+    "AuditLogRead",
+    "AuditLogListResponse",
+    "DataExportMetadata",
+    "UserDataExportResponse",
+    "AccountDeletionResponse",
     "RegisterRequest",
     "LoginRequest",
     "TokenResponse",

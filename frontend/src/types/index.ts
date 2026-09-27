@@ -34,6 +34,7 @@ export * from './recurringBill';
 export * from './notification';
 export * from './copilot';
 export * from './monthlyReport';
+export * from './dataManagement';
 
 export interface SecurityAlert {
   id: string;

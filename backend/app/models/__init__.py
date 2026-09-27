@@ -10,6 +10,7 @@ from app.models.budget import Budget
 from app.models.recurring_bill import RecurringBill
 from app.models.notification import Notification
 from app.models.chat_message import ChatMessage
+from app.models.audit_log import AuditLog
 
 __all__ = [
     "Base",
@@ -24,6 +25,7 @@ __all__ = [
     "RecurringBill",
     "Notification",
     "ChatMessage",
+    "AuditLog",
 ]
 
 

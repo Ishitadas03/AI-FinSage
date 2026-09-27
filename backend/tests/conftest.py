@@ -64,3 +64,35 @@ def override_get_db():
 
 
 app.dependency_overrides[get_db] = override_get_db
+
+
+@pytest.fixture
+def client():
+    from fastapi.testclient import TestClient
+    return TestClient(app)
+
+
+@pytest.fixture
+def db():
+    session = TestingSessionLocal()
+    try:
+        yield session
+    finally:
+        session.close()
+
+
+@pytest.fixture
+def test_user(db):
+    import uuid
+    from app.models.user import User
+    user = User(
+        id=uuid.uuid4(),
+        email=f"user_{uuid.uuid4().hex[:8]}@example.com",
+        full_name="Test User",
+        password_hash="fakehash",
+    )
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+    return user
+

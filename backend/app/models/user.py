@@ -1,6 +1,8 @@
 import uuid
 from datetime import datetime
-from sqlalchemy import String, DateTime, func
+from decimal import Decimal
+from typing import Optional, Dict, Any
+from sqlalchemy import String, DateTime, Numeric, JSON, func
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.orm import Mapped, mapped_column
 from app.models.base import Base
@@ -26,16 +28,49 @@ class User(Base):
         index=True,
         nullable=False,
     )
-    clerk_user_id: Mapped[str | None] = mapped_column(
+    clerk_user_id: Mapped[Optional[str]] = mapped_column(
         String(255),
         unique=True,
         index=True,
         nullable=True,
     )
-    password_hash: Mapped[str | None] = mapped_column(
+    password_hash: Mapped[Optional[str]] = mapped_column(
         String(255),
         nullable=True,
     )
+
+    # Persistent Application Profile Fields (Phase 5)
+    phone: Mapped[Optional[str]] = mapped_column(
+        String(50),
+        nullable=True,
+    )
+    pan_number: Mapped[Optional[str]] = mapped_column(
+        String(20),
+        nullable=True,
+    )
+    currency: Mapped[str] = mapped_column(
+        String(10),
+        default="INR",
+        server_default="INR",
+        nullable=False,
+    )
+    monthly_income: Mapped[Optional[Decimal]] = mapped_column(
+        Numeric(18, 2),
+        nullable=True,
+    )
+    risk_appetite: Mapped[str] = mapped_column(
+        String(50),
+        default="Moderate",
+        server_default="Moderate",
+        nullable=False,
+    )
+    preferences: Mapped[Optional[Dict[str, Any]]] = mapped_column(
+        JSON,
+        default=dict,
+        server_default="{}",
+        nullable=True,
+    )
+
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         server_default=func.now(),

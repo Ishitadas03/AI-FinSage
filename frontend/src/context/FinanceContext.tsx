@@ -86,11 +86,18 @@ import { recurringBillsApi } from '@/lib/api/recurringBills';
 import { notificationsApi } from '@/lib/api/notifications';
 import { copilotApi } from '@/lib/api/copilot';
 import { reportsApi } from '@/lib/api/reports';
+import { usersApi } from '@/lib/api/users';
+import { dataManagementApi } from '@/lib/api/dataManagement';
+import {
+  ApiUserProfile,
+  UserProfileUpdate,
+  AuditLogListResponse,
+  UserDeleteRequest,
+  AccountDeletionResponse,
+  UserDataExportResponse,
+} from '@/types/dataManagement';
 import { MonthlyFinancialReportResponse } from '@/types/monthlyReport';
 import { ChatMessageResponse } from '@/types/copilot';
-
-
-
 
 export type AuthStatus = 'idle' | 'loading' | 'authenticated' | 'unauthenticated' | 'error';
 
@@ -288,8 +295,16 @@ interface FinanceContextType {
   loadCurrentUser: () => Promise<boolean>;
   clearAuthError: () => void;
 
-  // Profile update & Reset
-  updateProfile: (profile: Partial<UserProfile>) => void;
+  // Real Backend User Profile & Data Management (Phase 5)
+  apiProfile: ApiUserProfile | null;
+  isLoadingProfile: boolean;
+  profileError: string | null;
+  loadProfile: () => Promise<ApiUserProfile | null>;
+  updateProfile: (profile: Partial<UserProfile>) => Promise<boolean>;
+  exportDataJson: () => Promise<UserDataExportResponse>;
+  exportDataCsvZip: () => Promise<Blob>;
+  loadAuditLogs: (limit?: number, offset?: number) => Promise<AuditLogListResponse>;
+  deleteUserAccount: (payload: UserDeleteRequest) => Promise<AccountDeletionResponse>;
   resetAllData: () => void;
 }
 
@@ -634,6 +649,11 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const user: UserProfile = authUser
     ? mapAuthUserToProfile(authUser, customProfile)
     : { ...GUEST_USER, ...customProfile };
+
+  // Real Backend User Profile State (Phase 5)
+  const [apiProfile, setApiProfile] = useState<ApiUserProfile | null>(null);
+  const [isLoadingProfile, setIsLoadingProfile] = useState<boolean>(false);
+  const [profileError, setProfileError] = useState<string | null>(null);
 
   const [selectedPeriod, setSelectedPeriod] = useState<string>("September 2026");
 
@@ -1861,10 +1881,6 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
   };
 
-  // Profile update
-  const updateProfile = (updated: Partial<UserProfile>) => {
-    setCustomProfile((prev) => ({ ...prev, ...updated }));
-  };
 
   // Loans Helpers
 
@@ -2020,6 +2036,82 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
     },
     []
   );
+
+  // Real Persistent User Profile & Data Management Operations (Phase 5)
+  const loadProfile = useCallback(async (): Promise<ApiUserProfile | null> => {
+    setIsLoadingProfile(true);
+    setProfileError(null);
+    try {
+      if (!tokenStorage.hasSession()) return null;
+      const data = await usersApi.getProfile();
+      setApiProfile(data);
+      if (data) {
+        setCustomProfile((prev) => ({
+          ...prev,
+          phone: data.phone || prev.phone,
+          panNumber: data.pan_number || prev.panNumber,
+          currency: data.currency || prev.currency,
+          monthlyIncome: data.monthly_income ? Number(data.monthly_income) : prev.monthlyIncome,
+          riskAppetite: (data.risk_appetite as any) || prev.riskAppetite,
+        }));
+      }
+      return data;
+    } catch (err) {
+      const msg = getApiErrorMessage(err, 'Failed to load user profile.');
+      setProfileError(msg);
+      return null;
+    } finally {
+      setIsLoadingProfile(false);
+    }
+  }, []);
+
+  const updateProfile = useCallback(async (updated: Partial<UserProfile>): Promise<boolean> => {
+    setIsLoadingProfile(true);
+    setProfileError(null);
+    try {
+      setCustomProfile((prev) => ({ ...prev, ...updated }));
+      if (tokenStorage.hasSession()) {
+        const payload: UserProfileUpdate = {
+          phone: updated.phone !== undefined ? updated.phone : undefined,
+          pan_number: updated.panNumber !== undefined ? updated.panNumber : undefined,
+          currency: updated.currency !== undefined ? updated.currency : undefined,
+          monthly_income: updated.monthlyIncome !== undefined ? Number(updated.monthlyIncome) : undefined,
+          risk_appetite: updated.riskAppetite !== undefined ? updated.riskAppetite : undefined,
+        };
+        const updatedApi = await usersApi.updateProfile(payload);
+        setApiProfile(updatedApi);
+      }
+      return true;
+    } catch (err) {
+      const msg = getApiErrorMessage(err, 'Failed to update user profile.');
+      setProfileError(msg);
+      return false;
+    } finally {
+      setIsLoadingProfile(false);
+    }
+  }, []);
+
+  const exportDataJson = useCallback(async (): Promise<UserDataExportResponse> => {
+    return await dataManagementApi.exportDataJson();
+  }, []);
+
+  const exportDataCsvZip = useCallback(async (): Promise<Blob> => {
+    return await dataManagementApi.exportDataCsvZip();
+  }, []);
+
+  const loadAuditLogs = useCallback(async (limit = 50, offset = 0): Promise<AuditLogListResponse> => {
+    return await dataManagementApi.getAuditLogs(limit, offset);
+  }, []);
+
+  const deleteUserAccount = useCallback(async (payload: UserDeleteRequest): Promise<AccountDeletionResponse> => {
+    const res = await dataManagementApi.deleteAccount(payload);
+    resetAllData();
+    tokenStorage.clearSession();
+    setIsAuthenticated(false);
+    setAuthUser(null);
+    setAuthStatus('unauthenticated');
+    return res;
+  }, []);
 
   const resetAllData = () => {
     setBudgets([]);
@@ -2187,6 +2279,18 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
         isLoadingMonthlyReport,
         monthlyReportError,
         loadMonthlyReport,
+
+        // Phase 5 additions
+        apiProfile,
+        isLoadingProfile,
+        profileError,
+        loadProfile,
+        updateProfile,
+        exportDataJson,
+        exportDataCsvZip,
+        loadAuditLogs,
+        deleteUserAccount,
+
         isOnboardingOpen,
         setIsOnboardingOpen,
         isAddTransactionOpen,
@@ -2197,7 +2301,6 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
         setIsImportModalOpen,
         isSearchOpen,
         setIsSearchOpen,
-        updateProfile,
         resetAllData,
       }}
     >
@@ -2215,6 +2318,15 @@ export const useFinance = () => {
       authUser: null,
       authError: null,
       user: GUEST_USER,
+      apiProfile: null,
+      isLoadingProfile: false,
+      profileError: null,
+      loadProfile: async () => null,
+      updateProfile: async () => false,
+      exportDataJson: async () => ({} as any),
+      exportDataCsvZip: async () => new Blob(),
+      loadAuditLogs: async () => ({ logs: [], total: 0 }),
+      deleteUserAccount: async () => ({} as any),
       accounts: [],
       transactions: [],
       budgets: [],

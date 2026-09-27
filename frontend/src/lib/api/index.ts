@@ -14,3 +14,5 @@ export * from './recurringBills';
 export * from './notifications';
 export * from './copilot';
 export * from './reports';
+export * from './users';
+export * from './dataManagement';

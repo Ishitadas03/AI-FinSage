@@ -17,6 +17,8 @@ from app.api.v1.endpoints import (
     notifications,
     copilot,
     reports,
+    users,
+    data_management,
 )
 
 api_v1_router = APIRouter()
@@ -37,5 +39,7 @@ api_v1_router.include_router(recurring_bills.router)
 api_v1_router.include_router(notifications.router)
 api_v1_router.include_router(copilot.router, prefix="/copilot", tags=["copilot"])
 api_v1_router.include_router(reports.router, prefix="/reports", tags=["reports"])
+api_v1_router.include_router(users.router)
+api_v1_router.include_router(data_management.router)
 
 
