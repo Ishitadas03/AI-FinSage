@@ -295,7 +295,7 @@ async def commit_bank_statement_import(
             destination_account_id=None,
             amount=row.amount,
             transaction_type=tx_type_str,
-            category=None,
+            category=row.category,
             merchant=row.merchant,
             description=row.description,
             reference=row.reference,

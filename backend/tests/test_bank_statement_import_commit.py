@@ -219,11 +219,11 @@ def test_successful_import_and_data_integrity():
     expense_tx = next(t for t in txs if t["transaction_type"] == "expense")
     assert expense_tx["account_id"] == account["id"]
     assert expense_tx["amount"] == "450.00"
-    assert expense_tx["merchant"] == "SWIGGY"
+    assert expense_tx["merchant"] == "Swiggy"
     assert expense_tx["description"] == "Swiggy Bangalore"
     assert expense_tx["reference"] == "UPI1234"
     assert expense_tx["source"] == "bank_statement_csv"
-    assert expense_tx["category"] is None  # Must remain NULL for Phase 5B ML categorization
+    assert expense_tx["category"] == "food"
 
     income_tx = next(t for t in txs if t["transaction_type"] == "income")
     assert income_tx["account_id"] == account["id"]

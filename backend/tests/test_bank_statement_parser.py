@@ -46,10 +46,10 @@ def test_standard_debit_credit_csv(parser_service: BankStatementParserService):
     row1 = result.normalized_rows[0]
     assert row1.transaction_date == datetime(2024, 3, 15, 0, 0, 0, tzinfo=timezone.utc)
     assert row1.description == "Swiggy Bangalore"
-    assert row1.merchant == "SWIGGY"
+    assert row1.merchant == "Swiggy"
     assert row1.amount == Decimal("450.00")
     assert row1.type == TransactionType.EXPENSE
-    assert row1.category is None
+    assert row1.category == "food"
     assert row1.reference == "UPI123456"
     assert row1.raw_row["Debit"] == "450.00"
 
@@ -58,7 +58,7 @@ def test_standard_debit_credit_csv(parser_service: BankStatementParserService):
     assert row2.description == "Salary from Acme Corp"
     assert row2.amount == Decimal("75000.00")
     assert row2.type == TransactionType.INCOME
-    assert row2.category is None
+    assert row2.category == "salary"
     assert row2.reference == "SAL202403"
 
 
@@ -81,7 +81,8 @@ def test_signed_amount_csv(parser_service: BankStatementParserService):
     expense_row = result.normalized_rows[0]
     assert expense_row.type == TransactionType.EXPENSE
     assert expense_row.amount == Decimal("499.00")  # Normalized non-negative magnitude
-    assert expense_row.merchant == "NETFLIX"
+    assert expense_row.merchant == "Netflix"
+    assert expense_row.category == "entertainment"
 
     income_row = result.normalized_rows[1]
     assert income_row.type == TransactionType.INCOME
@@ -102,7 +103,8 @@ def test_column_aliases_debit_credit(parser_service: BankStatementParserService)
     result = parser_service.parse_csv(csv_content)
     assert result.valid_rows == 2
     assert result.format_detected == StatementFormat.DEBIT_CREDIT
-    assert result.normalized_rows[0].merchant == "UBER"
+    assert result.normalized_rows[0].merchant == "Uber"
+    assert result.normalized_rows[0].category == "transport"
     assert result.normalized_rows[0].reference == "UTR9991"
 
 
@@ -114,7 +116,8 @@ def test_column_aliases_signed_amount(parser_service: BankStatementParserService
     result = parser_service.parse_csv(csv_content)
     assert result.valid_rows == 1
     assert result.format_detected == StatementFormat.SIGNED_AMOUNT
-    assert result.normalized_rows[0].merchant == "AMAZON"
+    assert result.normalized_rows[0].merchant == "Amazon"
+    assert result.normalized_rows[0].category == "shopping"
     assert result.normalized_rows[0].reference == "REF12345"
 
 
@@ -127,7 +130,8 @@ def test_lowercase_uppercase_and_whitespace_headers(parser_service: BankStatemen
     assert result.valid_rows == 1
     assert result.normalized_rows[0].description == "Zomato Order"
     assert result.normalized_rows[0].amount == Decimal("280.00")
-    assert result.normalized_rows[0].merchant == "ZOMATO"
+    assert result.normalized_rows[0].merchant == "Zomato"
+    assert result.normalized_rows[0].category == "food"
 
 
 # -----------------------------------------------------------------------------
@@ -345,24 +349,26 @@ def test_deterministic_merchant_extraction(parser_service: BankStatementParserSe
     result = parser_service.parse_csv(csv_content)
     assert result.valid_rows == 7
 
-    assert result.normalized_rows[0].merchant == "SWIGGY"
-    assert result.normalized_rows[1].merchant == "UBER"
-    assert result.normalized_rows[2].merchant == "ZOMATO"
-    assert result.normalized_rows[3].merchant == "STARBUCKS"
-    assert result.normalized_rows[4].merchant == "AMAZON"
-    assert result.normalized_rows[5].merchant == "SWIGGY"
+    assert result.normalized_rows[0].merchant == "Swiggy"
+    assert result.normalized_rows[1].merchant == "Uber"
+    assert result.normalized_rows[2].merchant == "Zomato"
+    assert result.normalized_rows[3].merchant == "Starbucks"
+    assert result.normalized_rows[4].merchant == "Amazon"
+    assert result.normalized_rows[5].merchant == "Swiggy"
     assert result.normalized_rows[6].merchant is None  # Non-merchant transfer
 
 
-def test_category_remains_null(parser_service: BankStatementParserService):
+def test_deterministic_categorization(parser_service: BankStatementParserService):
     csv_content = (
         "Date,Description,Amount\n"
         "2024-01-01,Salary Acme Corp,50000.00\n"
         "2024-01-02,Dominos Pizza,-450.00\n"
+        "2024-01-03,Random Unmatched Person,-100.00\n"
     )
     result = parser_service.parse_csv(csv_content)
-    for row in result.normalized_rows:
-        assert row.category is None
+    assert result.normalized_rows[0].category == "salary"
+    assert result.normalized_rows[1].category == "food"
+    assert result.normalized_rows[2].category is None  # Unmatched falls back to None for safe user correction
 
 
 # -----------------------------------------------------------------------------

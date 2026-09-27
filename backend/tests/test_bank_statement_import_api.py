@@ -73,17 +73,17 @@ def test_authenticated_upload_debit_credit_success():
 
     row1 = data["normalized_rows"][0]
     assert row1["description"] == "Swiggy Bangalore"
-    assert row1["merchant"] == "SWIGGY"
+    assert row1["merchant"] == "Swiggy"
     assert row1["amount"] == "450.00"
     assert row1["type"] == "expense"
-    assert row1["category"] is None
+    assert row1["category"] == "food"
     assert row1["reference"] == "UPI123456"
 
     row2 = data["normalized_rows"][1]
     assert row2["description"] == "Acme Corp Salary"
     assert row2["amount"] == "75000.00"
     assert row2["type"] == "income"
-    assert row2["category"] is None
+    assert row2["category"] == "salary"
     assert row2["reference"] == "SAL202403"
 
 
@@ -109,7 +109,8 @@ def test_authenticated_upload_signed_amount_success():
     assert data["valid_rows"] == 2
     assert data["normalized_rows"][0]["type"] == "expense"
     assert data["normalized_rows"][0]["amount"] == "499.00"
-    assert data["normalized_rows"][0]["merchant"] == "NETFLIX"
+    assert data["normalized_rows"][0]["merchant"] == "Netflix"
+    assert data["normalized_rows"][0]["category"] == "entertainment"
     assert data["normalized_rows"][1]["type"] == "income"
     assert data["normalized_rows"][1]["amount"] == "15000.50"
 
@@ -129,7 +130,8 @@ def test_header_aliases_upload():
     data = res.json()
     assert data["valid_rows"] == 1
     assert data["detected_format"] == "debit_credit"
-    assert data["normalized_rows"][0]["merchant"] == "UBER"
+    assert data["normalized_rows"][0]["merchant"] == "Uber"
+    assert data["normalized_rows"][0]["category"] == "transport"
     assert data["normalized_rows"][0]["reference"] == "UTR9991"
 
 

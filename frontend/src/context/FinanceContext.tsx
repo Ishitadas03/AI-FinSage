@@ -33,9 +33,15 @@ import { transactionsApi } from '@/lib/api/transactions';
 import { budgetsApi } from '@/lib/api/budgets';
 import { goalsApi } from '@/lib/api/goals';
 import { loansApi } from '@/lib/api/loans';
+import { bankImportApi } from '@/lib/api/bankImport';
 import { tokenStorage } from '@/lib/api/tokenStorage';
 import { getApiErrorMessage, setOnUnauthorizedCallback } from '@/lib/api/client';
 import { useAuth, useUser, useClerk } from '@clerk/react';
+import {
+  BankStatementCommitParams,
+  BankStatementImportCommitResponse,
+  BankStatementPreviewResponse,
+} from '@/types/bankStatement';
 import {
   ApiGoal,
   GoalContribution,
@@ -89,6 +95,8 @@ interface FinanceContextType {
   addTransaction: (tx: TransactionCreate) => Promise<void>;
   editTransaction: (id: string, tx: TransactionUpdate) => Promise<void>;
   importTransactions: (newTxs: TransactionCreate[]) => Promise<void>;
+  previewBankStatement: (file: File, previewLimit?: number, maxRows?: number) => Promise<BankStatementPreviewResponse>;
+  commitBankStatement: (params: BankStatementCommitParams) => Promise<BankStatementImportCommitResponse>;
 
   // Derived Financial Metrics
   netWorth: number;
@@ -1151,6 +1159,27 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
     [loadTransactions, loadAccounts]
   );
 
+  const previewBankStatement = useCallback(
+    async (file: File, previewLimit = 100, maxRows = 5000): Promise<BankStatementPreviewResponse> => {
+      return await bankImportApi.preview(file, previewLimit, maxRows);
+    },
+    []
+  );
+
+  const commitBankStatement = useCallback(
+    async (params: BankStatementCommitParams): Promise<BankStatementImportCommitResponse> => {
+      const res = await bankImportApi.commit(params);
+      await loadTransactions();
+      await loadAccounts();
+      await loadBudgets();
+      await loadGoals();
+      await loadLoans();
+      await loadDebtStress();
+      return res;
+    },
+    [loadTransactions, loadAccounts, loadBudgets, loadGoals, loadLoans, loadDebtStress]
+  );
+
   // Load Current User from Backend
   const loadCurrentUser = useCallback(async (): Promise<boolean> => {
     try {
@@ -1610,6 +1639,8 @@ On your HDFC Home Loan (₹18.5L balance at 8.65%):
         addTransaction,
         editTransaction,
         importTransactions,
+        previewBankStatement,
+        commitBankStatement,
         netWorth,
         monthlyIncome,
         monthlyExpenses,

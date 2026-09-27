@@ -12,6 +12,8 @@ from app.schemas.bank_statement_import import (
     StatementFormat,
 )
 from app.schemas.transaction import TransactionType
+from app.services.merchant_categorizer_service import MerchantCategorizerService
+
 
 
 class BankStatementParserError(Exception):
@@ -437,9 +439,15 @@ class BankStatementParserService:
                             )
                         )
 
-            # C. Normalize Description and Reference
+            # C. Normalize Description, Merchant, Reference, and Inferred Category
             clean_desc = self._normalize_description(desc_raw)
-            clean_merchant = self._extract_merchant(desc_raw)
+            clean_merchant, inferred_category = MerchantCategorizerService.categorize(
+                description=desc_raw,
+                raw_merchant=None,
+                tx_type=tx_type,
+            )
+            if not clean_merchant:
+                clean_merchant = self._extract_merchant(desc_raw)
             clean_ref = self._clean_reference(ref_raw) if ref_raw else None
 
             # D. Assemble row or record errors
@@ -456,7 +464,7 @@ class BankStatementParserService:
                     merchant=clean_merchant,
                     amount=tx_amount,
                     type=tx_type,
-                    category=None,
+                    category=inferred_category,
                     reference=clean_ref,
                     raw_row=raw_row_data,
                 )
