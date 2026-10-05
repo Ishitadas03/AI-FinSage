@@ -108,20 +108,20 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileOpen, onCloseMobile }) =
 
       <aside
         className={cn(
-          "fixed top-0 bottom-0 left-0 z-50 flex w-64 flex-col border-r border-slate-200 bg-white transition-transform duration-200 ease-in-out lg:translate-x-0",
+          "fixed top-0 bottom-0 left-0 z-50 flex w-64 flex-col border-r border-slate-200 bg-white transition-transform duration-300 ease-out lg:translate-x-0 shadow-lg lg:shadow-none",
           mobileOpen ? "translate-x-0" : "-translate-x-full"
         )}
       >
         {/* Brand Header */}
         <div className="flex h-16 items-center justify-between px-5 border-b border-slate-100">
-          <NavLink to="/" className="flex items-center group py-1" onClick={onCloseMobile}>
+          <NavLink to="/" className="flex items-center group py-1 transition-transform active:scale-95" onClick={onCloseMobile}>
             <FinSageLogo variant="horizontal" height={34} />
           </NavLink>
 
           {onCloseMobile && (
             <button
               onClick={onCloseMobile}
-              className="lg:hidden p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg"
+              className="lg:hidden p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg active:scale-90 transition-all"
             >
               <X className="h-5 w-5" />
             </button>
@@ -150,24 +150,24 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileOpen, onCloseMobile }) =
                     to={item.href}
                     onClick={onCloseMobile}
                     className={cn(
-                      "flex items-center justify-between rounded-xl px-3 py-2 text-[13px] font-medium transition-all",
+                      "flex items-center justify-between rounded-xl px-3 py-2 text-[13px] font-medium transition-all duration-200 active:scale-[0.98]",
                       isActive
-                        ? "bg-teal-50/90 text-teal-900 font-semibold"
-                        : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                        ? "bg-teal-50/90 text-teal-900 font-semibold shadow-2xs"
+                        : "text-slate-600 hover:bg-slate-50 hover:text-slate-900 hover:translate-x-1"
                     )}
                   >
                     <div className="flex items-center gap-3">
                       <Icon
                         className={cn(
-                          "h-[18px] w-[18px] transition-colors",
-                          isActive ? "text-teal-700" : "text-slate-400"
+                          "h-[18px] w-[18px] transition-all duration-200",
+                          isActive ? "text-teal-700 scale-105" : "text-slate-400 group-hover:text-slate-600"
                         )}
                       />
                       <span>{item.name}</span>
                     </div>
 
                     {item.badge && (
-                      <span className="flex h-5 items-center justify-center rounded-full bg-rose-100 px-1.5 text-[10px] font-bold text-rose-600">
+                      <span className="flex h-5 items-center justify-center rounded-full bg-rose-100 px-1.5 text-[10px] font-bold text-rose-600 animate-pulse">
                         {item.badge}
                       </span>
                     )}

@@ -42,7 +42,7 @@ export const ValuePropositionSection: React.FC = () => {
               <div
                 key={idx}
                 onClick={() => navigate(col.link)}
-                className="group relative rounded-2xl border border-slate-200/80 bg-[#F8FAFA]/60 p-6 sm:p-7 transition-all duration-300 hover:bg-white hover:border-teal-300 hover:shadow-lg cursor-pointer"
+                className="group relative rounded-2xl border border-slate-200/80 bg-[#F8FAFA]/60 p-6 sm:p-7 transition-all duration-300 hover:bg-white hover:border-teal-300 hover:shadow-xl hover:-translate-y-1.5 active:scale-[0.99] cursor-pointer"
               >
                 <div
                   className={`flex h-12 w-12 items-center justify-center rounded-xl ${col.bg} ${col.color} mb-4 shadow-2xs transition-transform duration-300 group-hover:scale-110`}

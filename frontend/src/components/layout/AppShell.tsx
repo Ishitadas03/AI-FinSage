@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
 import { Topbar } from './Topbar';
 import { BottomNav } from './BottomNav';
@@ -16,6 +17,7 @@ interface AppShellProps {
 
 export const AppShell: React.FC<AppShellProps> = ({ children }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const location = useLocation();
 
   return (
     <div className="min-h-screen bg-[#F7F9FC] text-slate-900 flex flex-col antialiased overflow-x-hidden">
@@ -30,7 +32,9 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
         <Topbar onOpenMobileMenu={() => setMobileMenuOpen(true)} />
 
         <main className="flex-1 px-3.5 py-4 sm:p-6 lg:p-8 pb-24 sm:pb-28 lg:pb-8 max-w-7xl w-full mx-auto overflow-x-hidden min-w-0">
-          {children}
+          <div key={location.pathname} className="animate-fade-in-up">
+            {children}
+          </div>
         </main>
       </div>
 

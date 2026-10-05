@@ -65,8 +65,8 @@ export const BottomNav: React.FC = () => {
                   aria-label="Add transaction"
                   className="flex flex-col items-center justify-center -mt-4 group focus:outline-none"
                 >
-                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-teal-700 text-white shadow-lg shadow-teal-800/30 border-2 border-white transition-transform active:scale-95 group-hover:bg-teal-800">
-                    <Plus className="h-6 w-6 stroke-[2.5]" />
+                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-teal-700 text-white shadow-lg shadow-teal-800/30 border-2 border-white transition-all duration-200 active:scale-90 group-hover:scale-105 group-hover:bg-teal-800 group-hover:shadow-teal-700/40">
+                    <Plus className="h-6 w-6 stroke-[2.5] transition-transform group-hover:rotate-90 duration-300" />
                   </div>
                   <span className="text-[10px] font-bold text-slate-700 mt-1">Add</span>
                 </button>
@@ -78,12 +78,12 @@ export const BottomNav: React.FC = () => {
                 key={idx}
                 onClick={item.onClick}
                 aria-label={item.name}
-                className="flex flex-col items-center justify-center py-1.5 px-2 rounded-xl text-slate-500 hover:text-teal-700 transition-colors relative min-w-[54px] active:scale-95"
+                className="flex flex-col items-center justify-center py-1.5 px-2 rounded-xl text-slate-500 hover:text-teal-700 transition-all duration-200 relative min-w-[54px] active:scale-90"
               >
                 <div className="relative">
                   <Icon className="h-5 w-5 text-teal-600 animate-pulse" />
                   {item.badge && (
-                    <span className="absolute -top-1 -right-2 rounded-full bg-teal-100 text-teal-800 text-[8px] font-extrabold px-1 leading-tight">
+                    <span className="absolute -top-1 -right-2 rounded-full bg-teal-100 text-teal-800 text-[8px] font-extrabold px-1 leading-tight animate-bounce">
                       {item.badge}
                     </span>
                   )}
@@ -103,7 +103,7 @@ export const BottomNav: React.FC = () => {
               to={item.href!}
               className={({ isActive }) =>
                 cn(
-                  'flex flex-col items-center justify-center py-1.5 px-2 rounded-xl transition-all min-w-[54px] active:scale-95',
+                  'flex flex-col items-center justify-center py-1.5 px-2 rounded-xl transition-all duration-200 min-w-[54px] active:scale-90',
                   isActive
                     ? 'text-teal-800 font-bold'
                     : 'text-slate-400 hover:text-slate-700 font-medium'
@@ -113,14 +113,14 @@ export const BottomNav: React.FC = () => {
               <div className="relative">
                 <Icon
                   className={cn(
-                    'h-5 w-5 transition-transform',
-                    isActive ? 'text-teal-700 stroke-[2.2] scale-105' : 'text-slate-400'
+                    'h-5 w-5 transition-transform duration-200',
+                    isActive ? 'text-teal-700 stroke-[2.2] scale-110' : 'text-slate-400'
                   )}
                 />
               </div>
               <span
                 className={cn(
-                  'text-[10px] mt-0.5 tracking-tight',
+                  'text-[10px] mt-0.5 tracking-tight transition-colors duration-200',
                   isActive ? 'text-teal-800 font-bold' : 'text-slate-500 font-medium'
                 )}
               >

@@ -18,7 +18,9 @@ export const PublicLayout: React.FC<PublicLayoutProps> = ({ children }) => {
     <div className="min-h-screen bg-[#F8FAFA] text-slate-900 flex flex-col antialiased selection:bg-teal-100 selection:text-teal-900 font-sans">
       <PublicNavbar />
       <main className="flex-1">
-        {children}
+        <div key={location.pathname} className="animate-fade-in-up">
+          {children}
+        </div>
       </main>
       <PublicFooter />
     </div>
