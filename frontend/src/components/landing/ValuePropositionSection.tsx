@@ -42,17 +42,17 @@ export const ValuePropositionSection: React.FC = () => {
               <div
                 key={idx}
                 onClick={() => navigate(col.link)}
-                className="group relative rounded-2xl border border-slate-200/80 bg-[#F8FAFA]/60 p-6 sm:p-7 transition-all duration-300 hover:bg-white hover:border-teal-300 hover:shadow-xl hover:-translate-y-1.5 active:scale-[0.99] cursor-pointer"
+                className="group relative rounded-2xl border border-slate-200/80 bg-[#F8FAFA]/60 p-6 sm:p-7 hover:bg-white hover:border-teal-300 hover:shadow-md cursor-pointer transition-colors"
               >
                 <div
-                  className={`flex h-12 w-12 items-center justify-center rounded-xl ${col.bg} ${col.color} mb-4 shadow-2xs transition-transform duration-300 group-hover:scale-110`}
+                  className={`flex h-12 w-12 items-center justify-center rounded-xl ${col.bg} ${col.color} mb-4 shadow-2xs`}
                 >
                   <Icon className="h-6 w-6 stroke-[2]" />
                 </div>
 
                 <h3 className="text-base font-bold text-slate-900 tracking-tight flex items-center justify-between">
                   <span>{col.title}</span>
-                  <ArrowRight className="h-4 w-4 text-slate-400 opacity-0 transition-all duration-300 group-hover:opacity-100 group-hover:translate-x-1 group-hover:text-teal-700" />
+                  <ArrowRight className="h-4 w-4 text-slate-400 opacity-0 group-hover:opacity-100 group-hover:text-teal-700 transition-opacity" />
                 </h3>
 
                 <p className="mt-2 text-xs sm:text-sm text-slate-600 leading-relaxed">

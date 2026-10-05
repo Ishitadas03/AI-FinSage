@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowRight, Play, Sparkles } from 'lucide-react';
+import { motion } from 'framer-motion';
 import { HeroDashboardPreview } from './HeroDashboardPreview';
 import { FloatingFeatureCard } from './FloatingFeatureCard';
 import { TrustIndicators } from './TrustIndicators';
@@ -10,6 +11,7 @@ import { PWAInstallButton } from '@/components/pwa/PWAInstallButton';
 export const HeroSection: React.FC = () => {
   const navigate = useNavigate();
   const { setIsOnboardingOpen } = useFinance();
+  const heroContainerRef = useRef<HTMLDivElement>(null);
 
   const handleGetStarted = () => {
     navigate('/dashboard');
@@ -50,7 +52,7 @@ export const HeroSection: React.FC = () => {
           <div className="lg:col-span-6 xl:col-span-5 space-y-6 text-left">
             {/* Pill/Badge */}
             <div className="inline-flex items-center gap-2 rounded-full border border-teal-200/80 bg-teal-50/80 px-3.5 py-1.5 text-xs font-bold text-teal-800 shadow-2xs backdrop-blur-xs">
-              <Sparkles className="h-3.5 w-3.5 text-teal-600 animate-pulse" />
+              <Sparkles className="h-3.5 w-3.5 text-teal-600" />
               <span className="tracking-wide uppercase text-[11px]">✦ AI-Powered Financial Clarity</span>
             </div>
 
@@ -79,7 +81,7 @@ export const HeroSection: React.FC = () => {
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 pt-2">
               <button
                 onClick={handleGetStarted}
-                className="group inline-flex items-center justify-center gap-2 rounded-xl bg-teal-700 px-6 py-3.5 text-sm font-bold text-white shadow-sm hover:bg-teal-800 transition-all hover:shadow-md active:scale-98"
+                className="group inline-flex items-center justify-center gap-2 rounded-xl bg-teal-700 px-6 py-3.5 text-sm font-bold text-white shadow-sm hover:bg-teal-800 transition-colors whitespace-nowrap"
               >
                 <span>Get Started Free</span>
                 <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-1" />
@@ -89,7 +91,7 @@ export const HeroSection: React.FC = () => {
 
               <button
                 onClick={handleSeeHowItWorks}
-                className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-3.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 hover:text-slate-900 shadow-2xs transition-all active:scale-98"
+                className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-3.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 hover:text-slate-900 shadow-2xs transition-colors"
               >
                 <Play className="h-3.5 w-3.5 fill-slate-500 text-slate-500" />
                 <span>See How It Works</span>
@@ -100,63 +102,91 @@ export const HeroSection: React.FC = () => {
             <TrustIndicators />
           </div>
 
-          {/* RIGHT PRODUCT PREVIEW & FLOATING CARDS (7 cols on lg, 7 on xl) */}
-          <div className="lg:col-span-6 xl:col-span-7 relative pt-4 pb-6 lg:py-8">
-            {/* Desktop Overlapping Floating Cards */}
+          {/* RIGHT PRODUCT PREVIEW & MOVABLE CARDS (7 cols on lg, 7 on xl) */}
+          <div className="lg:col-span-6 xl:col-span-7 relative pt-4 pb-6 lg:py-8" ref={heroContainerRef}>
+            {/* Desktop Overlapping Movable Cards */}
             <div className="relative">
               
-              {/* CARD 1: Top Left Floating Card */}
-              <div className="hidden lg:block absolute -top-6 -left-6 z-20 animate-in fade-in zoom-in duration-500 animate-float">
+              {/* CARD 1: Top Left Movable Card */}
+              <motion.div
+                drag
+                dragConstraints={heroContainerRef}
+                dragElastic={0.2}
+                whileHover={{ scale: 1.04, cursor: 'grab' }}
+                whileDrag={{ scale: 1.08, cursor: 'grabbing', zIndex: 50 }}
+                className="hidden lg:block absolute -top-6 -left-6 z-20 select-none touch-none"
+              >
                 <FloatingFeatureCard
                   iconType="target"
                   title="Build Goals"
                   description="Turn dreams into a plan."
                   iconBgColor="bg-teal-50"
                   iconColor="text-teal-700"
-                  className="max-w-[210px]"
+                  className="max-w-[210px] cursor-grab active:cursor-grabbing shadow-md hover:shadow-xl transition-shadow"
                 />
-              </div>
+              </motion.div>
 
-              {/* CARD 2: Top Right Floating Card */}
-              <div className="hidden lg:block absolute -top-5 -right-4 z-20 animate-in fade-in zoom-in duration-700 animate-float-delayed">
+              {/* CARD 2: Top Right Movable Card */}
+              <motion.div
+                drag
+                dragConstraints={heroContainerRef}
+                dragElastic={0.2}
+                whileHover={{ scale: 1.04, cursor: 'grab' }}
+                whileDrag={{ scale: 1.08, cursor: 'grabbing', zIndex: 50 }}
+                className="hidden lg:block absolute -top-5 -right-4 z-20 select-none touch-none"
+              >
                 <FloatingFeatureCard
                   iconType="sparkles"
                   title="Smarter Insights"
                   description="Get personalized AI insights."
                   iconBgColor="bg-amber-50"
                   iconColor="text-amber-600"
-                  className="max-w-[220px]"
+                  className="max-w-[220px] cursor-grab active:cursor-grabbing shadow-md hover:shadow-xl transition-shadow"
                 />
-              </div>
+              </motion.div>
 
               {/* Main Interactive Product Preview */}
               <div className="relative z-10 mx-auto max-w-xl lg:max-w-none">
                 <HeroDashboardPreview />
               </div>
 
-              {/* CARD 3: Bottom Left Floating Card */}
-              <div className="hidden lg:block absolute -bottom-6 -left-6 z-20 animate-in fade-in zoom-in duration-700 animate-float-slow">
+              {/* CARD 3: Bottom Left Movable Card */}
+              <motion.div
+                drag
+                dragConstraints={heroContainerRef}
+                dragElastic={0.2}
+                whileHover={{ scale: 1.04, cursor: 'grab' }}
+                whileDrag={{ scale: 1.08, cursor: 'grabbing', zIndex: 50 }}
+                className="hidden lg:block absolute -bottom-6 -left-6 z-20 select-none touch-none"
+              >
                 <FloatingFeatureCard
                   iconType="chart"
                   title="Plan Your Future"
                   description="See where you could be in 5 or 10 years."
                   iconBgColor="bg-emerald-50"
                   iconColor="text-emerald-700"
-                  className="max-w-[240px]"
+                  className="max-w-[240px] cursor-grab active:cursor-grabbing shadow-md hover:shadow-xl transition-shadow"
                 />
-              </div>
+              </motion.div>
 
-              {/* CARD 4: Bottom Right Floating Card */}
-              <div className="hidden lg:block absolute -bottom-5 -right-4 z-20 animate-in fade-in zoom-in duration-500 animate-float">
+              {/* CARD 4: Bottom Right Movable Card */}
+              <motion.div
+                drag
+                dragConstraints={heroContainerRef}
+                dragElastic={0.2}
+                whileHover={{ scale: 1.04, cursor: 'grab' }}
+                whileDrag={{ scale: 1.08, cursor: 'grabbing', zIndex: 50 }}
+                className="hidden lg:block absolute -bottom-5 -right-4 z-20 select-none touch-none"
+              >
                 <FloatingFeatureCard
                   iconType="shield"
                   title="Stay Protected"
                   description="Detect suspicious transactions."
                   iconBgColor="bg-rose-50"
                   iconColor="text-rose-600"
-                  className="max-w-[230px]"
+                  className="max-w-[230px] cursor-grab active:cursor-grabbing shadow-md hover:shadow-xl transition-shadow"
                 />
-              </div>
+              </motion.div>
             </div>
 
             {/* Mobile/Tablet Grid for Feature Cards */}

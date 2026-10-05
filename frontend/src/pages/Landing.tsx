@@ -49,14 +49,14 @@ export const Landing: React.FC = () => {
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
             <button
               onClick={() => navigate('/dashboard')}
-              className="inline-flex items-center gap-2 rounded-xl bg-white px-7 py-3 text-xs sm:text-sm font-bold text-teal-950 shadow-md hover:bg-teal-50 transition-all hover:scale-105 active:scale-98"
+              className="inline-flex items-center gap-2 rounded-xl bg-white px-7 py-3 text-xs sm:text-sm font-bold text-teal-950 shadow-md hover:bg-teal-50 transition-colors"
             >
               <span>Launch FinSage App</span>
               <ArrowRight className="h-4 w-4 text-teal-800" />
             </button>
             <button
               onClick={() => navigate('/future-self')}
-              className="inline-flex items-center gap-2 rounded-xl border border-white/30 bg-white/10 px-6 py-3 text-xs sm:text-sm font-semibold text-white hover:bg-white/20 transition-all active:scale-98 backdrop-blur-xs"
+              className="inline-flex items-center gap-2 rounded-xl border border-white/30 bg-white/10 px-6 py-3 text-xs sm:text-sm font-semibold text-white hover:bg-white/20 transition-colors backdrop-blur-xs"
             >
               <span>Try Future Self Simulator</span>
             </button>

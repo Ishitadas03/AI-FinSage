@@ -39,21 +39,21 @@ export const FloatingFeatureCard: React.FC<FloatingFeatureCardProps> = ({
   return (
     <div
       className={cn(
-        "flex items-center gap-3 rounded-2xl border border-slate-200/90 bg-white/95 p-3.5 sm:p-4 shadow-[0_10px_30px_rgba(15,23,42,0.08)] backdrop-blur-md transition-all duration-300 hover:scale-105 hover:shadow-[0_15px_35px_rgba(15,23,42,0.12)] hover:border-teal-300 group cursor-default",
+        "flex items-center gap-3 rounded-2xl border border-slate-200/90 bg-white/95 p-3.5 sm:p-4 shadow-sm backdrop-blur-md cursor-grab active:cursor-grabbing select-none transition-shadow",
         className
       )}
     >
       <div
         className={cn(
-          "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl shadow-xs transition-transform duration-300 group-hover:scale-110",
+          "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl shadow-xs",
           iconBgColor,
           iconColor
         )}
       >
-        <Icon className="h-5 w-5" />
+        <Icon className="h-5 w-5 pointer-events-none" />
       </div>
 
-      <div className="min-w-0">
+      <div className="min-w-0 pointer-events-none">
         <h4 className="text-xs sm:text-sm font-bold text-slate-900 tracking-tight">
           {title}
         </h4>
