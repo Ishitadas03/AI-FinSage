@@ -283,10 +283,10 @@ def test_date_and_account_filtering():
     # Day -5: Expense in Acc 2 (5000)
     create_tx(user, acc2["id"], "5000.00", "expense", "shopping", now - timedelta(days=5))
 
-    # Filter by account_id = Acc 1
+    # Filter by account_id = Acc 1 (explicit start_date to cover month boundaries)
     res_acc = client.get(
         "/api/v1/analytics/overview",
-        params={"account_id": acc1["id"]},
+        params={"account_id": acc1["id"], "start_date": (now - timedelta(days=15)).isoformat()},
         headers=user["headers"],
     )
     assert res_acc.status_code == 200

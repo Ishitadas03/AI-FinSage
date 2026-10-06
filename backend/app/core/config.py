@@ -1,6 +1,7 @@
+import base64
 from typing import List, Union
 from urllib.parse import quote_plus, unquote_plus
-from pydantic import field_validator
+from pydantic import field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from sqlalchemy.engine import make_url
 
@@ -29,6 +30,7 @@ class Settings(BaseSettings):
 
     # Clerk Authentication
     CLERK_ISSUER_URL: Union[str, None] = None
+    CLERK_PUBLISHABLE_KEY: Union[str, None] = None
     CLERK_SECRET_KEY: Union[str, None] = None
     CLERK_WEBHOOK_SECRET: Union[str, None] = None
 
@@ -49,6 +51,21 @@ class Settings(BaseSettings):
         "https://frontend-omega-lake-79.vercel.app",
     ]
 
+
+    @model_validator(mode="after")
+    def derive_clerk_issuer(self) -> "Settings":
+        if not self.CLERK_ISSUER_URL and self.CLERK_PUBLISHABLE_KEY:
+            try:
+                # e.g., pk_test_Z3Jvd24taGVyb24tMjc5Ni5jbGVyay5hY2NvdW50cy5kZXYk
+                key_part = self.CLERK_PUBLISHABLE_KEY.split("_", 2)[-1]
+                # Pad base64 string if necessary
+                padded = key_part + "=" * (-len(key_part) % 4)
+                decoded = base64.b64decode(padded).decode("utf-8").rstrip("$")
+                if decoded:
+                    self.CLERK_ISSUER_URL = f"https://{decoded}"
+            except Exception:
+                pass
+        return self
 
     @field_validator("JWT_SECRET_KEY")
     @classmethod
