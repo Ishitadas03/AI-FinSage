@@ -70,27 +70,6 @@ _ROOT_DIR = _BACKEND_DIR.parent
 _SQLITE_PATH = (_ROOT_DIR / "finsage_dev.db").resolve()
 
 
-def _sync_sqlite_schema(eng):
-    from app.models.base import Base
-    import app.models  # Ensure all models are registered
-    from sqlalchemy import inspect, text
-
-    Base.metadata.create_all(bind=eng)
-
-    inspector = inspect(eng)
-    with eng.begin() as conn:
-        for table_name, table in Base.metadata.tables.items():
-            if inspector.has_table(table_name):
-                existing_cols = {col["name"] for col in inspector.get_columns(table_name)}
-                for col in table.columns:
-                    if col.name not in existing_cols:
-                        col_type = col.type.compile(eng.dialect)
-                        try:
-                            conn.execute(text(f"ALTER TABLE {table_name} ADD COLUMN {col.name} {col_type}"))
-                        except Exception as alter_err:
-                            pass
-
-
 def create_db_engine():
     target_url = settings.DATABASE_URL
     kwargs = get_engine_kwargs(target_url)
@@ -115,8 +94,8 @@ def create_db_engine():
                 if isinstance(dbapi_connection, sqlite3.Connection):
                     dbapi_connection.create_function("to_char", 2, sqlite_to_char)
             
-            # Ensure tables and missing columns are created for SQLite fallback
-            _sync_sqlite_schema(eng)
+            from app.models.base import Base
+            Base.metadata.create_all(bind=eng)
             return eng
         raise err
 
