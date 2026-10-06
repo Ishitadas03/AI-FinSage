@@ -1,14 +1,25 @@
 import base64
+from pathlib import Path
 from typing import List, Union
 from urllib.parse import quote_plus, unquote_plus
 from pydantic import field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from sqlalchemy.engine import make_url
 
+_BACKEND_DIR = Path(__file__).resolve().parent.parent.parent
+_ROOT_DIR = _BACKEND_DIR.parent
+
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
-        env_file=".env",
+        env_file=(
+            str(_BACKEND_DIR / ".env"),
+            str(_BACKEND_DIR / ".env.local"),
+            str(_ROOT_DIR / ".env"),
+            str(_ROOT_DIR / ".env.local"),
+            ".env",
+            ".env.local",
+        ),
         env_file_encoding="utf-8",
         case_sensitive=True,
         extra="ignore",
