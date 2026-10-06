@@ -7,7 +7,7 @@ import { ApiErrorResponse, TokenResponse } from '@/types/auth';
  * Prefers VITE_API_BASE_URL from environment, otherwise defaults to '/api/v1'.
  */
 export const getApiBaseUrl = (): string => {
-  const envUrl = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL;
+  const envUrl = import.meta.env.VITE_API_BASE_URL;
   if (envUrl && typeof envUrl === 'string' && envUrl.trim().length > 0) {
     const trimmed = envUrl.trim().replace(/\/+$/, '');
     if (!trimmed.endsWith('/api/v1')) {
