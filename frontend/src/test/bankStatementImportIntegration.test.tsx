@@ -6,6 +6,11 @@ import { ImportStatementModal } from '@/components/modals/ImportStatementModal';
 import { bankImportApi } from '@/lib/api/bankImport';
 import { accountsApi } from '@/lib/api/accounts';
 import { transactionsApi } from '@/lib/api/transactions';
+import { budgetsApi } from '@/lib/api/budgets';
+import { goalsApi } from '@/lib/api/goals';
+import { loansApi } from '@/lib/api/loans';
+import { analyticsApi } from '@/lib/api/analytics';
+import { financialHealthApi } from '@/lib/api/financialHealth';
 import { authApi } from '@/lib/api/auth';
 import { tokenStorage } from '@/lib/api/tokenStorage';
 import { Account } from '@/types/account';
@@ -124,6 +129,22 @@ describe('Bank Statement Import Integration', () => {
       page_size: 50,
       pages: 1,
     });
+    vi.spyOn(budgetsApi, 'list').mockResolvedValue([]);
+    vi.spyOn(goalsApi, 'list').mockResolvedValue([]);
+    vi.spyOn(loansApi, 'list').mockResolvedValue([]);
+    vi.spyOn(loansApi, 'getDebtStress').mockResolvedValue({
+      monthly_net_income: 85000,
+      total_monthly_emi: 0,
+      dti_ratio: 0,
+      dti_status: 'healthy',
+      total_outstanding_debt: 0,
+      active_loans_count: 0,
+      stress_index: 0,
+      stress_level: 'low',
+      recommendations: [],
+    });
+    vi.spyOn(analyticsApi, 'getOverview').mockResolvedValue({} as any);
+    vi.spyOn(financialHealthApi, 'getOverview').mockResolvedValue({} as any);
   });
 
   it('uploads CSV, shows preview with detected format and validation warnings, and commits import', async () => {
