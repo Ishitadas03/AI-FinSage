@@ -1,5 +1,5 @@
 // FinSage Service Worker
-const CACHE_NAME = 'finsage-cache-v5';
+const CACHE_NAME = 'finsage-cache-v6';
 const OFFLINE_FALLBACK = '/index.html';
 
 // Critical shell assets to precache on install
