@@ -85,6 +85,7 @@ import { emiApi, EmiCalculationRequest, EmiCalculationResponse } from '@/lib/api
 import { recurringBillsApi } from '@/lib/api/recurringBills';
 import { notificationsApi } from '@/lib/api/notifications';
 import { copilotApi } from '@/lib/api/copilot';
+import { synthesizeClientCopilotResponse } from '@/lib/copilotSynthesis';
 import { reportsApi } from '@/lib/api/reports';
 import { usersApi } from '@/lib/api/users';
 import { dataManagementApi } from '@/lib/api/dataManagement';
@@ -1972,22 +1973,58 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
       setIsLoadingChat(true);
       setChatError(null);
 
+      // 1. Try backend copilot if active session exists
+      if (tokenStorage.hasSession()) {
+        try {
+          const res = await copilotApi.chat({ message: trimmed });
+          const botMsg: ChatMessage = {
+            id: res.id,
+            sender: 'assistant',
+            text: res.content,
+            timestamp: new Date(res.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            suggestions: res.suggested_queries,
+            intent: res.intent,
+            metrics_snapshot: res.metrics_snapshot,
+          };
+
+          setChatMessages((prev) => [...prev, botMsg]);
+          return botMsg;
+        } catch (err) {
+          console.warn('Backend copilot query failed, falling back to grounded client engine:', err);
+        }
+      }
+
+      // 2. Fallback to Grounded Deterministic Client Engine
       try {
-        const res = await copilotApi.chat({ message: trimmed });
+        const synthesized = synthesizeClientCopilotResponse(trimmed, {
+          netWorth,
+          monthlyIncome,
+          monthlyExpenses,
+          savingsRate,
+          accounts,
+          transactions,
+          budgets,
+          goals,
+          loans,
+          recurringBills,
+          securityAlerts,
+          financialHealthScore: financialHealth?.score,
+        });
+
         const botMsg: ChatMessage = {
-          id: res.id,
+          id: `bot-${Date.now()}`,
           sender: 'assistant',
-          text: res.content,
-          timestamp: new Date(res.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          suggestions: res.suggested_queries,
-          intent: res.intent,
-          metrics_snapshot: res.metrics_snapshot,
+          text: synthesized.content,
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          suggestions: synthesized.suggestions,
+          intent: synthesized.intent,
+          metrics_snapshot: synthesized.metrics_snapshot,
         };
 
         setChatMessages((prev) => [...prev, botMsg]);
         return botMsg;
-      } catch (err) {
-        const msg = getApiErrorMessage(err, 'Could not retrieve AI response. Please check your connection.');
+      } catch (synthErr) {
+        const msg = getApiErrorMessage(synthErr, 'Could not retrieve AI response. Please check your connection.');
         setChatError(msg);
         const errorMsg: ChatMessage = {
           id: `err-${Date.now()}`,
@@ -2001,7 +2038,20 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
         setIsLoadingChat(false);
       }
     },
-    []
+    [
+      netWorth,
+      monthlyIncome,
+      monthlyExpenses,
+      savingsRate,
+      accounts,
+      transactions,
+      budgets,
+      goals,
+      loans,
+      recurringBills,
+      securityAlerts,
+      financialHealth,
+    ]
   );
 
   const clearChat = useCallback(async (): Promise<void> => {

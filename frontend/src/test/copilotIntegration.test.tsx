@@ -151,4 +151,32 @@ describe('AI Copilot Integration', () => {
       expect(copilotApi.clearHistory).toHaveBeenCalled();
     });
   });
+
+  it('falls back seamlessly to grounded client synthesis when backend call fails', async () => {
+    vi.spyOn(copilotApi, 'chat').mockRejectedValue(new Error('Network Error'));
+
+    render(
+      <PWAInstallProvider>
+        <FinanceProvider>
+          <TestTrigger />
+        </FinanceProvider>
+      </PWAInstallProvider>
+    );
+
+    fireEvent.click(screen.getByText('Open Copilot'));
+
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText(/Ask anything about your savings/i)).toBeInTheDocument();
+    });
+
+    const input = screen.getByPlaceholderText(/Ask anything about your savings/i);
+    fireEvent.change(input, { target: { value: 'How can I save ₹10,000 more this month?' } });
+
+    const sendBtn = screen.getByLabelText('Send message');
+    fireEvent.click(sendBtn);
+
+    await waitFor(() => {
+      expect(screen.getByText(/Grounded Action Plan: Saving ₹10,000 More This Month/i)).toBeInTheDocument();
+    });
+  });
 });
