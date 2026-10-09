@@ -362,6 +362,264 @@ const mapAuthUserToProfile = (
 
 
 
+const INITIAL_ACCOUNTS: Account[] = [
+  {
+    id: "acc-1",
+    user_id: "usr-guest",
+    name: "HDFC Salary Account",
+    account_type: "savings",
+    balance: 545000,
+    current_balance: 545000,
+    credit_limit: null,
+    currency: "INR",
+    created_at: "2026-01-01T00:00:00Z",
+    updated_at: "2026-09-01T00:00:00Z",
+  },
+  {
+    id: "acc-2",
+    user_id: "usr-guest",
+    name: "ICICI Sapphiro Card",
+    account_type: "credit_card",
+    balance: 18450,
+    current_balance: 18450,
+    credit_limit: 300000,
+    currency: "INR",
+    created_at: "2026-01-01T00:00:00Z",
+    updated_at: "2026-09-01T00:00:00Z",
+  },
+  {
+    id: "acc-3",
+    user_id: "usr-guest",
+    name: "Zerodha Demat & MF",
+    account_type: "investment",
+    balance: 515000,
+    current_balance: 515000,
+    credit_limit: null,
+    currency: "INR",
+    created_at: "2026-01-01T00:00:00Z",
+    updated_at: "2026-09-01T00:00:00Z",
+  },
+  {
+    id: "acc-4",
+    user_id: "usr-guest",
+    name: "SBI Emergency Liquid Fund",
+    account_type: "savings",
+    balance: 180000,
+    current_balance: 180000,
+    credit_limit: null,
+    currency: "INR",
+    created_at: "2026-01-01T00:00:00Z",
+    updated_at: "2026-09-01T00:00:00Z",
+  },
+];
+
+const INITIAL_TRANSACTIONS: ApiTransaction[] = [
+  {
+    id: "tx-1",
+    user_id: "usr-guest",
+    account_id: "acc-1",
+    destination_account_id: null,
+    amount: 85000,
+    transaction_type: "income",
+    category: "salary",
+    merchant: "Tech Corp India Pvt Ltd",
+    description: "Monthly Salary Credit - September 2026",
+    reference: "SAL-SEP2026",
+    source: "manual",
+    import_fingerprint: null,
+    transaction_date: "2026-09-01T09:00:00Z",
+    created_at: "2026-09-01T09:00:00Z",
+    updated_at: "2026-09-01T09:00:00Z",
+  },
+  {
+    id: "tx-2",
+    user_id: "usr-guest",
+    account_id: "acc-2",
+    destination_account_id: null,
+    amount: 1240,
+    transaction_type: "expense",
+    category: "food_dining",
+    merchant: "Swiggy Gourmet",
+    description: "Weekend Dinner Delivery",
+    reference: "UPI-9821389",
+    source: "manual",
+    import_fingerprint: null,
+    transaction_date: "2026-09-02T20:30:00Z",
+    created_at: "2026-09-02T20:30:00Z",
+    updated_at: "2026-09-02T20:30:00Z",
+  },
+  {
+    id: "tx-3",
+    user_id: "usr-guest",
+    account_id: "acc-1",
+    destination_account_id: null,
+    amount: 1499,
+    transaction_type: "expense",
+    category: "utilities",
+    merchant: "Airtel Fiber",
+    description: "Monthly Gigabit Broadband Subscription",
+    reference: "BB-SEP26-88",
+    source: "manual",
+    import_fingerprint: null,
+    transaction_date: "2026-09-05T08:15:00Z",
+    created_at: "2026-09-05T08:15:00Z",
+    updated_at: "2026-09-05T08:15:00Z",
+  },
+  {
+    id: "tx-4",
+    user_id: "usr-guest",
+    account_id: "acc-1",
+    destination_account_id: null,
+    amount: 4850,
+    transaction_type: "expense",
+    category: "shopping",
+    merchant: "Nature's Basket Organic",
+    description: "Bi-weekly household groceries and pantry",
+    reference: "POS-NB-441",
+    source: "manual",
+    import_fingerprint: null,
+    transaction_date: "2026-09-08T16:45:00Z",
+    created_at: "2026-09-08T16:45:00Z",
+    updated_at: "2026-09-08T16:45:00Z",
+  },
+  {
+    id: "tx-5",
+    user_id: "usr-guest",
+    account_id: "acc-2",
+    destination_account_id: null,
+    amount: 620,
+    transaction_type: "expense",
+    category: "transportation",
+    merchant: "Uber India",
+    description: "Airport express transit ride",
+    reference: "UBR-901284",
+    source: "manual",
+    import_fingerprint: null,
+    transaction_date: "2026-09-10T09:20:00Z",
+    created_at: "2026-09-10T09:20:00Z",
+    updated_at: "2026-09-10T09:20:00Z",
+  },
+  {
+    id: "tx-6",
+    user_id: "usr-guest",
+    account_id: "acc-2",
+    destination_account_id: null,
+    amount: 18450,
+    transaction_type: "expense",
+    category: "shopping",
+    merchant: "Unknown Intl Gateway - London",
+    description: "Flagged by Scam Shield: Abnormal foreign debit attempt",
+    reference: "INTL-TX-8812",
+    source: "manual",
+    import_fingerprint: null,
+    transaction_date: "2026-09-13T03:42:00Z",
+    created_at: "2026-09-13T03:42:00Z",
+    updated_at: "2026-09-13T03:42:00Z",
+  },
+  {
+    id: "tx-7",
+    user_id: "usr-guest",
+    account_id: "acc-1",
+    destination_account_id: "acc-4",
+    amount: 8000,
+    transaction_type: "transfer",
+    category: "investment",
+    merchant: "Nippon India MF",
+    description: "Automated Liquid Mutual Fund SIP Transfer",
+    reference: "SIP-MF-7712",
+    source: "manual",
+    import_fingerprint: null,
+    transaction_date: "2026-09-15T09:00:00Z",
+    created_at: "2026-09-15T09:00:00Z",
+    updated_at: "2026-09-15T09:00:00Z",
+  },
+  {
+    id: "tx-8",
+    user_id: "usr-guest",
+    account_id: "acc-1",
+    destination_account_id: null,
+    amount: 28500,
+    transaction_type: "expense",
+    category: "housing",
+    merchant: "HDFC Home Loans",
+    description: "Monthly Affordable Housing Principal & Interest EMI",
+    reference: "EMI-HDFC-991",
+    source: "manual",
+    import_fingerprint: null,
+    transaction_date: "2026-09-18T11:00:00Z",
+    created_at: "2026-09-18T11:00:00Z",
+    updated_at: "2026-09-18T11:00:00Z",
+  },
+  {
+    id: "tx-9",
+    user_id: "usr-guest",
+    account_id: "acc-1",
+    destination_account_id: null,
+    amount: 25000,
+    transaction_type: "income",
+    category: "freelance",
+    merchant: "Global Fintech Ventures",
+    description: "Q3 Financial Advisory consultation payout",
+    reference: "INV-FIN-2026",
+    source: "manual",
+    import_fingerprint: null,
+    transaction_date: "2026-09-20T14:30:00Z",
+    created_at: "2026-09-20T14:30:00Z",
+    updated_at: "2026-09-20T14:30:00Z",
+  },
+  {
+    id: "tx-10",
+    user_id: "usr-guest",
+    account_id: "acc-1",
+    destination_account_id: null,
+    amount: 2450,
+    transaction_type: "expense",
+    category: "utilities",
+    merchant: "Tata Power Mumbai",
+    description: "Residential Power Utility Bill",
+    reference: "TATA-POW-44",
+    source: "manual",
+    import_fingerprint: null,
+    transaction_date: "2026-09-22T17:10:00Z",
+    created_at: "2026-09-22T17:10:00Z",
+    updated_at: "2026-09-22T17:10:00Z",
+  },
+  {
+    id: "tx-11",
+    user_id: "usr-guest",
+    account_id: "acc-2",
+    destination_account_id: null,
+    amount: 3890,
+    transaction_type: "expense",
+    category: "shopping",
+    merchant: "Amazon India",
+    description: "Ergonomic workspace accessories & monitor stand",
+    reference: "AMZN-IN-882",
+    source: "manual",
+    import_fingerprint: null,
+    transaction_date: "2026-09-24T19:05:00Z",
+    created_at: "2026-09-24T19:05:00Z",
+    updated_at: "2026-09-24T19:05:00Z",
+  },
+  {
+    id: "tx-12",
+    user_id: "usr-guest",
+    account_id: "acc-2",
+    destination_account_id: null,
+    amount: 2100,
+    transaction_type: "expense",
+    category: "entertainment",
+    merchant: "Cult.fit Elite",
+    description: "Monthly fitness center pass",
+    reference: "CULT-FIT-102",
+    source: "manual",
+    import_fingerprint: null,
+    transaction_date: "2026-09-26T07:30:00Z",
+    created_at: "2026-09-26T07:30:00Z",
+    updated_at: "2026-09-26T07:30:00Z",
+  },
+];
+
 const INITIAL_SECURITY_ALERTS: SecurityAlert[] = [
   {
     id: "sec-1",
@@ -626,6 +884,178 @@ const INITIAL_CHAT: ChatMessage[] = [
   },
 ];
 
+const INITIAL_ANALYTICS_OVERVIEW: AnalyticsOverviewResponse = {
+  period: {
+    start_date: '2026-04-01T00:00:00Z',
+    end_date: '2026-09-30T23:59:59Z',
+  },
+  summary: {
+    total_income: 110000,
+    total_expenses: 54200,
+    net_cash_flow: 55800,
+    savings_rate: 28.0,
+  },
+  spending_by_category: [
+    { category: 'Housing', amount: 28500, percentage: 52.6 },
+    { category: 'Shopping', amount: 27190, percentage: 25.4 },
+    { category: 'Utilities', amount: 3949, percentage: 7.3 },
+    { category: 'Food & Dining', amount: 1240, percentage: 2.3 },
+    { category: 'Entertainment', amount: 2100, percentage: 3.9 },
+    { category: 'Transportation', amount: 620, percentage: 1.1 },
+  ],
+  income_by_category: [
+    { category: 'Salary', amount: 85000, percentage: 77.3 },
+    { category: 'Freelance Advisory', amount: 25000, percentage: 22.7 },
+  ],
+  account_breakdown: [
+    {
+      account_id: 'acc-1',
+      account_name: 'HDFC Salary Account',
+      account_type: 'savings',
+      income: 110000,
+      expenses: 32449,
+      net_cash_flow: 77551,
+    },
+    {
+      account_id: 'acc-2',
+      account_name: 'ICICI Sapphiro Card',
+      account_type: 'credit_card',
+      income: 0,
+      expenses: 26300,
+      net_cash_flow: -26300,
+    },
+  ],
+  trend: [
+    { period: '2026-04', income: 85000, expenses: 51200, net_cash_flow: 33800 },
+    { period: '2026-05', income: 85000, expenses: 53100, net_cash_flow: 31900 },
+    { period: '2026-06', income: 90000, expenses: 52400, net_cash_flow: 37600 },
+    { period: '2026-07', income: 85000, expenses: 54900, net_cash_flow: 30100 },
+    { period: '2026-08', income: 95000, expenses: 53800, net_cash_flow: 41200 },
+    { period: '2026-09', income: 110000, expenses: 54200, net_cash_flow: 55800 },
+  ],
+  top_expenses: [
+    {
+      id: 'tx-8',
+      amount: 28500,
+      category: 'Housing',
+      merchant: 'HDFC Home Loans',
+      description: 'Monthly Affordable Housing Principal & Interest EMI',
+      transaction_date: '2026-09-18T11:00:00Z',
+      account_id: 'acc-1',
+      account_name: 'HDFC Salary Account',
+    },
+    {
+      id: 'tx-6',
+      amount: 18450,
+      category: 'Shopping',
+      merchant: 'Unknown Intl Gateway - London',
+      description: 'Flagged by Scam Shield: Abnormal foreign debit attempt',
+      transaction_date: '2026-09-13T03:42:00Z',
+      account_id: 'acc-2',
+      account_name: 'ICICI Sapphiro Card',
+    },
+    {
+      id: 'tx-4',
+      amount: 4850,
+      category: 'Shopping',
+      merchant: "Nature's Basket Organic",
+      description: 'Bi-weekly household groceries and pantry',
+      transaction_date: '2026-09-08T16:45:00Z',
+      account_id: 'acc-1',
+      account_name: 'HDFC Salary Account',
+    },
+    {
+      id: 'tx-11',
+      amount: 3890,
+      category: 'Shopping',
+      merchant: 'Amazon India',
+      description: 'Ergonomic workspace accessories & monitor stand',
+      transaction_date: '2026-09-24T19:05:00Z',
+      account_id: 'acc-2',
+      account_name: 'ICICI Sapphiro Card',
+    },
+    {
+      id: 'tx-10',
+      amount: 2450,
+      category: 'Utilities',
+      merchant: 'Tata Power Mumbai',
+      description: 'Residential Power Utility Bill',
+      transaction_date: '2026-09-22T17:10:00Z',
+      account_id: 'acc-1',
+      account_name: 'HDFC Salary Account',
+    },
+  ],
+};
+
+const INITIAL_FINANCIAL_HEALTH_OVERVIEW: FinancialHealthOverviewResponse = {
+  start_date: '2026-09-01T00:00:00Z',
+  end_date: '2026-09-30T23:59:59Z',
+  days_in_period: 30,
+
+  liquid_assets: 725000,
+  credit_card_debt: 18450,
+  investment_assets: 515000,
+  total_assets: 1240000,
+
+  total_income: 110000,
+  total_expenses: 54200,
+  net_cashflow: 55800,
+
+  total_outstanding_loan_principal: 2850000,
+  total_monthly_emi: 28500,
+  active_loan_count: 1,
+
+  savings_rate: {
+    value: 28.0,
+    unit: '%',
+    status: 'healthy',
+    benchmark: '> 20%',
+    explanation: 'Your savings rate of 28.0% exceeds standard financial benchmarks.',
+  },
+  expense_ratio: {
+    value: 49.3,
+    unit: '%',
+    status: 'healthy',
+    benchmark: '< 70%',
+    explanation: 'Operating expenses are well contained relative to verified income.',
+  },
+  emergency_fund_coverage_months: {
+    value: 3.3,
+    unit: 'months',
+    status: 'moderate',
+    benchmark: '6.0 months',
+    explanation: 'Liquid emergency reserves cover 3.3 months of mandatory commitments.',
+  },
+  debt_to_liquid_ratio: {
+    value: 2.5,
+    unit: '%',
+    status: 'healthy',
+    benchmark: '< 20%',
+    explanation: 'Unsecured debt is negligible compared to available liquid reserves.',
+  },
+  investment_allocation_ratio: {
+    value: 41.5,
+    unit: '%',
+    status: 'healthy',
+    benchmark: '> 30%',
+    explanation: 'A healthy portion of net worth is allocated into compounding assets.',
+  },
+  credit_card_utilization: {
+    value: 6.2,
+    unit: '%',
+    status: 'healthy',
+    benchmark: '< 30%',
+    explanation: 'Credit card utilization is at an excellent 6.2% across your lines.',
+  },
+  debt_to_income_ratio: {
+    value: 25.9,
+    unit: '%',
+    status: 'healthy',
+    benchmark: '< 35%',
+    explanation: 'Monthly debt obligations are within safe, healthy boundaries.',
+  },
+};
+
 export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const clerkAuth = useAuth();
   const clerkUser = useUser();
@@ -659,16 +1089,59 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [selectedPeriod, setSelectedPeriod] = useState<string>("September 2026");
 
   // Real Backend Accounts State
-  const [accounts, setAccounts] = useState<Account[]>([]);
+  const [accounts, setAccounts] = useState<Account[]>(() => {
+    if (!tokenStorage.hasSession()) {
+      try {
+        const saved = localStorage.getItem('finsage_demo_accounts');
+        return saved ? JSON.parse(saved) : INITIAL_ACCOUNTS;
+      } catch {
+        return INITIAL_ACCOUNTS;
+      }
+    }
+    return [];
+  });
   const [isLoadingAccounts, setIsLoadingAccounts] = useState<boolean>(false);
   const [accountsError, setAccountsError] = useState<string | null>(null);
 
   // Real Backend Transactions State
-  const [transactions, setTransactions] = useState<ApiTransaction[]>([]);
-  const [transactionsTotal, setTransactionsTotal] = useState<number>(0);
+  const [transactions, setTransactions] = useState<ApiTransaction[]>(() => {
+    if (!tokenStorage.hasSession()) {
+      try {
+        const saved = localStorage.getItem('finsage_demo_transactions');
+        const list: ApiTransaction[] = saved ? JSON.parse(saved) : INITIAL_TRANSACTIONS;
+        return list.slice(0, 10);
+      } catch {
+        return INITIAL_TRANSACTIONS.slice(0, 10);
+      }
+    }
+    return [];
+  });
+  const [transactionsTotal, setTransactionsTotal] = useState<number>(() => {
+    if (!tokenStorage.hasSession()) {
+      try {
+        const saved = localStorage.getItem('finsage_demo_transactions');
+        const list: ApiTransaction[] = saved ? JSON.parse(saved) : INITIAL_TRANSACTIONS;
+        return list.length;
+      } catch {
+        return INITIAL_TRANSACTIONS.length;
+      }
+    }
+    return 0;
+  });
   const [transactionsPage, setTransactionsPage] = useState<number>(1);
-  const [transactionsPageSize, setTransactionsPageSize] = useState<number>(20);
-  const [transactionsTotalPages, setTransactionsTotalPages] = useState<number>(1);
+  const [transactionsPageSize, setTransactionsPageSize] = useState<number>(10);
+  const [transactionsTotalPages, setTransactionsTotalPages] = useState<number>(() => {
+    if (!tokenStorage.hasSession()) {
+      try {
+        const saved = localStorage.getItem('finsage_demo_transactions');
+        const list: ApiTransaction[] = saved ? JSON.parse(saved) : INITIAL_TRANSACTIONS;
+        return Math.max(1, Math.ceil(list.length / 10));
+      } catch {
+        return Math.max(1, Math.ceil(INITIAL_TRANSACTIONS.length / 10));
+      }
+    }
+    return 1;
+  });
   const [isLoadingTransactions, setIsLoadingTransactions] = useState<boolean>(false);
   const [transactionsError, setTransactionsError] = useState<string | null>(null);
   const [activeTransactionFilters, setActiveTransactionFilters] = useState<TransactionFilterParams>({});
@@ -692,12 +1165,22 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [debtStressError, setDebtStressError] = useState<string | null>(null);
 
   // Real Backend Analytics State
-  const [analyticsOverview, setAnalyticsOverview] = useState<AnalyticsOverviewResponse | null>(null);
+  const [analyticsOverview, setAnalyticsOverview] = useState<AnalyticsOverviewResponse | null>(() => {
+    if (!tokenStorage.hasSession()) {
+      return INITIAL_ANALYTICS_OVERVIEW;
+    }
+    return null;
+  });
   const [isLoadingAnalytics, setIsLoadingAnalytics] = useState<boolean>(false);
   const [analyticsError, setAnalyticsError] = useState<string | null>(null);
 
   // Real Backend Financial Health State
-  const [financialHealthOverview, setFinancialHealthOverview] = useState<FinancialHealthOverviewResponse | null>(null);
+  const [financialHealthOverview, setFinancialHealthOverview] = useState<FinancialHealthOverviewResponse | null>(() => {
+    if (!tokenStorage.hasSession()) {
+      return INITIAL_FINANCIAL_HEALTH_OVERVIEW;
+    }
+    return null;
+  });
   const [isLoadingFinancialHealth, setIsLoadingFinancialHealth] = useState<boolean>(false);
   const [financialHealthError, setFinancialHealthError] = useState<string | null>(null);
 
@@ -799,17 +1282,24 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
     async (params?: AnalyticsQueryParams): Promise<AnalyticsOverviewResponse | null> => {
       setIsLoadingAnalytics(true);
       setAnalyticsError(null);
-      try {
-        const data = await analyticsApi.getOverview(params);
-        setAnalyticsOverview(data);
-        return data;
-      } catch (err) {
-        const msg = getApiErrorMessage(err, 'Failed to load spending analytics.');
-        setAnalyticsError(msg);
-        return null;
-      } finally {
-        setIsLoadingAnalytics(false);
+
+      if (tokenStorage.hasSession()) {
+        try {
+          const data = await analyticsApi.getOverview(params);
+          setAnalyticsOverview(data);
+          return data;
+        } catch (err) {
+          const msg = getApiErrorMessage(err, 'Failed to load spending analytics.');
+          setAnalyticsError(msg);
+          return null;
+        } finally {
+          setIsLoadingAnalytics(false);
+        }
       }
+
+      setAnalyticsOverview(INITIAL_ANALYTICS_OVERVIEW);
+      setIsLoadingAnalytics(false);
+      return INITIAL_ANALYTICS_OVERVIEW;
     },
     []
   );
@@ -819,17 +1309,24 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
     async (params?: FinancialHealthQueryParams): Promise<FinancialHealthOverviewResponse | null> => {
       setIsLoadingFinancialHealth(true);
       setFinancialHealthError(null);
-      try {
-        const data = await financialHealthApi.getOverview(params);
-        setFinancialHealthOverview(data);
-        return data;
-      } catch (err) {
-        const msg = getApiErrorMessage(err, 'Failed to load financial health overview.');
-        setFinancialHealthError(msg);
-        return null;
-      } finally {
-        setIsLoadingFinancialHealth(false);
+
+      if (tokenStorage.hasSession()) {
+        try {
+          const data = await financialHealthApi.getOverview(params);
+          setFinancialHealthOverview(data);
+          return data;
+        } catch (err) {
+          const msg = getApiErrorMessage(err, 'Failed to load financial health overview.');
+          setFinancialHealthError(msg);
+          return null;
+        } finally {
+          setIsLoadingFinancialHealth(false);
+        }
       }
+
+      setFinancialHealthOverview(INITIAL_FINANCIAL_HEALTH_OVERVIEW);
+      setIsLoadingFinancialHealth(false);
+      return INITIAL_FINANCIAL_HEALTH_OVERVIEW;
     },
     []
   );
@@ -1008,17 +1505,30 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   // Real Accounts Operations
   const loadAccounts = useCallback(async (): Promise<Account[]> => {
-
     setIsLoadingAccounts(true);
     setAccountsError(null);
+    if (tokenStorage.hasSession()) {
+      try {
+        const data = await accountsApi.list();
+        setAccounts(data);
+        return data;
+      } catch (err) {
+        const msg = getApiErrorMessage(err, 'Failed to load accounts.');
+        setAccountsError(msg);
+        return [];
+      } finally {
+        setIsLoadingAccounts(false);
+      }
+    }
+
     try {
-      const data = await accountsApi.list();
+      const saved = localStorage.getItem('finsage_demo_accounts');
+      const data = saved ? JSON.parse(saved) : INITIAL_ACCOUNTS;
       setAccounts(data);
       return data;
-    } catch (err) {
-      const msg = getApiErrorMessage(err, 'Failed to load accounts.');
-      setAccountsError(msg);
-      return [];
+    } catch {
+      setAccounts(INITIAL_ACCOUNTS);
+      return INITIAL_ACCOUNTS;
     } finally {
       setIsLoadingAccounts(false);
     }
@@ -1396,14 +1906,81 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
       const effectiveFilters = filters || activeTransactionFilters;
       setActiveTransactionFilters(effectiveFilters);
 
+      if (tokenStorage.hasSession()) {
+        try {
+          const response = await transactionsApi.list(effectiveFilters);
+          setTransactions(response.items);
+          setTransactionsTotal(response.total);
+          setTransactionsPage(response.page);
+          setTransactionsPageSize(response.page_size);
+          setTransactionsTotalPages(response.total_pages);
+          return response;
+        } catch (err) {
+          const msg = getApiErrorMessage(err, 'Failed to load transactions.');
+          setTransactionsError(msg);
+          return {
+            items: [],
+            total: 0,
+            page: 1,
+            page_size: 20,
+            total_pages: 1,
+          };
+        } finally {
+          setIsLoadingTransactions(false);
+        }
+      }
+
+      // Guest / Offline fallback
       try {
-        const response = await transactionsApi.list(effectiveFilters);
-        setTransactions(response.items);
-        setTransactionsTotal(response.total);
-        setTransactionsPage(response.page);
-        setTransactionsPageSize(response.page_size);
-        setTransactionsTotalPages(response.total_pages);
-        return response;
+        let stored: ApiTransaction[] = INITIAL_TRANSACTIONS;
+        try {
+          const saved = localStorage.getItem('finsage_demo_transactions');
+          if (saved) stored = JSON.parse(saved);
+        } catch {}
+
+        let filtered = [...stored];
+        if (effectiveFilters.merchant) {
+          const q = effectiveFilters.merchant.toLowerCase().trim();
+          filtered = filtered.filter(
+            (t) =>
+              (t.merchant && t.merchant.toLowerCase().includes(q)) ||
+              (t.description && t.description.toLowerCase().includes(q))
+          );
+        }
+
+        if (effectiveFilters.transaction_type) {
+          filtered = filtered.filter((t) => t.transaction_type === effectiveFilters.transaction_type);
+        }
+
+        if (effectiveFilters.category) {
+          filtered = filtered.filter((t) => t.category === effectiveFilters.category);
+        }
+
+        if (effectiveFilters.account_id) {
+          filtered = filtered.filter((t) => t.account_id === effectiveFilters.account_id);
+        }
+
+        const page = effectiveFilters.page || 1;
+        const pageSize = effectiveFilters.page_size || 10;
+        const total = filtered.length;
+        const totalPages = Math.max(1, Math.ceil(total / pageSize));
+        const startIndex = (page - 1) * pageSize;
+        const paginatedItems = filtered.slice(startIndex, startIndex + pageSize);
+
+        setTransactions(paginatedItems);
+        setTransactionsTotal(total);
+        setTransactionsPage(page);
+        setTransactionsPageSize(pageSize);
+        setTransactionsTotalPages(totalPages);
+        setTransactionsError(null);
+
+        return {
+          items: paginatedItems,
+          total,
+          page,
+          page_size: pageSize,
+          total_pages: totalPages,
+        };
       } catch (err) {
         const msg = getApiErrorMessage(err, 'Failed to load transactions.');
         setTransactionsError(msg);
@@ -1425,19 +2002,57 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
     async (payload: TransactionCreate): Promise<ApiTransaction> => {
       setIsLoadingTransactions(true);
       setTransactionsError(null);
+      if (tokenStorage.hasSession()) {
+        try {
+          const created = await transactionsApi.create(payload);
+          await loadTransactions();
+          await loadAccounts();
+          await loadBudgets();
+          await loadAnalytics();
+          await loadFinancialHealth();
+          return created;
+        } catch (err) {
+          const msg = getApiErrorMessage(err, 'Failed to create transaction.');
+          setTransactionsError(msg);
+          throw err;
+        } finally {
+          setIsLoadingTransactions(false);
+        }
+      }
+
+      // Guest / Demo mode local creation
       try {
-        const created = await transactionsApi.create(payload);
-        // Refresh transaction list, accounts, budgets, analytics, and health to update authoritative metrics
+        const newTx: ApiTransaction = {
+          id: `tx-${Date.now()}`,
+          user_id: 'usr-guest',
+          account_id: payload.account_id,
+          destination_account_id: payload.destination_account_id || null,
+          amount: payload.amount,
+          transaction_type: payload.transaction_type,
+          category: payload.category || null,
+          merchant: payload.merchant || 'Manual Entry',
+          description: payload.description || '',
+          reference: payload.reference || null,
+          source: 'manual',
+          import_fingerprint: null,
+          transaction_date: payload.transaction_date || new Date().toISOString(),
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        };
+
+        let stored: ApiTransaction[] = INITIAL_TRANSACTIONS;
+        try {
+          const saved = localStorage.getItem('finsage_demo_transactions');
+          if (saved) stored = JSON.parse(saved);
+        } catch {}
+
+        const updatedList = [newTx, ...stored];
+        try {
+          localStorage.setItem('finsage_demo_transactions', JSON.stringify(updatedList));
+        } catch {}
+
         await loadTransactions();
-        await loadAccounts();
-        await loadBudgets();
-        await loadAnalytics();
-        await loadFinancialHealth();
-        return created;
-      } catch (err) {
-        const msg = getApiErrorMessage(err, 'Failed to create transaction.');
-        setTransactionsError(msg);
-        throw err;
+        return newTx;
       } finally {
         setIsLoadingTransactions(false);
       }
@@ -1449,18 +2064,51 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
     async (id: string, payload: TransactionUpdate): Promise<ApiTransaction> => {
       setIsLoadingTransactions(true);
       setTransactionsError(null);
+      if (tokenStorage.hasSession()) {
+        try {
+          const updated = await transactionsApi.update(id, payload);
+          await loadTransactions();
+          await loadAccounts();
+          await loadBudgets();
+          await loadAnalytics();
+          await loadFinancialHealth();
+          return updated;
+        } catch (err) {
+          const msg = getApiErrorMessage(err, 'Failed to update transaction.');
+          setTransactionsError(msg);
+          throw err;
+        } finally {
+          setIsLoadingTransactions(false);
+        }
+      }
+
       try {
-        const updated = await transactionsApi.update(id, payload);
+        let stored: ApiTransaction[] = INITIAL_TRANSACTIONS;
+        try {
+          const saved = localStorage.getItem('finsage_demo_transactions');
+          if (saved) stored = JSON.parse(saved);
+        } catch {}
+
+        let updatedTx: ApiTransaction | null = null;
+        const updatedList = stored.map((tx) => {
+          if (tx.id === id) {
+            updatedTx = {
+              ...tx,
+              ...payload,
+              amount: payload.amount !== undefined ? payload.amount : tx.amount,
+              updated_at: new Date().toISOString(),
+            };
+            return updatedTx;
+          }
+          return tx;
+        });
+
+        try {
+          localStorage.setItem('finsage_demo_transactions', JSON.stringify(updatedList));
+        } catch {}
+
         await loadTransactions();
-        await loadAccounts();
-        await loadBudgets();
-        await loadAnalytics();
-        await loadFinancialHealth();
-        return updated;
-      } catch (err) {
-        const msg = getApiErrorMessage(err, 'Failed to update transaction.');
-        setTransactionsError(msg);
-        throw err;
+        return updatedTx || stored[0];
       } finally {
         setIsLoadingTransactions(false);
       }
@@ -1472,18 +2120,38 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
     async (id: string): Promise<boolean> => {
       setIsLoadingTransactions(true);
       setTransactionsError(null);
+      if (tokenStorage.hasSession()) {
+        try {
+          await transactionsApi.delete(id);
+          await loadTransactions();
+          await loadAccounts();
+          await loadBudgets();
+          await loadAnalytics();
+          await loadFinancialHealth();
+          return true;
+        } catch (err) {
+          const msg = getApiErrorMessage(err, 'Failed to delete transaction.');
+          setTransactionsError(msg);
+          return false;
+        } finally {
+          setIsLoadingTransactions(false);
+        }
+      }
+
       try {
-        await transactionsApi.delete(id);
+        let stored: ApiTransaction[] = INITIAL_TRANSACTIONS;
+        try {
+          const saved = localStorage.getItem('finsage_demo_transactions');
+          if (saved) stored = JSON.parse(saved);
+        } catch {}
+
+        const updatedList = stored.filter((tx) => tx.id !== id);
+        try {
+          localStorage.setItem('finsage_demo_transactions', JSON.stringify(updatedList));
+        } catch {}
+
         await loadTransactions();
-        await loadAccounts();
-        await loadBudgets();
-        await loadAnalytics();
-        await loadFinancialHealth();
         return true;
-      } catch (err) {
-        const msg = getApiErrorMessage(err, 'Failed to delete transaction.');
-        setTransactionsError(msg);
-        return false;
       } finally {
         setIsLoadingTransactions(false);
       }
